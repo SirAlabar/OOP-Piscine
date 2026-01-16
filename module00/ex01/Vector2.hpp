@@ -1,0 +1,10 @@
+#ifndef VECTOR2_HPP
+#define VECTOR2_HPP
+
+struct Vector2
+{
+    float X;
+    float Y;
+};
+
+#endif
