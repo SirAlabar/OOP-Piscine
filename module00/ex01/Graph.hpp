@@ -21,7 +21,7 @@ public:
     
     void addPoint(const Vector2& point);
     void addLine(const Vector2& start, const Vector2& end);
-    void loadFromFile(const std::string& filename);
+    bool loadFromFile(const std::string& filename);
 
     // Getters
     const Vector2& getSize() const;
