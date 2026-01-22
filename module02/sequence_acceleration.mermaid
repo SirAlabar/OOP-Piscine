@@ -1,0 +1,18 @@
+
+sequenceDiagram
+    participant Driver
+    participant Pedal
+    participant Injector
+    participant ExplosionChamber
+    participant Crankshaft
+    participant Transmission
+    participant Wheel
+
+    Note over Driver,Wheel: Acceleration Flow (Association Chain)
+    Driver->>Pedal: use(p_pression)
+    Pedal->>Injector: execute(p_pression)
+    Injector->>ExplosionChamber: explode()
+    ExplosionChamber->>Crankshaft: receiveForce()
+    Crankshaft->>Transmission: activate(p_force)
+    Transmission->>Wheel: rotate()
+    Wheel-->>Driver: Car accelerates

@@ -1,0 +1,15 @@
+
+sequenceDiagram
+    participant Driver
+    participant Pedal
+    participant BrakeController
+    participant Brake
+    participant Wheel
+
+    Note over Driver,Wheel: Braking Flow (Polymorphic Association)
+    Driver->>Pedal: use(p_pression)
+    Pedal->>BrakeController: execute(p_pression)
+    Note over BrakeController,Brake: BrakeController distributes to 4 Brakes
+    BrakeController->>Brake: execute(p_force)
+    Brake->>Wheel: reduce speed
+    Wheel-->>Driver: Car decelerates

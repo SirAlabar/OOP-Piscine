@@ -1,0 +1,15 @@
+
+sequenceDiagram
+    participant Driver
+    participant SteerWheel
+    participant DAE
+    participant Direction
+    participant Wheel
+
+    Note over Driver,Wheel: Steering Flow (Association Chain)
+    Driver->>SteerWheel: turn(p_angle)
+    SteerWheel->>DAE: use(p_angle)
+    DAE->>Direction: turn(p_angle)
+    Note over Direction,Wheel: Direction controls 2 front wheels
+    Direction->>Wheel: adjust angle
+    Wheel-->>Driver: Car turns

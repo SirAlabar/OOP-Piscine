@@ -1,0 +1,167 @@
+classDiagram
+
+    %% ==================== ABSTRACT BASE ====================
+    class LinkablePart {
+        <<abstract>>
+        +execute(float p_pression)*
+    }
+
+
+    %% ==================== ENGINE BLOCK ====================
+    class Motor {
+        -Injector injector
+        -ExplosionChamber explosionChamber
+        -Crankshaft crankshaft
+        +connectToTransmission(Transmission* p_transmission) void
+    }
+    
+    class Injector {
+        -ExplosionChamber* explosionChamber
+        +execute(float p_pression) void
+    }
+    
+    class ExplosionChamber {
+        -float pressure
+    }
+    
+    class Crankshaft {
+        -float rpm
+    }
+
+
+    %% ==================== TRANSMISSION BLOCK ====================
+    class Transmission {
+        -Gear* gears
+        -Wheel* wheels
+        -Crankshaft* crankshaft
+        +activate(float p_force) void
+        +shiftGear(int level) void
+    }
+    
+    class Gear {
+        -int ratio
+    }
+    
+    class GearLever {
+        -Gear* currentGear
+    }
+    
+    class Wheel {
+        -float angle
+        -float speed
+    }
+
+
+    %% ==================== DIRECTION/STEERING BLOCK ====================
+    class Direction {
+        -Wheel* wheels[2]
+        +turn(float p_angle) void
+    }
+    
+    class DAE {
+        -Direction* direction
+        -float force
+        +use(float p_angle) void
+    }
+    
+    class SteerWheel {
+        -DAE* dae
+        +turn(float p_angle) void
+    }
+
+
+    %% ==================== BRAKING BLOCK ====================
+    class Brake {
+        -Wheel* wheel
+        -float force
+        +execute(float p_force) void
+        +attackWheel(Wheel* p_wheel) void
+    }
+    
+    class BrakeController {
+        -Brake brakes[4]
+        +execute(float p_pression) void
+    }
+
+
+    %% ==================== COCKPIT BLOCK ====================
+    class Pedal {
+        -LinkablePart* target
+        +setTarget(LinkablePart* p_part) void
+        +use(float p_pression) void
+    }
+    
+    class Cockpit {
+        -Pedal accelerator
+        -Pedal brakePedal
+        -SteerWheel steerWheel
+        -GearLever gearLever
+    }
+
+
+    %% ==================== ELECTRONICS BLOCK ====================
+    class Electronics {
+        -DAE dae
+    }
+
+
+    %% ==================== CAR CORE ====================
+    class Car {
+        -Motor motor
+        -Transmission transmission
+        -BrakeController brakeController
+        -Direction direction
+        -Electronics electronics
+        -Cockpit cockpit
+    }
+
+
+    %% ==================== INHERITANCE ====================
+    LinkablePart <|-- Injector : inheritance
+    LinkablePart <|-- BrakeController : inheritance
+
+
+    %% ==================== ENGINE RELATIONSHIPS ====================
+    Motor *-- "1" Injector : composition
+    Motor *-- "1" ExplosionChamber : composition
+    Motor *-- "1" Crankshaft : composition
+    Injector --> "1" ExplosionChamber : association
+
+
+    %% ==================== TRANSMISSION RELATIONSHIPS ====================
+    Transmission *-- "1..*" Gear : composition
+    Transmission --> "4" Wheel : association
+    Transmission --> "1" Crankshaft : association
+    GearLever --> "1" Gear : association
+
+
+    %% ==================== DIRECTION RELATIONSHIPS ====================
+    Direction --> "2" Wheel : association
+    DAE --> "1" Direction : association
+    SteerWheel --> "1" DAE : association
+
+
+    %% ==================== BRAKING RELATIONSHIPS ====================
+    Brake --> "1" Wheel : association
+    BrakeController *-- "4" Brake : composition
+
+
+    %% ==================== COCKPIT RELATIONSHIPS ====================
+    Pedal --> "0..1" LinkablePart : association
+    Cockpit *-- "2" Pedal : composition
+    Cockpit *-- "1" SteerWheel : composition
+    Cockpit *-- "1" GearLever : composition
+
+
+    %% ==================== ELECTRONICS RELATIONSHIPS ====================
+    Electronics *-- "1" DAE : composition
+
+
+    %% ==================== CAR RELATIONSHIPS ====================
+    Car *-- "1" Motor : composition
+    Car *-- "1" Transmission : composition
+    Car *-- "1" BrakeController : composition
+    Car *-- "1" Direction : composition
+    Car *-- "1" Electronics : composition
+    Car *-- "1" Cockpit : composition
+    Motor --> "1" Transmission : association
