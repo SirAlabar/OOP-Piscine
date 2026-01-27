@@ -14,7 +14,7 @@ RESET		= \033[0m
 #==============================================================================#
 #                                   CONFIG                                     #
 #==============================================================================#
-NAME		= program
+NAME		= Factory
 
 # Compiler settings
 CXX			= c++
@@ -23,12 +23,16 @@ DEBUG_FLAGS	= -g -fsanitize=address
 INCLUDE		= -I./include -I.
 
 # Source files - auto-detect or specify
-SRCS		= $(wildcard *.cpp) $(wildcard src/*.cpp)
+SRCS = $(wildcard *.cpp) \
+       $(wildcard src/people/*.cpp) \
+       $(wildcard src/academic/*.cpp) \
+       $(wildcard src/forms/*.cpp) \
+       $(wildcard src/rooms/*.cpp)
 OBJS_DIR	= obj
 OBJS		= $(SRCS:%.cpp=$(OBJS_DIR)/%.o)
 
 # Create obj directory structure
-$(shell mkdir -p $(OBJS_DIR) $(OBJS_DIR)/src)
+$(shell mkdir -p $(OBJS_DIR) $(OBJS_DIR)/src $(OBJS_DIR)/src/people $(OBJS_DIR)/src/academic $(OBJS_DIR)/src/forms $(OBJS_DIR)/src/rooms)
 
 #==============================================================================#
 #                                   RULES                                      #
