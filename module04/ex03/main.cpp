@@ -1,0 +1,119 @@
+#include <iostream>
+#include "patterns/singetons.hpp"
+#include "people/Professor.hpp"
+#include "people/Secretary.hpp"
+#include "people/Headmaster.hpp"
+#include "people/Student.hpp"
+#include "academic/Course.hpp"
+
+#define RESET   "\033[0m"
+#define GREEN   "\033[32m"
+#define BLUE    "\033[34m"
+#define CYAN    "\033[36m"
+
+int main()
+{
+	std::cout << CYAN << "=== Ex03: Mediator Pattern ===" << RESET << std::endl << std::endl;
+
+	Secretary* secretary = new Secretary("Secretary Mary");
+	Headmaster* headmaster = new Headmaster("Headmaster Constantine", secretary);
+	
+	Professor* profSmith = new Professor("Prof. Smith");
+	Student* alice = new Student("Alice");
+	Student* bob = new Student("Bob");
+	
+	std::cout << std::endl;
+
+	std::cout << BLUE << "=== Scenario 1: Professor Requests Course Creation ===" << RESET << std::endl;
+	headmaster->launchClasses();
+	
+	if (!profSmith->getCurrentCourse())
+	{
+		profSmith->requestCourseCreation(headmaster, "Mathematics");
+	}
+	std::cout << std::endl;
+
+	std::cout << BLUE << "=== Scenario 2: Students Request Course Subscription ===" << RESET << std::endl;
+	Course* math = profSmith->getCurrentCourse();
+	if (math)
+	{
+		alice->requestCourseSubscription(headmaster, math);
+		bob->requestCourseSubscription(headmaster, math);
+	}
+	std::cout << std::endl;
+
+	std::cout << BLUE << "=== Scenario 3: Classes Begin ===" << RESET << std::endl;
+	headmaster->launchClasses();
+	profSmith->doClass();
+	std::cout << std::endl;
+	
+	headmaster->requestRingBell();
+	std::cout << std::endl;
+	
+	headmaster->launchClasses();
+	profSmith->doClass();
+	std::cout << std::endl;
+	
+	headmaster->launchClasses();
+	profSmith->doClass();
+	std::cout << std::endl;
+	
+	headmaster->launchClasses();
+	profSmith->doClass();
+	std::cout << std::endl;
+	
+	headmaster->launchClasses();
+	profSmith->doClass();
+	std::cout << std::endl;
+
+	std::cout << BLUE << "=== Scenario 4: Professor Recommends Graduation ===" << RESET << std::endl;
+	
+	if (math->canGraduate(alice))
+	{
+		profSmith->requestStudentGraduation(headmaster, alice, math);
+	}
+	
+	if (math->canGraduate(bob))
+	{
+		profSmith->requestStudentGraduation(headmaster, bob, math);
+	}
+	std::cout << std::endl;
+
+	std::cout << BLUE << "=== Scenario 5: Attempt Early Graduation (Should Fail) ===" << RESET << std::endl;
+	Student* charlie = new Student("Charlie");
+	charlie->requestCourseSubscription(headmaster, math);
+	profSmith->requestStudentGraduation(headmaster, charlie, math);
+	std::cout << std::endl;
+
+	std::cout << BLUE << "=== Scenario 6: Headmaster Requests Classroom ===" << RESET << std::endl;
+	headmaster->processClassroomRequest();
+	std::cout << std::endl;
+
+	std::cout << CYAN << "=== Ex03 Complete ===" << RESET << std::endl;
+	std::cout << std::endl;
+
+	std::cout << GREEN << "Cleaning up memory..." << RESET << std::endl;
+	
+	delete charlie;
+	delete alice;
+	delete bob;
+	delete profSmith;
+	delete headmaster;
+	delete secretary;
+	
+	std::vector<Course*>& courses = CourseList::getInstance().getAll();
+	for (std::vector<Course*>::iterator it = courses.begin(); it != courses.end(); ++it)
+	{
+		delete *it;
+	}
+	
+	std::vector<Room*>& rooms = RoomList::getInstance().getAll();
+	for (std::vector<Room*>::iterator it = rooms.begin(); it != rooms.end(); ++it)
+	{
+		delete *it;
+	}
+	
+	std::cout << GREEN << "✓ Cleanup complete!" << RESET << std::endl;
+
+	return 0;
+}
