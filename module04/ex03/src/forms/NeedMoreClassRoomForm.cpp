@@ -1,5 +1,6 @@
 #include "forms/NeedMoreClassRoomForm.hpp"
 #include "academic/Classroom.hpp"
+#include "rooms/Room.hpp"
 #include "patterns/singetons.hpp"
 #include <iostream>
 
