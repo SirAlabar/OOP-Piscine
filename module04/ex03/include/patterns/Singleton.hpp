@@ -21,6 +21,16 @@ public:
 		return instance;
 	}
 
+	~Singleton()
+	{
+		for (size_t i = 0; i < _items.size(); ++i)
+		{
+			delete _items[i];
+			_items[i] = NULL;
+		}
+		_items.clear();
+	}
+
 	void add(T* item)
 	{
 		if (item)

@@ -32,6 +32,13 @@ int main()
 	Student* alice = new Student("Alice");
 	Student* bob = new Student("Bob");
 	Course* math = new Course("Mathematics");
+
+	StaffList::getInstance().add(secretary);
+	StaffList::getInstance().add(headmaster);
+	StaffList::getInstance().add(profSmith);
+	StudentList::getInstance().add(alice);
+	StudentList::getInstance().add(bob);
+	CourseList::getInstance().add(math);	
 	
 	std::cout << std::endl;
 
@@ -84,15 +91,9 @@ int main()
 	headmaster->receiveForm(incompleteForm);  // Missing student and course
 	std::cout << std::endl;
 
-	std::cout << CYAN << "=== Ex02 Complete ===" << RESET << std::endl;
-	
 	delete unsignedForm;
-	delete math;
-	delete alice;
-	delete bob;
-	delete profSmith;
-	delete headmaster;
-	delete secretary;
+
+	std::cout << CYAN << "=== Ex02 Complete ===" << RESET << std::endl;
 
 	return 0;
 }

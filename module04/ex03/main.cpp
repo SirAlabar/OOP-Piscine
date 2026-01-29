@@ -23,8 +23,12 @@ int main()
 	Student* alice = new Student("Alice");
 	Student* bob = new Student("Bob");
 	
-	StaffList::getInstance().add(static_cast<Staff*>(profSmith));
-	StaffList::getInstance().add(static_cast<Staff*>(profJones));
+	StaffList::getInstance().add(secretary);
+	StaffList::getInstance().add(headmaster);
+	StaffList::getInstance().add(profSmith);
+	StaffList::getInstance().add(profJones);
+	StudentList::getInstance().add(alice);
+	StudentList::getInstance().add(bob);
 	
 	std::cout << std::endl;
 
@@ -87,36 +91,15 @@ int main()
 
 	std::cout << BLUE << "=== Scenario 7: Attempt Early Graduation (Should Fail) ===" << RESET << std::endl;
 	Student* charlie = new Student("Charlie");
+	StudentList::getInstance().add(charlie);
 	charlie->requestCourseSubscription(headmaster, math);
 	profSmith->requestStudentGraduation(headmaster, charlie, math);
 	std::cout << std::endl;
 
 	std::cout << CYAN << "=== Ex03 Complete ===" << RESET << std::endl;
 	std::cout << std::endl;
-
-	std::cout << GREEN << "Cleaning up memory..." << RESET << std::endl;
 	
-	delete charlie;
-	delete alice;
-	delete bob;
-	delete profSmith;
-	delete profJones;
-	delete headmaster;
-	delete secretary;
-	
-	std::vector<Course*>& courses = CourseList::getInstance().getAll();
-	for (std::vector<Course*>::iterator it = courses.begin(); it != courses.end(); ++it)
-	{
-		delete *it;
-	}
-	
-	std::vector<Room*>& rooms = RoomList::getInstance().getAll();
-	for (std::vector<Room*>::iterator it = rooms.begin(); it != rooms.end(); ++it)
-	{
-		delete *it;
-	}
-	
-	std::cout << GREEN << "✓ Cleanup complete!" << RESET << std::endl;
+	std::cout << GREEN << "✓ Complete! (All memory auto-cleanup via Singletons)" << RESET << std::endl;
 
 	return 0;
 }

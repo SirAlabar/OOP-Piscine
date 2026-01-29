@@ -9,6 +9,10 @@ Staff::Staff(std::string p_name) : Person(p_name)
 {
 }
 
+Staff::~Staff()
+{
+}
+
 void Staff::sign(Form* p_form)
 {
 	if (p_form)
