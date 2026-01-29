@@ -8,6 +8,7 @@
 #include "forms/SubscriptionToCourseForm.hpp"
 #include "forms/CourseFinishedForm.hpp"
 #include "forms/NeedMoreClassRoomForm.hpp"
+#include "patterns/singetons.hpp"
 #include <iostream>
 
 #define MAGENTA "\033[35m"
@@ -81,7 +82,7 @@ void Headmaster::processGraduationRequest(Professor* professor, Student* student
 		          << RESET << std::endl;
 		return;
 	}
-
+	
 	Form* form = _secretary->createForm(CourseFinished);
 	
 	CourseFinishedForm* gradForm = static_cast<CourseFinishedForm*>(form);
@@ -104,6 +105,21 @@ void Headmaster::processClassroomRequest()
 	receiveForm(form);
 }
 
+void Headmaster::launchClasses()
+{
+	std::cout << CYAN << "Headmaster: Launching classes! Professors, attend your classes!" << RESET << std::endl;
+	
+	std::vector<Staff*>& staff = StaffList::getInstance().getAll();
+	for (std::vector<Staff*>::iterator it = staff.begin(); it != staff.end(); ++it)
+	{
+		Professor* prof = dynamic_cast<Professor*>(*it);
+		if (prof)
+		{
+			prof->doClass(this);
+		}
+	}
+}
+
 void Headmaster::receiveForm(Form* p_form)
 {
 	if (p_form)
@@ -113,14 +129,4 @@ void Headmaster::receiveForm(Form* p_form)
 		sign(p_form);
 		p_form->execute();
 	}
-}
-
-void Headmaster::launchClasses()
-{
-	std::cout << CYAN << "Headmaster: Launching classes! Professors, attend your classes!" << RESET << std::endl;
-}
-
-void Headmaster::requestRingBell()
-{
-	std::cout << CYAN << "Headmaster: *RING BELL* Break time!" << RESET << std::endl;
 }

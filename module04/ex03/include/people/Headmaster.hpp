@@ -26,7 +26,6 @@ public:
 	void processClassroomRequest();
 	
 	void launchClasses();
-	void requestRingBell();
 	
 	void receiveForm(Form* p_form);
 };

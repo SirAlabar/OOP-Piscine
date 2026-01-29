@@ -19,21 +19,31 @@ int main()
 	Headmaster* headmaster = new Headmaster("Headmaster Constantine", secretary);
 	
 	Professor* profSmith = new Professor("Prof. Smith");
+	Professor* profJones = new Professor("Prof. Jones");
 	Student* alice = new Student("Alice");
 	Student* bob = new Student("Bob");
 	
+	StaffList::getInstance().add(static_cast<Staff*>(profSmith));
+	StaffList::getInstance().add(static_cast<Staff*>(profJones));
+	
 	std::cout << std::endl;
 
-	std::cout << BLUE << "=== Scenario 1: Professor Requests Course Creation ===" << RESET << std::endl;
+	std::cout << BLUE << "=== Scenario 1: Professors Have No Course ===" << RESET << std::endl;
 	headmaster->launchClasses();
-	
+	std::cout << std::endl;
+
+	std::cout << BLUE << "=== Scenario 2: Professor Requests Course Creation ===" << RESET << std::endl;
 	if (!profSmith->getCurrentCourse())
 	{
 		profSmith->requestCourseCreation(headmaster, "Mathematics");
 	}
+	if (!profJones->getCurrentCourse())
+	{
+		profJones->requestCourseCreation(headmaster, "Physics");
+	}
 	std::cout << std::endl;
 
-	std::cout << BLUE << "=== Scenario 2: Students Request Course Subscription ===" << RESET << std::endl;
+	std::cout << BLUE << "=== Scenario 3: Students Request Course Subscription ===" << RESET << std::endl;
 	Course* math = profSmith->getCurrentCourse();
 	if (math)
 	{
@@ -42,31 +52,27 @@ int main()
 	}
 	std::cout << std::endl;
 
-	std::cout << BLUE << "=== Scenario 3: Classes Begin ===" << RESET << std::endl;
+	std::cout << BLUE << "=== Scenario 4: Professor Needs Classroom (None Available) ===" << RESET << std::endl;
 	headmaster->launchClasses();
-	profSmith->doClass();
-	std::cout << std::endl;
-	
-	headmaster->requestRingBell();
-	std::cout << std::endl;
-	
-	headmaster->launchClasses();
-	profSmith->doClass();
-	std::cout << std::endl;
-	
-	headmaster->launchClasses();
-	profSmith->doClass();
-	std::cout << std::endl;
-	
-	headmaster->launchClasses();
-	profSmith->doClass();
-	std::cout << std::endl;
-	
-	headmaster->launchClasses();
-	profSmith->doClass();
 	std::cout << std::endl;
 
-	std::cout << BLUE << "=== Scenario 4: Professor Recommends Graduation ===" << RESET << std::endl;
+	std::cout << BLUE << "=== Scenario 5: Classes Begin With Classroom ===" << RESET << std::endl;
+	headmaster->launchClasses();
+	std::cout << std::endl;
+	
+	headmaster->launchClasses();
+	std::cout << std::endl;
+	
+	headmaster->launchClasses();
+	std::cout << std::endl;
+	
+	headmaster->launchClasses();
+	std::cout << std::endl;
+	
+	headmaster->launchClasses();
+	std::cout << std::endl;
+
+	std::cout << BLUE << "=== Scenario 6: Professor Recommends Graduation ===" << RESET << std::endl;
 	
 	if (math->canGraduate(alice))
 	{
@@ -79,14 +85,10 @@ int main()
 	}
 	std::cout << std::endl;
 
-	std::cout << BLUE << "=== Scenario 5: Attempt Early Graduation (Should Fail) ===" << RESET << std::endl;
+	std::cout << BLUE << "=== Scenario 7: Attempt Early Graduation (Should Fail) ===" << RESET << std::endl;
 	Student* charlie = new Student("Charlie");
 	charlie->requestCourseSubscription(headmaster, math);
 	profSmith->requestStudentGraduation(headmaster, charlie, math);
-	std::cout << std::endl;
-
-	std::cout << BLUE << "=== Scenario 6: Headmaster Requests Classroom ===" << RESET << std::endl;
-	headmaster->processClassroomRequest();
 	std::cout << std::endl;
 
 	std::cout << CYAN << "=== Ex03 Complete ===" << RESET << std::endl;
@@ -98,6 +100,7 @@ int main()
 	delete alice;
 	delete bob;
 	delete profSmith;
+	delete profJones;
 	delete headmaster;
 	delete secretary;
 	

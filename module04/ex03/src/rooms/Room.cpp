@@ -8,6 +8,10 @@ Room::Room() : ID(_nextID++)
 {
 }
 
+Room::~Room()
+{
+}
+
 bool Room::canEnter(Person* p_person)
 {
 	return (p_person != NULL);

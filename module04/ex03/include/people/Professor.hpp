@@ -6,18 +6,21 @@
 class Course;
 class Headmaster;
 class Student;
+class Classroom;
 
 class Professor : public Staff
 {
 private:
 	Course* _currentCourse;
+	
+	Classroom* findAvailableClassroom();
 
 public:
 	Professor(std::string p_name);
 	~Professor();
 	
 	void assignCourse(Course* p_course);
-	void doClass();
+	void doClass(Headmaster* headmaster);
 	void closeCourse();
 	
 	void requestCourseCreation(Headmaster* headmaster, std::string courseName);
