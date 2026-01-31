@@ -601,7 +601,6 @@ railway-simulation/
 ├── README.md
 ├── DESIGN.md                 # Architecture documentation
 docs/
-docs/
 ├── uml/
 │   ├── Sequence_Diagram.md
 │   ├── State_Machine.md
