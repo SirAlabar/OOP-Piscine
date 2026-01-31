@@ -1,38 +1,18 @@
 #include "core/Node.hpp"
 
 // Default constructor
-Node::Node() : _name(""), _type(CITY)
+Node::Node() : _name(""), _type(NodeType::CITY)
 {
 }
 
 // Parameterized constructor
-Node::Node(const std::string& name, NodeType type) : _name(name), _type(type)
-{
-}
-
-// Copy constructor
-Node::Node(const Node& other) : _name(other._name), _type(other._type)
-{
-}
-
-// Assignment operator
-Node& Node::operator=(const Node& other)
-{
-	if (this != &other)
-	{
-		_name = other._name;
-		_type = other._type;
-	}
-	return *this;
-}
-
-// Destructor
-Node::~Node()
+Node::Node(const std::string& name, NodeType type)
+	: _name(name), _type(type)
 {
 }
 
 // Getters
-std::string Node::getName() const
+const std::string& Node::getName() const
 {
 	return _name;
 }
@@ -53,9 +33,9 @@ std::string Node::getTypeString() const
 {
 	switch (_type)
 	{
-		case CITY:
+		case NodeType::CITY:
 			return "City";
-		case JUNCTION:
+		case NodeType::JUNCTION:
 			return "Junction";
 		default:
 			return "Unknown";

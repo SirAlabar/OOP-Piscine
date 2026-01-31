@@ -17,9 +17,9 @@ private:
 public:
 	Rail();
 	Rail(Node* nodeA, Node* nodeB, double length, double speedLimit);
-	Rail(const Rail& other);
-	Rail& operator=(const Rail& other);
-	~Rail();
+	Rail(const Rail&) = default;
+	Rail& operator=(const Rail&) = default;
+	~Rail() = default;
 
 	Node*  getNodeA() const;
 	Node*  getNodeB() const;

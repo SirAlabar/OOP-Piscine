@@ -30,27 +30,6 @@ Time::Time(const std::string& timeStr) : _hours(0), _minutes(0)
 	}
 }
 
-// Copy constructor
-Time::Time(const Time& other) : _hours(other._hours), _minutes(other._minutes)
-{
-}
-
-// Assignment operator
-Time& Time::operator=(const Time& other)
-{
-	if (this != &other)
-	{
-		_hours = other._hours;
-		_minutes = other._minutes;
-	}
-	return *this;
-}
-
-// Destructor
-Time::~Time()
-{
-}
-
 // Getters
 int Time::getHours() const
 {

@@ -4,7 +4,7 @@
 #include <string>
 
 // CITY = station where trains stop, JUNCTION = rail connection point
-enum NodeType
+enum class NodeType
 {
 	CITY,
 	JUNCTION
@@ -19,15 +19,15 @@ private:
 
 public:
 	Node();
-	Node(const std::string& name, NodeType type = CITY);
-	Node(const Node& other);
-	Node& operator=(const Node& other);
-	~Node();
+	Node(const std::string& name, NodeType type = NodeType::CITY);
+	Node(const Node&) = default;
+	Node& operator=(const Node&) = default;
+	~Node() = default;
 
-	std::string getName() const;
-	NodeType    getType() const;
-	bool        isValid() const;
-	std::string getTypeString() const;
+	const std::string& getName() const;
+	NodeType           getType() const;
+	bool               isValid() const;
+	std::string        getTypeString() const;
 };
 
 #endif

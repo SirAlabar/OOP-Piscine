@@ -3,39 +3,22 @@
 #include "core/Train.hpp"
 
 // Default constructor
-Rail::Rail() : _nodeA(nullptr), _nodeB(nullptr), _length(0.0), _speedLimit(0.0), _occupiedBy(nullptr)
+Rail::Rail()
+	: _nodeA(nullptr),
+	  _nodeB(nullptr),
+	  _length(0.0),
+	  _speedLimit(0.0),
+	  _occupiedBy(nullptr)
 {
 }
 
 // Parameterized constructor
 Rail::Rail(Node* nodeA, Node* nodeB, double length, double speedLimit)
-	: _nodeA(nodeA), _nodeB(nodeB), _length(length), _speedLimit(speedLimit), _occupiedBy(nullptr)
-{
-}
-
-// Copy constructor
-Rail::Rail(const Rail& other)
-	: _nodeA(other._nodeA), _nodeB(other._nodeB), _length(other._length),
-	  _speedLimit(other._speedLimit), _occupiedBy(other._occupiedBy)
-{
-}
-
-// Assignment operator
-Rail& Rail::operator=(const Rail& other)
-{
-	if (this != &other)
-	{
-		_nodeA = other._nodeA;
-		_nodeB = other._nodeB;
-		_length = other._length;
-		_speedLimit = other._speedLimit;
-		_occupiedBy = other._occupiedBy;
-	}
-	return *this;
-}
-
-// Destructor
-Rail::~Rail()
+	: _nodeA(nodeA),
+	  _nodeB(nodeB),
+	  _length(length),
+	  _speedLimit(speedLimit),
+	  _occupiedBy(nullptr)
 {
 }
 
@@ -86,8 +69,8 @@ void Rail::clearOccupied()
 // Validation - both nodes exist, length and speed limit are positive
 bool Rail::isValid() const
 {
-	return _nodeA != nullptr && _nodeB != nullptr && 
-           _length > 0.0 && _speedLimit > 0.0;
+	return _nodeA != nullptr && _nodeB != nullptr &&
+	       _length > 0.0 && _speedLimit > 0.0;
 }
 
 // Get the opposite node (useful for pathfinding)

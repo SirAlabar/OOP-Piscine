@@ -2,67 +2,39 @@
 #include "core/Node.hpp"
 #include "core/Rail.hpp"
 
-// Default constructor
-Graph::Graph()
-{
-}
-
-// Copy constructor (shallow copy - doesn't own nodes/rails)
-Graph::Graph(const Graph& other)
-	: _nodes(other._nodes), _rails(other._rails), _adjacency(other._adjacency)
-{
-}
-
-// Assignment operator
-Graph& Graph::operator=(const Graph& other)
-{
-	if (this != &other)
-	{
-		_nodes = other._nodes;
-		_rails = other._rails;
-		_adjacency = other._adjacency;
-	}
-	return *this;
-}
-
-// Destructor (doesn't delete nodes/rails - not owned by Graph)
-Graph::~Graph()
-{
-}
-
 // Add node to graph (checks for duplicates)
 void Graph::addNode(Node* node)
 {
 	if (!node)
-	{
+    {
 		return;
-	}
-	
+    }
+
 	// Check if node with same name already exists
 	if (hasNode(node->getName()))
-	{
+    {
 		return;
-	}
-	
+    }
+
 	_nodes.push_back(node);
-	_adjacency[node] = std::vector<Rail*>();  // Initialize empty adjacency list
+	_adjacency[node] = {};
 }
 
 // Get node by name (returns nullptr if not found)
-Node* Graph::getNode(const std::string& name) const
+const Node* Graph::getNode(const std::string& name) const
 {
-	for (Node* node : _nodes)
+	for (const auto* node : _nodes)
 	{
 		if (node && node->getName() == name)
-		{
+        {
 			return node;
-		}
+        }
 	}
 	return nullptr;
 }
 
 // Get all nodes
-const std::vector<Node*>& Graph::getNodes() const
+const Graph::NodeList& Graph::getNodes() const
 {
 	return _nodes;
 }
@@ -82,12 +54,12 @@ size_t Graph::getNodeCount() const
 // Helper: check if node exists in graph
 bool Graph::nodeExistsInGraph(Node* node) const
 {
-	for (Node* n : _nodes)
+	for (const auto* n : _nodes)
 	{
 		if (n == node)
-		{
+        {
 			return true;
-		}
+        }
 	}
 	return false;
 }
@@ -96,28 +68,28 @@ bool Graph::nodeExistsInGraph(Node* node) const
 void Graph::addRail(Rail* rail)
 {
 	if (!rail || !rail->isValid())
-	{
+    {
 		return;
-	}
-	
+    }
+
 	Node* nodeA = rail->getNodeA();
 	Node* nodeB = rail->getNodeB();
-	
+
 	// Both nodes must exist in graph
 	if (!nodeExistsInGraph(nodeA) || !nodeExistsInGraph(nodeB))
-	{
+    {
 		return;
-	}
-	
+    }
+
 	_rails.push_back(rail);
-	
+
 	// Build bidirectional adjacency (rail is bidirectional)
 	_adjacency[nodeA].push_back(rail);
 	_adjacency[nodeB].push_back(rail);
 }
 
 // Get all rails
-const std::vector<Rail*>& Graph::getRails() const
+const Graph::RailList& Graph::getRails() const
 {
 	return _rails;
 }
@@ -129,31 +101,30 @@ size_t Graph::getRailCount() const
 }
 
 // Get all rails connected to a node
-std::vector<Rail*> Graph::getRailsFromNode(Node* node) const
+Graph::RailList Graph::getRailsFromNode(Node* node) const
 {
-	auto it = _adjacency.find(node);
-	if (it != _adjacency.end())
-	{
+	if (auto it = _adjacency.find(node); it != _adjacency.end())
+    {
 		return it->second;
-	}
-	return std::vector<Rail*>();
+    }
+
+	return {};
 }
 
 // Get all neighbor nodes of a given node
 std::vector<Node*> Graph::getNeighbors(Node* node) const
 {
 	std::vector<Node*> neighbors;
-	std::vector<Rail*> rails = getRailsFromNode(node);
-	
-	for (Rail* rail : rails)
+	const auto rails = getRailsFromNode(node);
+
+	for (const auto* rail : rails)
 	{
-		Node* neighbor = rail->getOtherNode(node);
-		if (neighbor)
-		{
+		if (auto* neighbor = rail->getOtherNode(node))
+        {
 			neighbors.push_back(neighbor);
-		}
+        }
 	}
-	
+
 	return neighbors;
 }
 
@@ -161,29 +132,30 @@ std::vector<Node*> Graph::getNeighbors(Node* node) const
 bool Graph::isValid() const
 {
 	// Check all nodes are valid
-	for (Node* node : _nodes)
+	for (const auto* node : _nodes)
 	{
 		if (!node || !node->isValid())
-		{
+        {
 			return false;
-		}
+        }
 	}
-	
+
 	// Check all rails are valid
-	for (Rail* rail : _rails)
+	for (const auto* rail : _rails)
 	{
 		if (!rail || !rail->isValid())
-		{
+        {
 			return false;
-		}
-		
+        }
+
 		// Verify rail nodes exist in graph
-		if (!nodeExistsInGraph(rail->getNodeA()) || !nodeExistsInGraph(rail->getNodeB()))
-		{
+		if (!nodeExistsInGraph(rail->getNodeA()) ||
+		    !nodeExistsInGraph(rail->getNodeB()))
+        {
 			return false;
-		}
+        }
 	}
-	
+
 	return true;
 }
 

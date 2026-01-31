@@ -12,6 +12,9 @@ class Time;
 // Represents a train with physical properties and journey parameters
 class Train
 {
+public:
+	using Path = std::vector<Rail*>;
+
 private:
 	// Identity
 	std::string _name;
@@ -34,8 +37,8 @@ private:
 	Time        _stopDuration;    // HHhMM format
 
 	// Path (computed by pathfinding)
-	std::vector<Rail*> _path;
-	size_t             _currentRailIndex;
+	Path   _path;
+	size_t _currentRailIndex;
 
 	// State pattern
 	ITrainState* _currentState;
@@ -51,7 +54,7 @@ public:
 	      const Time& departureTime, const Time& stopDuration);
 	Train(const Train& other);
 	Train& operator=(const Train& other);
-	~Train();
+	~Train() = default;
 
 	// Identity getters
 	std::string getName() const;
@@ -76,11 +79,11 @@ public:
 	Time        getStopDuration() const;
 
 	// Path management
-	const std::vector<Rail*>& getPath() const;
-	void                      setPath(const std::vector<Rail*>& path);
-	Rail*                     getCurrentRail() const;
-	size_t                    getCurrentRailIndex() const;
-	void                      advanceToNextRail();
+	const Path& getPath() const;
+	void        setPath(const Path& path);
+	Rail*       getCurrentRail() const;
+	size_t      getCurrentRailIndex() const;
+	void        advanceToNextRail();
 
 	// State management
 	ITrainState* getCurrentState() const;

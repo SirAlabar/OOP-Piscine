@@ -14,9 +14,9 @@ public:
 	Time();
 	Time(int hours, int minutes);
 	Time(const std::string& timeStr);  // Parse "HHhMM" format
-	Time(const Time& other);
-	Time& operator=(const Time& other);
-	~Time();
+	Time(const Time&) = default;
+	Time& operator=(const Time&) = default;
+	~Time() = default;
 
 	int getHours() const;
 	int getMinutes() const;

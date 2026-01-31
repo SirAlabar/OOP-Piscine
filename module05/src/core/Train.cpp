@@ -75,11 +75,6 @@ Train& Train::operator=(const Train& other)
 	return *this;
 }
 
-// Destructor
-Train::~Train()
-{
-}
-
 // Identity getters
 std::string Train::getName() const
 {
@@ -155,12 +150,12 @@ Time Train::getStopDuration() const
 }
 
 // Path management
-const std::vector<Rail*>& Train::getPath() const
+const Train::Path& Train::getPath() const
 {
 	return _path;
 }
 
-void Train::setPath(const std::vector<Rail*>& path)
+void Train::setPath(const Path& path)
 {
 	_path = path;
 	_currentRailIndex = 0;
@@ -169,7 +164,9 @@ void Train::setPath(const std::vector<Rail*>& path)
 Rail* Train::getCurrentRail() const
 {
 	if (_currentRailIndex < _path.size())
+    {
 		return _path[_currentRailIndex];
+    }
 	return nullptr;
 }
 
