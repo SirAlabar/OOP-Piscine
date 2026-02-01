@@ -1,6 +1,7 @@
 #include "core/Train.hpp"
 #include "core/Rail.hpp"
 #include "utils/Time.hpp"
+#include "patterns/states/ITrainState.hpp" 
 
 // Initialize static ID counter
 int Train::_nextID = 1;
@@ -217,4 +218,13 @@ void Train::resetIDCounter()
 int Train::getNextID()
 {
 	return _nextID;
+}
+
+// Delegate update to current state
+void Train::update(double dt)
+{
+	if (_currentState)
+	{
+		_currentState->update(this, dt);
+	}
 }

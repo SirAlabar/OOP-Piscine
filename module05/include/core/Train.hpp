@@ -95,6 +95,9 @@ public:
 	// Static ID management
 	static void  resetIDCounter();  // For testing
 	static int   getNextID();       // Peek at next ID without incrementing
+
+    // Update (delegates to current state)
+    void update(double dt);
 };
 
 #endif
