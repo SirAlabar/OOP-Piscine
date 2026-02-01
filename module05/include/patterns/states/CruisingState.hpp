@@ -1,0 +1,16 @@
+#ifndef CRUISINGSTATE_HPP
+#define CRUISINGSTATE_HPP
+
+#include "patterns/states/ITrainState.hpp"
+
+class CruisingState : public ITrainState
+{
+public:
+	CruisingState() = default;
+	~CruisingState() override = default;
+	
+	void update(Train* train, double dt) override;
+	std::string getName() const override;
+};
+
+#endif
