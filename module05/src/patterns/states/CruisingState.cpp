@@ -1,7 +1,10 @@
 #include "patterns/states/CruisingState.hpp"
+#include "patterns/states/WaitingState.hpp"
+#include "patterns/states/BrakingState.hpp"
 #include "core/Train.hpp"
 #include "core/Rail.hpp"
 #include "simulation/PhysicsSystem.hpp"
+#include "simulation/SimulationContext.hpp"
 
 void CruisingState::update(Train* train, double dt)
 {
@@ -51,6 +54,32 @@ void CruisingState::update(Train* train, double dt)
 	// Update position
 	PhysicsSystem::updatePosition(train, dt);
 }
+
+ITrainState* CruisingState::checkTransition(Train* train, SimulationContext* ctx)
+{
+	if (!train || !ctx)
+	{
+		return nullptr;
+	}
+
+	if (ctx->shouldWaitForTrainAhead(train))
+	{
+		static WaitingState waitingState;
+		return &waitingState;
+	}
+
+	double brakingDist = ctx->getBrakingDistance(train);
+	double distRemaining = ctx->getDistanceToRailEnd(train);
+
+	if (distRemaining <= brakingDist * 1.1)
+	{
+		static BrakingState brakingState;
+		return &brakingState;
+	}
+
+	return nullptr;
+}
+
 
 std::string CruisingState::getName() const
 {

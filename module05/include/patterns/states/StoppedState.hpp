@@ -15,6 +15,7 @@ public:
 	void update(Train* train, double dt) override;
 	std::string getName() const override;
 	double getTimeRemaining() const;
+    ITrainState* checkTransition(Train* train, SimulationContext* ctx) override; 
 };
 
 #endif

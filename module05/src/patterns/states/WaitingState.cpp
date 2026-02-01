@@ -1,6 +1,9 @@
 #include "patterns/states/WaitingState.hpp"
+#include "patterns/states/CruisingState.hpp"
+#include "patterns/states/AcceleratingState.hpp"
 #include "core/Train.hpp"
 #include "simulation/PhysicsSystem.hpp"
+#include "simulation/SimulationContext.hpp"
 
 void WaitingState::update(Train* train, double dt)
 {
@@ -24,6 +27,35 @@ void WaitingState::update(Train* train, double dt)
 	{
 		train->setVelocity(0.0);
 	}
+}
+
+ITrainState* WaitingState::checkTransition(Train* train, SimulationContext* ctx)
+{
+	if (!train || !ctx)
+	{
+		return nullptr;
+	}
+	
+	// Transition: Waiting → Cruising/Accelerating (rail cleared)
+	if (ctx->isNextTrainTooClose(train))
+	{
+		double speedLimit = ctx->getCurrentRailSpeedLimit(train);
+		
+		// Resume at cruising if already at speed
+		if (train->getVelocity() >= speedLimit * 0.9)
+		{
+			static CruisingState cruisingState;
+			return &cruisingState;
+		}
+		// Otherwise accelerate
+		else
+		{
+			static AcceleratingState accelState;
+			return &accelState;
+		}
+	}
+	
+	return nullptr;
 }
 
 std::string WaitingState::getName() const
