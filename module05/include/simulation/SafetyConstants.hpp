@@ -12,19 +12,20 @@ namespace SafetyConstants
 	constexpr double CAR_FOLLOWING_KD = 1.0;
 	constexpr double CAR_FOLLOWING_MAX_ACCEL = 1.5;
 
+	// Zone detection with sentinel value guard
 	inline bool isEmergencyZone(double gap, double brakingDistance)
 	{
-		return gap <= brakingDistance;
+		return gap >= 0.0 && gap <= brakingDistance;
 	}
 
 	inline bool isFollowingZone(double gap, double brakingDistance, double safeDistance)
 	{
-		return gap > brakingDistance && gap <= safeDistance;
+		return gap >= 0.0 && gap > brakingDistance && gap <= safeDistance;
 	}
 
 	inline bool isFreeZone(double gap, double safeDistance)
 	{
-		return gap > safeDistance;
+		return gap >= 0.0 && gap > safeDistance;
 	}
 }
 
