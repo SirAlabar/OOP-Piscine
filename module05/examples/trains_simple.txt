@@ -1,0 +1,4 @@
+# Simple train configurations
+TrainAB 80 0.05 356.0 500.0 CityA CityB 14h10 00h10
+TrainAC 60 0.05 412.0 450.0 CityA CityC 14h20 00h05
+TrainBA 70 0.05 380.0 480.0 CityB CityA 15h00 00h10

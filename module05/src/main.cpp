@@ -1,8 +1,17 @@
+#include "Application.hpp"
 #include <iostream>
+#include <exception>
 
-int main()
+int main(int argc, char* argv[])
 {
-	std::cout << "Railway Simulation - Week 1 Development Build" << std::endl;
-	std::cout << "Node and Rail classes implemented. Full simulation coming soon." << std::endl;
-	return 0;
+	try
+	{
+		Application app(argc, argv);
+		return app.run();
+	}
+	catch (const std::exception& e)
+	{
+		std::cerr << "Fatal error: " << e.what() << std::endl;
+		return 1;
+	}
 }
