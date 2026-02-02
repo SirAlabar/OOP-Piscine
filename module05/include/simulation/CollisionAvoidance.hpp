@@ -4,29 +4,26 @@
 #include <vector>
 
 class Train;
-class Graph;
-class Rail;
+struct RiskData;
 
 class CollisionAvoidance
 {
 public:
 	CollisionAvoidance() = default;
 	~CollisionAvoidance() = default;
-
-	void refreshRailOccupancy(const std::vector<Train*>& trains, const Graph* network) const;
-
-	// Safety queries
-	bool isNextTrainTooClose(const Train* train, const std::vector<Train*>& trains) const;
-	double distanceToNextTrain(const Train* train, const std::vector<Train*>& trains) const;
-
-	bool isNextRailOccupied(const Train* train) const;
-    bool shouldWaitForTrainAhead(
-    const Train* train,
-    const std::vector<Train*>& trains) const;
-
-
-	// Minimum safe distance rule
-	double getMinimumSafeDistance(const Train* train) const;
+	
+	// LEVEL 1: Pure observation - returns factual data only
+	RiskData assessRisk(const Train* train, const std::vector<Train*>& allTrains) const;
+	
+private:
+	// Internal helpers (all const, no side effects, no decisions)
+	Train* findLeaderOnRoute(const Train* train, const std::vector<Train*>& allTrains) const;
+	double calculateGap(const Train* train, const Train* leader) const;
+	double calculateClosingSpeed(const Train* train, const Train* leader) const;
+	double calculateBrakingDistance(const Train* train) const;
+	double calculateSafeDistance(const Train* train) const;
+	double getCurrentSpeedLimit(const Train* train) const;
+	double getNextSpeedLimit(const Train* train) const;
 };
 
 #endif

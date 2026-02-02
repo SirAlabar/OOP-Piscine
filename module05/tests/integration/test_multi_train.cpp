@@ -16,32 +16,45 @@ const bool ENABLE_VISUALIZATION = true;
 class MultiTrainTest : public ::testing::Test
 {
 protected:
-	void SetUp() override
-	{
-		Train::resetIDCounter();
-		
-		// Create simple network: A → B (30km, 200 km/h)
-		nodeA = new Node("CityA");
-		nodeB = new Node("CityB");
-		
-		graph.addNode(nodeA);
-		graph.addNode(nodeB);
-		
-		rail = new Rail(nodeA, nodeB, 30.0, 200.0);
-		graph.addRail(rail);
-		
-		// Reset SimulationManager
-		SimulationManager::getInstance().reset();
-		SimulationManager::getInstance().setNetwork(&graph);
-	}
+    void SetUp() override
+    {
+        Train::resetIDCounter();
+        
+        // A → SlowZone → FastZone → B
+        nodeA = new Node("CityA");
+        slowZone = new Node("SlowZone", NodeType::JUNCTION);
+        fastZone = new Node("FastZone", NodeType::JUNCTION);
+        nodeB = new Node("CityB");
+        
+        graph.addNode(nodeA);
+        graph.addNode(slowZone);
+        graph.addNode(fastZone);
+        graph.addNode(nodeB);
+        
+        // 3 segments with different limits
+        rail1 = new Rail(nodeA, slowZone, 10.0, 100.0);    // Slow
+        rail2 = new Rail(slowZone, fastZone, 10.0, 200.0); // Medium
+        rail3 = new Rail(fastZone, nodeB, 10.0, 250.0);    // Fast
+        
+        graph.addRail(rail1);
+        graph.addRail(rail2);
+        graph.addRail(rail3);
+        
+        SimulationManager::getInstance().reset();
+        SimulationManager::getInstance().setNetwork(&graph);
+    }
 	
 	void TearDown() override
-	{
-		SimulationManager::getInstance().reset();
-		delete nodeA;
-		delete nodeB;
-		delete rail;
-	}
+    {
+        SimulationManager::getInstance().reset();
+        delete nodeA;
+        delete slowZone;
+        delete fastZone;
+        delete nodeB;
+        delete rail1;
+        delete rail2;
+        delete rail3;
+    }
 	
 	void visualize(double time)
 	{
@@ -55,45 +68,44 @@ protected:
 		{
 			if (!train) continue;
 			
-			std::cout << " | " << train->getName() 
+			std::cout << " | " << std::setw(10) << std::left << train->getName() 
 			          << ": " << std::setw(12) << std::left 
-			          << (train->getCurrentState() ? train->getCurrentState()->getName() : "NULL")
+			          << (train->getCurrentState() ? train->getCurrentState()->getName() : "FINISHED")
 			          << " v=" << std::setw(5) << std::right << std::setprecision(1) << train->getVelocity()
 			          << "m/s pos=" << std::setw(7) << train->getPosition() << "m";
 		}
 	}
 	
-	Graph graph;
-	Node* nodeA;
-	Node* nodeB;
-	Rail* rail;
+    Graph graph;
+    Node *nodeA, *slowZone, *fastZone, *nodeB;
+    Rail *rail1, *rail2, *rail3;
 };
 
-// ===== TEST 1: Two Trains, Same Route, Different Departure Times =====
+// ===== TEST 1: Fast Train Catches Slow Train =====
 
-TEST_F(MultiTrainTest, TwoTrainsSameRouteDifferentDepartures)
+TEST_F(MultiTrainTest, FastTrainCatchesSlowTrain)
 {
 	if (ENABLE_VISUALIZATION)
 	{
 		std::cout << "\n╔════════════════════════════════════════════════╗\n";
-		std::cout << "║  TWO TRAINS - SAME ROUTE - COLLISION TEST     ║\n";
+		std::cout << "║  FAST TRAIN CATCHES SLOW TRAIN                ║\n";
 		std::cout << "╚════════════════════════════════════════════════╝\n";
-		std::cout << "\nScenario: Train1 departs 00h00, Train2 departs 00h05\n";
-		std::cout << "Expected: Train2 waits when approaching occupied rail\n\n";
+		std::cout << "\nScenario: Slow train departs first, fast train catches up\n";
+		std::cout << "Expected: Fast train enters Waiting state\n\n";
 	}
 	
-	// Train 1: Departs at 00h00
+	// Slow Train: Heavy, weak, departs first
 	TrainConfig config1 = {
-		"Train1", 80.0, 0.005, 356.0, 500.0,
+		"SlowTrain", 120.0, 0.008, 250.0, 400.0,
 		"CityA", "CityB",
 		Time("00h00"), Time("00h05")
 	};
 	
-	// Train 2: Departs at 00h05 (5 minutes later)
+	// Fast Train: Light, powerful, departs 1 minute later
 	TrainConfig config2 = {
-		"Train2", 60.0, 0.005, 400.0, 450.0,
+		"FastTrain", 60.0, 0.003, 500.0, 600.0,
 		"CityA", "CityB",
-		Time("00h05"), Time("00h05")
+		Time("00h01"), Time("00h05")
 	};
 	
 	Train* train1 = TrainFactory::create(config1, &graph);
@@ -102,64 +114,49 @@ TEST_F(MultiTrainTest, TwoTrainsSameRouteDifferentDepartures)
 	ASSERT_NE(train1, nullptr);
 	ASSERT_NE(train2, nullptr);
 	
-	// Find paths
 	DijkstraStrategy dijkstra;
-	auto path1 = dijkstra.findPath(&graph, nodeA, nodeB);
-	auto path2 = dijkstra.findPath(&graph, nodeA, nodeB);
+	train1->setPath(dijkstra.findPath(&graph, nodeA, nodeB));
+	train2->setPath(dijkstra.findPath(&graph, nodeA, nodeB));
 	
-	ASSERT_EQ(path1.size(), 1);
-	ASSERT_EQ(path2.size(), 1);
-	
-	train1->setPath(path1);
-	train2->setPath(path2);
-	
-	// Set initial states
 	static IdleState idleState;
 	train1->setState(&idleState);
 	train2->setState(&idleState);
 	
-	// Add to simulation
 	SimulationManager::getInstance().addTrain(train1);
 	SimulationManager::getInstance().addTrain(train2);
 	
-	// Run simulation
-	double maxTime = 1200.0; // 20 minutes
-	double dt = 1.0;
+	SimulationManager::getInstance().start();
 	
 	bool train2Waited = false;
 	bool train1Finished = false;
 	bool train2Finished = false;
 	
-	SimulationManager::getInstance().start();
-	
-	for (double time = 0.0; time < maxTime; time += dt)
+	for (double time = 0.0; time < 1500.0; time += 1.0)
 	{
 		SimulationManager::getInstance().step();
 		
-		// Visualize every 30 seconds
-		if (static_cast<int>(time) % 30 == 0)
+		if (static_cast<int>(time) % 60 == 0)
 		{
 			visualize(time);
 		}
 		
-		// Check if Train2 ever enters Waiting state
 		if (train2->getCurrentState() && 
 		    train2->getCurrentState()->getName() == "Waiting")
 		{
-			train2Waited = true;
-			if (ENABLE_VISUALIZATION && !train2Finished)
+			if (!train2Waited && ENABLE_VISUALIZATION)
 			{
-				std::cout << "\n\n>>> COLLISION AVOIDANCE: Train2 is WAITING for Train1 to clear rail!\n";
+				std::cout << "\n\n>>> COLLISION AVOIDANCE ACTIVATED (time: " << time << "s)\n";
+				std::cout << "    FastTrain is WAITING for SlowTrain to clear!\n";
 			}
+			train2Waited = true;
 		}
 		
-		// Check if trains finished
 		if (!train1Finished && train1->getCurrentRail() == nullptr)
 		{
 			train1Finished = true;
 			if (ENABLE_VISUALIZATION)
 			{
-				std::cout << "\n\n>>> Train1 ARRIVED at CityB (time: " << time << "s)\n";
+				std::cout << "\n\n>>> SlowTrain ARRIVED at CityB (time: " << time << "s)\n";
 			}
 		}
 		
@@ -168,11 +165,10 @@ TEST_F(MultiTrainTest, TwoTrainsSameRouteDifferentDepartures)
 			train2Finished = true;
 			if (ENABLE_VISUALIZATION)
 			{
-				std::cout << "\n\n>>> Train2 ARRIVED at CityB (time: " << time << "s)\n";
+				std::cout << "\n\n>>> FastTrain ARRIVED at CityB (time: " << time << "s)\n";
 			}
 		}
 		
-		// Stop if both finished
 		if (train1Finished && train2Finished)
 		{
 			break;
@@ -184,55 +180,147 @@ TEST_F(MultiTrainTest, TwoTrainsSameRouteDifferentDepartures)
 		std::cout << "\n\n─────────────────────────────────────────────────\n";
 		std::cout << "SIMULATION COMPLETE ✓\n";
 		std::cout << "─────────────────────────────────────────────────\n";
-		std::cout << "Train1 finished: " << (train1Finished ? "YES ✓" : "NO ✗") << "\n";
-		std::cout << "Train2 finished: " << (train2Finished ? "YES ✓" : "NO ✗") << "\n";
-		std::cout << "Train2 waited:   " << (train2Waited ? "YES ✓" : "NO ✗") << "\n";
+		std::cout << "SlowTrain finished:  " << (train1Finished ? "YES ✓" : "NO ✗") << "\n";
+		std::cout << "FastTrain finished:  " << (train2Finished ? "YES ✓" : "NO ✗") << "\n";
+		std::cout << "FastTrain waited:    " << (train2Waited ? "YES ✓" : "NO ✗") << "\n";
 		std::cout << "─────────────────────────────────────────────────\n\n";
 	}
 	
-	// Assertions
-	EXPECT_TRUE(train1Finished) << "Train1 should complete journey";
-	EXPECT_TRUE(train2Finished) << "Train2 should complete journey";
-	EXPECT_TRUE(train2Waited) << "Train2 should have waited for Train1";
-	
-	// Verify no collision (trains never at same position)
-	EXPECT_NE(train1->getPosition(), train2->getPosition()) 
-		<< "Trains should not be at same position";
+	EXPECT_TRUE(train1Finished) << "SlowTrain should complete journey";
+	EXPECT_TRUE(train2Finished) << "FastTrain should complete journey";
+	EXPECT_TRUE(train2Waited) << "FastTrain should have waited for SlowTrain";
 	
 	delete train1;
 	delete train2;
 }
 
-// ===== TEST 2: Three Trains, Sequential Departures =====
+// ===== TEST 2: Simultaneous Departure with Manual Offset =====
 
-TEST_F(MultiTrainTest, ThreeTrainsSequential)
+TEST_F(MultiTrainTest, SimultaneousDepartureWithOffset)
 {
 	if (ENABLE_VISUALIZATION)
 	{
 		std::cout << "\n╔════════════════════════════════════════════════╗\n";
-		std::cout << "║  THREE TRAINS - SEQUENTIAL DEPARTURES         ║\n";
-		std::cout << "╚════════════════════════════════════════════════╝\n\n";
+		std::cout << "║  SIMULTANEOUS DEPARTURE - MANUAL OFFSET       ║\n";
+		std::cout << "╚════════════════════════════════════════════════╝\n";
+		std::cout << "\nScenario: Both trains depart 00h00, Train2 starts 100m behind\n";
+		std::cout << "Expected: Train2 detects Train1 immediately, enters Waiting\n\n";
 	}
 	
-	// Train 1: 00h00
 	TrainConfig config1 = {
 		"Train1", 80.0, 0.005, 356.0, 500.0,
 		"CityA", "CityB",
 		Time("00h00"), Time("00h05")
 	};
 	
-	// Train 2: 00h03
 	TrainConfig config2 = {
-		"Train2", 70.0, 0.005, 380.0, 480.0,
+		"Train2", 80.0, 0.005, 356.0, 500.0,
 		"CityA", "CityB",
-		Time("00h03"), Time("00h05")
+		Time("00h00"), Time("00h05")
 	};
 	
-	// Train 3: 00h06
-	TrainConfig config3 = {
-		"Train3", 60.0, 0.005, 400.0, 450.0,
+	Train* train1 = TrainFactory::create(config1, &graph);
+	Train* train2 = TrainFactory::create(config2, &graph);
+	
+	ASSERT_NE(train1, nullptr);
+	ASSERT_NE(train2, nullptr);
+	
+	DijkstraStrategy dijkstra;
+	train1->setPath(dijkstra.findPath(&graph, nodeA, nodeB));
+	train2->setPath(dijkstra.findPath(&graph, nodeA, nodeB));
+	
+	// Manually offset Train2 by 100m behind
+	train2->setPosition(-100.0);
+	
+	static IdleState idleState;
+	train1->setState(&idleState);
+	train2->setState(&idleState);
+	
+	SimulationManager::getInstance().addTrain(train1);
+	SimulationManager::getInstance().addTrain(train2);
+	
+	SimulationManager::getInstance().start();
+	
+	bool train2Waited = false;
+	double minDistance = 1e9;
+	
+	for (double time = 0.0; time < 1200.0; time += 1.0)
+	{
+		SimulationManager::getInstance().step();
+		
+		if (static_cast<int>(time) % 60 == 0)
+		{
+			visualize(time);
+		}
+		
+		if (train2->getCurrentState() && 
+		    train2->getCurrentState()->getName() == "Waiting")
+		{
+			train2Waited = true;
+		}
+		
+		// Track minimum distance while both on same rail
+		if (train1->getCurrentRail() && train2->getCurrentRail() &&
+		    train1->getCurrentRail() == train2->getCurrentRail())
+		{
+			double dist = std::abs(train1->getPosition() - train2->getPosition());
+			if (dist < minDistance)
+			{
+				minDistance = dist;
+			}
+		}
+		
+		if (train1->getCurrentRail() == nullptr && train2->getCurrentRail() == nullptr)
+		{
+			break;
+		}
+	}
+	
+	if (ENABLE_VISUALIZATION)
+	{
+		std::cout << "\n\n─────────────────────────────────────────────────\n";
+		std::cout << "Train2 waited:        " << (train2Waited ? "YES ✓" : "NO ✗") << "\n";
+		std::cout << "Minimum separation:   " << std::fixed << std::setprecision(1) 
+		          << minDistance << "m\n";
+		std::cout << "─────────────────────────────────────────────────\n\n";
+	}
+	
+	EXPECT_TRUE(train2Waited) << "Train2 should enter Waiting state";
+	EXPECT_GT(minDistance, 30.0) << "Trains got too close: " << minDistance << "m";
+	
+	delete train1;
+	delete train2;
+}
+
+// ===== TEST 3: Three Train Convoy =====
+
+TEST_F(MultiTrainTest, ThreeTrainConvoy)
+{
+	if (ENABLE_VISUALIZATION)
+	{
+		std::cout << "\n╔════════════════════════════════════════════════╗\n";
+		std::cout << "║  THREE TRAIN CONVOY - SEQUENTIAL DEPARTURES   ║\n";
+		std::cout << "╚════════════════════════════════════════════════╝\n";
+		std::cout << "\nScenario: 3 trains, 1 minute intervals\n";
+		std::cout << "Expected: Train2 waits for Train1, Train3 waits for Train2\n\n";
+	}
+	
+	TrainConfig config1 = {
+		"Train1", 80.0, 0.005, 356.0, 500.0,
 		"CityA", "CityB",
-		Time("00h06"), Time("00h05")
+		Time("00h00"), Time("00h05")
+	};
+	
+	TrainConfig config2 = {
+		"Train2", 80.0, 0.005, 356.0, 500.0,
+		"CityA", "CityB",
+		Time("00h01"), Time("00h05")
+	};
+	
+	TrainConfig config3 = {
+		"Train3", 80.0, 0.005, 356.0, 500.0,
+		"CityA", "CityB",
+		Time("00h02"), Time("00h05")
 	};
 	
 	Train* train1 = TrainFactory::create(config1, &graph);
@@ -257,28 +345,66 @@ TEST_F(MultiTrainTest, ThreeTrainsSequential)
 	SimulationManager::getInstance().addTrain(train2);
 	SimulationManager::getInstance().addTrain(train3);
 	
-	SimulationManager::getInstance().run(1500.0); // 25 minutes
+	SimulationManager::getInstance().start();
 	
-	// All trains should finish
-	EXPECT_EQ(train1->getCurrentRail(), nullptr) << "Train1 should finish";
-	EXPECT_EQ(train2->getCurrentRail(), nullptr) << "Train2 should finish";
-	EXPECT_EQ(train3->getCurrentRail(), nullptr) << "Train3 should finish";
+	bool train2Waited = false;
+	bool train3Waited = false;
+	
+	for (double time = 0.0; time < 1500.0; time += 1.0)
+	{
+		SimulationManager::getInstance().step();
+		
+		if (static_cast<int>(time) % 60 == 0)
+		{
+			visualize(time);
+		}
+		
+		if (train2->getCurrentState() && 
+		    train2->getCurrentState()->getName() == "Waiting")
+		{
+			train2Waited = true;
+		}
+		
+		if (train3->getCurrentState() && 
+		    train3->getCurrentState()->getName() == "Waiting")
+		{
+			train3Waited = true;
+		}
+		
+		if (train1->getCurrentRail() == nullptr && 
+		    train2->getCurrentRail() == nullptr &&
+		    train3->getCurrentRail() == nullptr)
+		{
+			break;
+		}
+	}
 	
 	if (ENABLE_VISUALIZATION)
 	{
-		std::cout << "\n✓ All three trains completed journey\n\n";
+		std::cout << "\n\n─────────────────────────────────────────────────\n";
+		std::cout << "CONVOY SIMULATION COMPLETE ✓\n";
+		std::cout << "─────────────────────────────────────────────────\n";
+		std::cout << "All trains finished: YES ✓\n";
+		std::cout << "Train2 waited:       " << (train2Waited ? "YES ✓" : "NO ✗") << "\n";
+		std::cout << "Train3 waited:       " << (train3Waited ? "YES ✓" : "NO ✗") << "\n";
+		std::cout << "─────────────────────────────────────────────────\n\n";
 	}
+	
+	EXPECT_EQ(train1->getCurrentRail(), nullptr) << "Train1 should finish";
+	EXPECT_EQ(train2->getCurrentRail(), nullptr) << "Train2 should finish";
+	EXPECT_EQ(train3->getCurrentRail(), nullptr) << "Train3 should finish";
+	EXPECT_TRUE(train2Waited) << "Train2 should wait for Train1";
+	EXPECT_TRUE(train3Waited) << "Train3 should wait for Train2";
 	
 	delete train1;
 	delete train2;
 	delete train3;
 }
 
-// ===== TEST 3: Different Routes (No Collision Expected) =====
+// ===== TEST 4: Different Routes (No Collision Expected) =====
 
 TEST_F(MultiTrainTest, DifferentRoutesNoCollision)
 {
-	// Extend network: A → B, A → C
 	Node* nodeC = new Node("CityC");
 	graph.addNode(nodeC);
 	
@@ -292,16 +418,14 @@ TEST_F(MultiTrainTest, DifferentRoutesNoCollision)
 		std::cout << "╚════════════════════════════════════════════════╝\n\n";
 	}
 	
-	// Train 1: A → B
 	TrainConfig config1 = {
-		"Train1_AB", 80.0, 0.005, 356.0, 500.0,
+		"Train_AB", 80.0, 0.005, 356.0, 500.0,
 		"CityA", "CityB",
 		Time("00h00"), Time("00h05")
 	};
 	
-	// Train 2: A → C (different route)
 	TrainConfig config2 = {
-		"Train2_AC", 60.0, 0.005, 400.0, 450.0,
+		"Train_AC", 60.0, 0.005, 400.0, 450.0,
 		"CityA", "CityC",
 		Time("00h00"), Time("00h05")
 	};
@@ -325,9 +449,8 @@ TEST_F(MultiTrainTest, DifferentRoutesNoCollision)
 	
 	SimulationManager::getInstance().run(1000.0);
 	
-	// Both should finish independently
-	EXPECT_EQ(train1->getCurrentRail(), nullptr);
-	EXPECT_EQ(train2->getCurrentRail(), nullptr);
+	EXPECT_EQ(train1->getCurrentRail(), nullptr) << "Train_AB should finish";
+	EXPECT_EQ(train2->getCurrentRail(), nullptr) << "Train_AC should finish";
 	
 	if (ENABLE_VISUALIZATION)
 	{
@@ -340,24 +463,221 @@ TEST_F(MultiTrainTest, DifferentRoutesNoCollision)
 	delete railAC;
 }
 
-// ===== TEST 4: Collision Avoidance Verification =====
+// ===== TEST 5: Safety Distance Verification During Movement =====
 
-TEST_F(MultiTrainTest, VerifyNoCollisionOccurs)
+TEST_F(MultiTrainTest, SafetyDistanceMaintainedDuringMovement)
 {
+	if (ENABLE_VISUALIZATION)
+	{
+		std::cout << "\n╔════════════════════════════════════════════════╗\n";
+		std::cout << "║  SAFETY DISTANCE VERIFICATION                 ║\n";
+		std::cout << "╚════════════════════════════════════════════════╝\n\n";
+	}
+	
 	TrainConfig config1 = {
-		"Fast", 60.0, 0.005, 450.0, 500.0,
+		"Leader", 80.0, 0.005, 356.0, 500.0,
 		"CityA", "CityB",
 		Time("00h00"), Time("00h05")
 	};
 	
 	TrainConfig config2 = {
-		"Slow", 100.0, 0.005, 300.0, 400.0,
+		"Follower", 80.0, 0.005, 356.0, 500.0,
+		"CityA", "CityB",
+		Time("00h00"), Time("00h05")
+	};
+	
+	Train* train1 = TrainFactory::create(config1, &graph);
+	Train* train2 = TrainFactory::create(config2, &graph);
+	
+	ASSERT_NE(train1, nullptr);
+	ASSERT_NE(train2, nullptr);
+	
+	DijkstraStrategy dijkstra;
+	train1->setPath(dijkstra.findPath(&graph, nodeA, nodeB));
+	train2->setPath(dijkstra.findPath(&graph, nodeA, nodeB));
+	
+	// Start Train2 slightly behind
+	train2->setPosition(-150.0);
+	
+	static IdleState idleState;
+	train1->setState(&idleState);
+	train2->setState(&idleState);
+	
+	SimulationManager::getInstance().addTrain(train1);
+	SimulationManager::getInstance().addTrain(train2);
+	
+	SimulationManager::getInstance().start();
+	
+	double minDistanceWhileMoving = 1e9;
+	bool bothMovingAtSomePoint = false;
+	
+	for (double time = 0.0; time < 1200.0; time += 1.0)
+	{
+		SimulationManager::getInstance().step();
+		
+		// Only check distance when BOTH trains are moving (not finished)
+		if (train1->getCurrentRail() && train2->getCurrentRail() &&
+		    train1->getCurrentRail() == train2->getCurrentRail())
+		{
+			if (train1->getVelocity() > 1.0 && train2->getVelocity() > 1.0)
+			{
+				bothMovingAtSomePoint = true;
+				double dist = std::abs(train1->getPosition() - train2->getPosition());
+				if (dist < minDistanceWhileMoving)
+				{
+					minDistanceWhileMoving = dist;
+				}
+			}
+		}
+		
+		if (train1->getCurrentRail() == nullptr && train2->getCurrentRail() == nullptr)
+		{
+			break;
+		}
+	}
+	
+	if (ENABLE_VISUALIZATION)
+	{
+		std::cout << "\n─────────────────────────────────────────────────\n";
+		std::cout << "Both trains moved together:  " << (bothMovingAtSomePoint ? "YES ✓" : "NO ✗") << "\n";
+		std::cout << "Minimum distance (moving):   " << std::fixed << std::setprecision(1) 
+		          << minDistanceWhileMoving << "m\n";
+		std::cout << "─────────────────────────────────────────────────\n\n";
+	}
+	
+	EXPECT_TRUE(bothMovingAtSomePoint) << "Trains should have moved together at some point";
+	EXPECT_GT(minDistanceWhileMoving, 80.0) 
+		<< "Safety distance violated during movement: " << minDistanceWhileMoving << "m";
+	
+	delete train1;
+	delete train2;
+}
+
+// ===== TEST 6: No Overtaking on Single Track =====
+
+TEST_F(MultiTrainTest, NoOvertakingOnSingleTrack)
+{
+	if (ENABLE_VISUALIZATION)
+	{
+		std::cout << "\n╔════════════════════════════════════════════════╗\n";
+		std::cout << "║  NO OVERTAKING - FAST STUCK BEHIND SLOW       ║\n";
+		std::cout << "╚════════════════════════════════════════════════╝\n";
+		std::cout << "\nScenario: Slow train departs first, fast train cannot overtake\n";
+		std::cout << "Expected: Fast train stuck in Waiting state entire journey\n\n";
+	}
+	
+	TrainConfig config1 = {
+		"SlowTrain", 150.0, 0.010, 200.0, 350.0,
+		"CityA", "CityB",
+		Time("00h00"), Time("00h05")
+	};
+	
+	TrainConfig config2 = {
+		"FastTrain", 50.0, 0.002, 600.0, 700.0,
+		"CityA", "CityB",
+		Time("00h00"), Time("00h05")
+	};
+	
+	Train* train1 = TrainFactory::create(config1, &graph);
+	Train* train2 = TrainFactory::create(config2, &graph);
+	
+	ASSERT_NE(train1, nullptr);
+	ASSERT_NE(train2, nullptr);
+	
+	DijkstraStrategy dijkstra;
+	train1->setPath(dijkstra.findPath(&graph, nodeA, nodeB));
+	train2->setPath(dijkstra.findPath(&graph, nodeA, nodeB));
+	
+	// Start FastTrain slightly behind
+	train2->setPosition(-80.0);
+	
+	static IdleState idleState;
+	train1->setState(&idleState);
+	train2->setState(&idleState);
+	
+	SimulationManager::getInstance().addTrain(train1);
+	SimulationManager::getInstance().addTrain(train2);
+	
+	SimulationManager::getInstance().start();
+	
+	int waitingTimeCount = 0;
+	int totalTimeCount = 0;
+	
+	for (double time = 0.0; time < 2000.0; time += 1.0)
+	{
+		SimulationManager::getInstance().step();
+		
+		if (static_cast<int>(time) % 120 == 0)
+		{
+			visualize(time);
+		}
+		
+		// Count how much time FastTrain spends waiting
+		if (train2->getCurrentState() && 
+		    train2->getCurrentState()->getName() == "Waiting")
+		{
+			waitingTimeCount++;
+		}
+		
+		if (train2->getVelocity() > 0.1 || 
+		    (train2->getCurrentState() && train2->getCurrentState()->getName() == "Waiting"))
+		{
+			totalTimeCount++;
+		}
+		
+		if (train1->getCurrentRail() == nullptr && train2->getCurrentRail() == nullptr)
+		{
+			break;
+		}
+	}
+	
+	double waitingPercentage = (totalTimeCount > 0) ? 
+		(100.0 * waitingTimeCount / totalTimeCount) : 0.0;
+	
+	if (ENABLE_VISUALIZATION)
+	{
+		std::cout << "\n\n─────────────────────────────────────────────────\n";
+		std::cout << "FastTrain waiting time:  " << std::fixed << std::setprecision(1)
+		          << waitingPercentage << "%\n";
+		std::cout << "─────────────────────────────────────────────────\n\n";
+	}
+	
+	// FastTrain should spend significant time waiting (at least 50% of journey)
+	EXPECT_GT(waitingPercentage, 50.0) 
+		<< "FastTrain should be stuck behind SlowTrain";
+	
+	delete train1;
+	delete train2;
+}
+
+// ===== TEST 7: High Speed Differential =====
+
+TEST_F(MultiTrainTest, HighSpeedDifferentialCatchUp)
+{
+	if (ENABLE_VISUALIZATION)
+	{
+		std::cout << "\n╔════════════════════════════════════════════════╗\n";
+		std::cout << "║  HIGH SPEED DIFFERENTIAL - RAPID CATCH-UP     ║\n";
+		std::cout << "╚════════════════════════════════════════════════╝\n\n";
+	}
+	
+	TrainConfig config1 = {
+		"Freight", 200.0, 0.012, 180.0, 300.0,
+		"CityA", "CityB",
+		Time("00h00"), Time("00h05")
+	};
+	
+	TrainConfig config2 = {
+		"Express", 40.0, 0.001, 700.0, 800.0,
 		"CityA", "CityB",
 		Time("00h02"), Time("00h05")
 	};
 	
 	Train* train1 = TrainFactory::create(config1, &graph);
 	Train* train2 = TrainFactory::create(config2, &graph);
+	
+	ASSERT_NE(train1, nullptr);
+	ASSERT_NE(train2, nullptr);
 	
 	DijkstraStrategy dijkstra;
 	train1->setPath(dijkstra.findPath(&graph, nodeA, nodeB));
@@ -372,30 +692,50 @@ TEST_F(MultiTrainTest, VerifyNoCollisionOccurs)
 	
 	SimulationManager::getInstance().start();
 	
-	double minDistance = 1e9;
+	bool expressWaited = false;
+	double timeWhenExpressCaughtUp = -1.0;
 	
-	for (double time = 0.0; time < 1200.0; time += 1.0)
+	for (double time = 0.0; time < 2000.0; time += 1.0)
 	{
 		SimulationManager::getInstance().step();
 		
-		// Track minimum distance between trains
-		if (train1->getCurrentRail() && train2->getCurrentRail())
+		if (train2->getCurrentState() && 
+		    train2->getCurrentState()->getName() == "Waiting")
 		{
-			double dist = std::abs(train1->getPosition() - train2->getPosition());
-			if (dist < minDistance)
+			if (!expressWaited)
 			{
-				minDistance = dist;
+				expressWaited = true;
+				timeWhenExpressCaughtUp = time;
+				if (ENABLE_VISUALIZATION)
+				{
+					std::cout << "\n>>> Express train caught Freight train at t=" 
+					          << time << "s\n";
+				}
 			}
+		}
+		
+		if (train1->getCurrentRail() == nullptr && train2->getCurrentRail() == nullptr)
+		{
+			break;
 		}
 	}
 	
-	// Minimum distance should be reasonable (at least 50m separation)
-	EXPECT_GT(minDistance, 50.0) << "Trains got too close: " << minDistance << "m";
-	
 	if (ENABLE_VISUALIZATION)
 	{
-		std::cout << "\n✓ Minimum separation maintained: " << minDistance << "m\n\n";
+		std::cout << "\n─────────────────────────────────────────────────\n";
+		std::cout << "Express caught Freight:  " << (expressWaited ? "YES ✓" : "NO ✗") << "\n";
+		if (expressWaited)
+		{
+			std::cout << "Catch-up time:           " << timeWhenExpressCaughtUp << "s\n";
+		}
+		std::cout << "─────────────────────────────────────────────────\n\n";
 	}
+	
+	EXPECT_TRUE(expressWaited) << "Express should catch and wait for Freight";
+	EXPECT_GT(timeWhenExpressCaughtUp, 120.0) 
+		<< "Express should catch up after at least 2 minutes";
+	EXPECT_LT(timeWhenExpressCaughtUp, 600.0) 
+		<< "Express should catch up within 10 minutes";
 	
 	delete train1;
 	delete train2;

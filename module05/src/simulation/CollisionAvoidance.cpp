@@ -1,154 +1,171 @@
 #include "simulation/CollisionAvoidance.hpp"
-#include "simulation/PhysicsSystem.hpp"
+#include "simulation/RiskData.hpp"
 #include "core/Train.hpp"
-#include "core/Graph.hpp"
 #include "core/Rail.hpp"
+#include "simulation/PhysicsSystem.hpp"
+#include <limits>
 
-#include <algorithm>
-#include <cmath>
-
-void CollisionAvoidance::refreshRailOccupancy(const std::vector<Train*>& trains, const Graph* network) const
+RiskData CollisionAvoidance::assessRisk(const Train* train, const std::vector<Train*>& allTrains) const
 {
-	if (!network)
+	RiskData data;
+	
+	if (!train)
 	{
-		return;
+		return data;
 	}
-
-	// 1) Clear rails occupancy metadata
-	const auto& rails = network->getRails();
-	for (Rail* rail : rails)
+	
+	// Find leader on route
+	data.leader = findLeaderOnRoute(train, allTrains);
+	
+	// Calculate gap and closing speed
+	if (data.leader)
 	{
-		if (rail)
-		{
-			rail->clearOccupied();
-		}
+		data.gap = calculateGap(train, data.leader);
+		data.closingSpeed = calculateClosingSpeed(train, data.leader);
 	}
-
-	// 2) For each rail, mark the leading train (highest position) as occupiedBy
-	for (Train* train : trains)
-	{
-		if (!train)
-		{
-			continue;
-		}
-
-		Rail* currentRail = train->getCurrentRail();
-		if (!currentRail)
-		{
-			continue;
-		}
-
-		Train* leader = currentRail->getOccupiedBy();
-		if (!leader || train->getPosition() > leader->getPosition())
-		{
-			currentRail->setOccupiedBy(train);
-		}
-	}
+	
+	// Physical constraints
+	data.brakingDistance = calculateBrakingDistance(train);
+	data.safeDistance = calculateSafeDistance(train);
+	
+	// Rail constraints
+	data.currentSpeedLimit = getCurrentSpeedLimit(train);
+	data.nextSpeedLimit = getNextSpeedLimit(train);
+	
+	return data;
 }
 
-double CollisionAvoidance::distanceToNextTrain(const Train* train, const std::vector<Train*>& trains) const
+Train* CollisionAvoidance::findLeaderOnRoute(const Train* train, const std::vector<Train*>& allTrains) const
 {
 	if (!train)
 	{
-		return -1.0;
+		return nullptr;
 	}
-
-	Rail* currentRail = train->getCurrentRail();
-	if (!currentRail)
+	
+	Rail* myRail = train->getCurrentRail();
+	if (!myRail)
 	{
-		return -1.0;
+		return nullptr;
 	}
-
-	const double myPos = train->getPosition();
-	double best = -1.0;
-
-	// Find the nearest train AHEAD on the SAME rail
-	for (Train* other : trains)
+	
+	double myPos = train->getPosition();
+	Train* closest = nullptr;
+	double minDistance = std::numeric_limits<double>::infinity();
+	
+	// Check all trains on same rail
+	for (Train* other : allTrains)
 	{
 		if (!other || other == train)
 		{
 			continue;
 		}
-
-		if (other->getCurrentRail() != currentRail)
+		
+		if (other->getCurrentRail() == myRail)
 		{
-			continue;
-		}
-
-		const double otherPos = other->getPosition();
-		if (otherPos <= myPos)
-		{
-			continue;
-		}
-
-		const double dist = otherPos - myPos;
-		if (best < 0.0 || dist < best)
-		{
-			best = dist;
+			double otherPos = other->getPosition();
+			
+			// Leader is ahead of me
+			if (otherPos > myPos)
+			{
+				double distance = otherPos - myPos;
+				if (distance < minDistance)
+				{
+					minDistance = distance;
+					closest = other;
+				}
+			}
 		}
 	}
-
-	return best; // -1 if none
+	
+	return closest;
 }
 
-double CollisionAvoidance::getMinimumSafeDistance(const Train* train) const
+double CollisionAvoidance::calculateGap(const Train* train, const Train* leader) const
+{
+	if (!train || !leader)
+	{
+		return -1.0;
+	}
+	
+	// Gap on same rail
+	if (train->getCurrentRail() == leader->getCurrentRail())
+	{
+		return leader->getPosition() - train->getPosition();
+	}
+	
+	return -1.0;
+}
+
+double CollisionAvoidance::calculateClosingSpeed(const Train* train, const Train* leader) const
+{
+	if (!train || !leader)
+	{
+		return 0.0;
+	}
+	
+	// Positive = approaching, negative = separating
+	return train->getVelocity() - leader->getVelocity();
+}
+
+double CollisionAvoidance::calculateBrakingDistance(const Train* train) const
 {
 	if (!train)
 	{
 		return 0.0;
 	}
-
-	// Base rule: 2x braking distance
-	const double brakingDistance = PhysicsSystem::calculateBrakingDistance(train);
-	const double dynamic = brakingDistance * 2.0;
-
-	// Hard floor (matches your tests expectation baseline)
-	const double floorMeters = 100.0;
-
-	return std::max(dynamic, floorMeters);
+	
+	return PhysicsSystem::calculateBrakingDistance(train);
 }
 
-bool CollisionAvoidance::isNextTrainTooClose(const Train* train, const std::vector<Train*>& trains) const
-{
-	const double dist = distanceToNextTrain(train, trains);
-	if (dist < 0.0)
-	{
-		return false;
-	}
-
-	return dist < getMinimumSafeDistance(train);
-}
-
-bool CollisionAvoidance::isNextRailOccupied(const Train* train) const
+double CollisionAvoidance::calculateSafeDistance(const Train* train) const
 {
 	if (!train)
 	{
-		return false;
+		return 100.0;
 	}
-
-	const auto& path = train->getPath();
-	size_t index = train->getCurrentRailIndex();
-
-	if (index + 1 < path.size())
-	{
-		Rail* nextRail = path[index + 1];
-		return nextRail && nextRail->isOccupied();
-	}
-
-	return false;
+	
+	// Base calculation: 2-second time headway
+	double timeHeadway = 2.0;  // seconds
+	double speedBasedMargin = train->getVelocity() * timeHeadway;
+	
+	// Add braking distance buffer
+	double brakingMargin = calculateBrakingDistance(train);
+	
+	// Minimum clearance
+	double minClearance = 50.0;  // meters
+	
+	return minClearance + speedBasedMargin + brakingMargin;
 }
 
-bool CollisionAvoidance::shouldWaitForTrainAhead(
-    const Train* train,
-    const std::vector<Train*>& trains
-) const
+double CollisionAvoidance::getCurrentSpeedLimit(const Train* train) const
 {
-    double distance = distanceToNextTrain(train, trains);
-    if (distance < 0.0)
-        return false;
-
-    // Headway rule (exigida pelos testes)
-    constexpr double MIN_HEADWAY = 100.0; // metros
-    return distance < MIN_HEADWAY;
+	if (!train)
+	{
+		return 0.0;
+	}
+	
+	Rail* rail = train->getCurrentRail();
+	if (!rail)
+	{
+		return 0.0;
+	}
+	
+	return PhysicsSystem::kmhToMs(rail->getSpeedLimit());
 }
 
+double CollisionAvoidance::getNextSpeedLimit(const Train* train) const
+{
+	if (!train)
+	{
+		return -1.0;
+	}
+	
+	size_t nextIndex = train->getCurrentRailIndex() + 1;
+	if (nextIndex >= train->getPath().size())
+	{
+		return -1.0;
+	}
+	
+	Rail* nextRail = train->getPath()[nextIndex];
+	return PhysicsSystem::kmhToMs(nextRail->getSpeedLimit());
+}

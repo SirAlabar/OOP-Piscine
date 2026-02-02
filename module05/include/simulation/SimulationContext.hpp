@@ -7,46 +7,44 @@
 class Train;
 class Graph;
 class Node;
-class Rail;
 class StoppedState;
 class CollisionAvoidance;
 
 class SimulationContext
 {
 private:
-    Graph* _network;
-    CollisionAvoidance* _collisionSystem;
-    const std::vector<Train*>* _trains;
-    std::map<Train*, StoppedState*> _stoppedStates;
+	Graph* _network;
+	CollisionAvoidance* _collisionSystem;
+	const std::vector<Train*>* _trains;
+	std::map<Train*, StoppedState*> _stoppedStates;
 
 public:
-    SimulationContext(
-        Graph* network,
-        CollisionAvoidance* collisionSystem,
-        const std::vector<Train*>* trains
-    );
+	SimulationContext(
+		Graph* network,
+		CollisionAvoidance* collisionSystem,
+		const std::vector<Train*>* trains
+	);
 
-    ~SimulationContext();
+	~SimulationContext();
 
-    // Physics helpers
-    double getCurrentRailSpeedLimit(const Train* train) const;
-    double getCurrentRailLength(const Train* train) const;
-    double getBrakingDistance(const Train* train) const;
-    double getDistanceToRailEnd(const Train* train) const;
+	// Physics Queries
+	double getCurrentRailSpeedLimit(const Train* train) const;
+	double getCurrentRailLength(const Train* train) const;
+	double getBrakingDistance(const Train* train) const;
+	double getDistanceToRailEnd(const Train* train) const;
 
-    // Network queries
-    Node* getCurrentArrivalNode(const Train* train) const;
+	// Network Queries
+	Node* getCurrentArrivalNode(const Train* train) const;
 
-    // Collision / safety queries
-    bool isNextTrainTooClose(const Train* train) const;
-    double distanceToNextTrain(const Train* train) const;
-    // Collision / safety queries
-bool shouldWaitForTrainAhead(const Train* train) const;
+	// SAfety Queries
+	double distanceToNextTrain(const Train* train) const;
+	double getMinimumSafeDistance(const Train* train) const;
+    const RiskData& getRisk(const Train* train) const;
 
 
-    // State lifecycle
-    StoppedState* getOrCreateStoppedState(Train* train, double durationSeconds);
-    void releaseStoppedState(Train* train);
+	// State Lifecycle
+	StoppedState* getOrCreateStoppedState(Train* train, double durationSeconds);
+	void releaseStoppedState(Train* train);
 };
 
 #endif
