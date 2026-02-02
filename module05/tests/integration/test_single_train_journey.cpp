@@ -449,13 +449,21 @@ TEST(NetworkTest, ComplexNetworkStructure)
 	graph.addNode(E);
 	
 	// Create mesh network
-	graph.addRail(new Rail(A, B, 50.0, 250.0));
-	graph.addRail(new Rail(A, C, 30.0, 200.0));
-	graph.addRail(new Rail(B, D, 40.0, 220.0));
-	graph.addRail(new Rail(C, D, 25.0, 180.0));
-	graph.addRail(new Rail(C, E, 35.0, 240.0));
-	graph.addRail(new Rail(D, E, 20.0, 200.0));
-	graph.addRail(new Rail(B, E, 60.0, 250.0));
+    Rail* AB = new Rail(A, B, 50.0, 250.0);
+    Rail* AC = new Rail(A, C, 30.0, 200.0);
+    Rail* BD = new Rail(B, D, 40.0, 220.0);
+    Rail* CD = new Rail(C, D, 25.0, 180.0);
+    Rail* CE = new Rail(C, E, 35.0, 240.0);
+    Rail* DE = new Rail(D, E, 20.0, 200.0);
+    Rail* BE = new Rail(B, E, 60.0, 250.0);
+
+    graph.addRail(AB);
+    graph.addRail(AC);
+    graph.addRail(BD);
+    graph.addRail(CD);
+    graph.addRail(CE);
+    graph.addRail(DE);
+    graph.addRail(BE);
 	
 	EXPECT_EQ(graph.getNodeCount(), 5);
 	EXPECT_EQ(graph.getRailCount(), 7);
@@ -486,7 +494,18 @@ TEST(NetworkTest, ComplexNetworkStructure)
 	}
 	
 	// Cleanup
-	delete A; delete B; delete C; delete D; delete E;
+	delete AB;
+    delete AC;
+    delete BD;
+    delete CD;
+    delete CE;
+    delete DE;
+    delete BE;
+    delete A;
+    delete B;
+    delete C;
+    delete D;
+    delete E;
 }
 
 // ===== State transitions test =====
