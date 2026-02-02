@@ -58,27 +58,50 @@ void SimulationManager::setTimestep(double timestep)
 // Simulation control
 void SimulationManager::start()
 {
-	_running = true;
+    _running = true;
+
+    if (!_network || !_context)
+    {
+        return;
+    }
+
+    checkDepartures();
+
+    _collisionSystem->refreshRailOccupancy(_trains, _network);
+    _context->refreshAllRiskData();
+
+    handleStateTransitions();
+
+    // Ensure initial consistency after transitions
+    _context->refreshAllRiskData();
 }
 
 void SimulationManager::stop()
 {
-	_running = false;
+    _running = false;
 }
 
 void SimulationManager::step()
 {
-	if (!_network || !_context)
-	{
-		return;
-	}
+    if (!_network || !_context)
+    {
+        return;
+    }
 
-	checkDepartures();
-	_collisionSystem->refreshRailOccupancy(_trains, _network);
-	_context->refreshAllRiskData();
-	handleStateTransitions();
-	updateTrainStates(_timestep);
-	_currentTime += _timestep;
+    checkDepartures();
+
+    // Update current rail occupancy status
+    _collisionSystem->refreshRailOccupancy(_trains, _network);
+    // Compute risk information based on the current state
+    _context->refreshAllRiskData();
+    // Perform state transitions before applying physics
+    handleStateTransitions();
+    // Refresh risk data again after possible state changes
+    _context->refreshAllRiskData();
+    // Apply physics updates according to the current state of each train
+    updateTrainStates(_timestep);
+
+    _currentTime += _timestep;
 }
 
 

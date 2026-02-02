@@ -1,0 +1,960 @@
+[0;33mCreating build directory...[0m
+-- Configuring done (0.0s)
+-- Generating done (0.0s)
+-- Build files have been written to: /home/hugo/OPP-Piscine/module05/build
+[0;33mBuilding project...[0m
+gmake[1]: Entering directory '/home/hugo/OPP-Piscine/module05/build'
+gmake[2]: Entering directory '/home/hugo/OPP-Piscine/module05/build'
+gmake[3]: Entering directory '/home/hugo/OPP-Piscine/module05/build'
+gmake[3]: Leaving directory '/home/hugo/OPP-Piscine/module05/build'
+[ 75%] Built target RailwaySimCore
+gmake[3]: Entering directory '/home/hugo/OPP-Piscine/module05/build'
+gmake[3]: Entering directory '/home/hugo/OPP-Piscine/module05/build'
+gmake[3]: Leaving directory '/home/hugo/OPP-Piscine/module05/build'
+[ 78%] Built target Railway_Simulator
+gmake[3]: Leaving directory '/home/hugo/OPP-Piscine/module05/build'
+gmake[3]: Entering directory '/home/hugo/OPP-Piscine/module05/build'
+[ 80%] Building CXX object CMakeFiles/Railway_Simulator_tests.dir/tests/integration/test_multi_train.cpp.o
+[ 82%] Linking CXX executable Railway_Simulator_tests
+gmake[3]: Leaving directory '/home/hugo/OPP-Piscine/module05/build'
+[100%] Built target Railway_Simulator_tests
+gmake[2]: Leaving directory '/home/hugo/OPP-Piscine/module05/build'
+gmake[1]: Leaving directory '/home/hugo/OPP-Piscine/module05/build'
+[0;32mBuild complete![0m
+[0;33mRunning tests...[0m
+
+Running main() from ./googletest/src/gtest_main.cc
+[0;32m[==========] [mRunning 151 tests from 14 test suites.
+[0;32m[----------] [mGlobal test environment set-up.
+[0;32m[----------] [m1 test from RealisticFlowTest
+[0;32m[ RUN      ] [mRealisticFlowTest.SingleRealisticTrafficFlow
+
+==== REALISTIC TRAFFIC FLOW DEBUG TEST ====
+[t=  0] Leader: pos= 3.701 v=3.701 state=Accelerating | Follower: pos=  -200 v=    0 state=Stopped
+[t=  1] Leader: pos=11.103 v=7.402 state=Accelerating | Follower: pos=-196.299 v=3.701 state=Accelerating
+[t=  2] Leader: pos=22.206 v=11.103 state=Accelerating | Follower: pos=-188.897 v=7.402 state=Accelerating
+[t=  3] Leader: pos= 37.01 v=14.804 state=Accelerating | Follower: pos=-177.794 v=11.103 state=Accelerating
+[t=  4] Leader: pos=55.515 v=18.505 state=Accelerating | Follower: pos=-162.99 v=14.804 state=Accelerating
+[t=  5] Leader: pos=77.721 v=22.206 state=Accelerating | Follower: pos=-144.485 v=18.505 state=Accelerating
+[t=  6] Leader: pos=103.628 v=25.907 state=Accelerating | Follower: pos=-122.279 v=22.206 state=Accelerating
+[t=  7] Leader: pos=133.236 v=29.608 state=Accelerating | Follower: pos=-96.372 v=25.907 state=Accelerating
+[t=  8] Leader: pos=166.545 v=33.309 state=Accelerating | Follower: pos=-66.764 v=29.608 state=Accelerating
+[t=  9] Leader: pos=203.555 v=37.01 state=Accelerating | Follower: pos=-33.455 v=33.309 state=Accelerating
+[t= 10] Leader: pos=244.266 v=40.711 state=Accelerating | Follower: pos= 3.555 v=37.01 state=Accelerating
+[t= 11] Leader: pos=288.678 v=44.412 state=Accelerating | Follower: pos=35.516 v=31.961 state=Braking
+[t= 12] Leader: pos=336.791 v=48.113 state=Accelerating | Follower: pos=62.428 v=26.912 state=Braking
+[t= 13] Leader: pos=388.605 v=51.814 state=Accelerating | Follower: pos=84.291 v=21.863 state=Braking
+[t= 14] Leader: pos=444.12 v=55.515 state=Accelerating | Follower: pos=101.105 v=16.814 state=Braking
+[t= 15] Leader: pos=499.635 v=55.515 state=Cruising | Follower: pos=112.87 v=11.765 state=Braking
+[t= 16] Leader: pos=555.15 v=55.515 state=Cruising | Follower: pos=119.586 v=6.716 state=Braking
+[t= 17] Leader: pos=610.665 v=55.515 state=Cruising | Follower: pos=121.253 v=1.667 state=Braking
+[t= 18] Leader: pos=666.18 v=55.515 state=Cruising | Follower: pos=121.253 v=    0 state=Braking
+[t= 19] Leader: pos=721.695 v=55.515 state=Cruising | Follower: pos=121.253 v=    0 state=Stopped
+[t= 20] Leader: pos=777.21 v=55.515 state=Cruising | Follower: pos=124.954 v=3.701 state=Accelerating
+[t= 21] Leader: pos=832.725 v=55.515 state=Cruising | Follower: pos=132.356 v=7.402 state=Accelerating
+[t= 22] Leader: pos=888.24 v=55.515 state=Cruising | Follower: pos=143.459 v=11.103 state=Accelerating
+[t= 23] Leader: pos=943.755 v=55.515 state=Cruising | Follower: pos=158.263 v=14.804 state=Accelerating
+[t= 24] Leader: pos=999.27 v=55.515 state=Cruising | Follower: pos=176.768 v=18.505 state=Accelerating
+[t= 25] Leader: pos=1054.78 v=55.515 state=Cruising | Follower: pos=198.974 v=22.206 state=Accelerating
+[t= 26] Leader: pos=1110.3 v=55.515 state=Cruising | Follower: pos=224.881 v=25.907 state=Accelerating
+[t= 27] Leader: pos=1165.82 v=55.515 state=Cruising | Follower: pos=254.489 v=29.608 state=Accelerating
+[t= 28] Leader: pos=1221.33 v=55.515 state=Cruising | Follower: pos=287.798 v=33.309 state=Accelerating
+[t= 29] Leader: pos=1276.85 v=55.515 state=Cruising | Follower: pos=324.808 v=37.01 state=Accelerating
+[t= 30] Leader: pos=1332.36 v=55.515 state=Cruising | Follower: pos=365.519 v=40.711 state=Accelerating
+[t= 31] Leader: pos=1387.88 v=55.515 state=Cruising | Follower: pos=409.931 v=44.412 state=Accelerating
+[t= 32] Leader: pos=1443.39 v=55.515 state=Cruising | Follower: pos=458.044 v=48.113 state=Accelerating
+[t= 33] Leader: pos=1498.91 v=55.515 state=Cruising | Follower: pos=509.858 v=51.814 state=Accelerating
+[t= 34] Leader: pos=1554.42 v=55.515 state=Cruising | Follower: pos=565.373 v=55.515 state=Accelerating
+[t= 35] Leader: pos=1609.94 v=55.515 state=Cruising | Follower: pos=620.888 v=55.515 state=Cruising
+[t= 36] Leader: pos=1665.45 v=55.515 state=Cruising | Follower: pos=676.403 v=55.515 state=Cruising
+[t= 37] Leader: pos=1720.97 v=55.515 state=Cruising | Follower: pos=731.918 v=55.515 state=Cruising
+[t= 38] Leader: pos=1776.48 v=55.515 state=Cruising | Follower: pos=787.433 v=55.515 state=Cruising
+[t= 39] Leader: pos=  1832 v=55.515 state=Cruising | Follower: pos=842.948 v=55.515 state=Cruising
+[t= 40] Leader: pos=1887.51 v=55.515 state=Cruising | Follower: pos=898.463 v=55.515 state=Cruising
+[t= 41] Leader: pos=1943.03 v=55.515 state=Cruising | Follower: pos=953.978 v=55.515 state=Cruising
+[t= 42] Leader: pos=1998.54 v=55.515 state=Cruising | Follower: pos=1009.49 v=55.515 state=Cruising
+[t= 43] Leader: pos=2054.06 v=55.515 state=Cruising | Follower: pos=1065.01 v=55.515 state=Cruising
+[t= 44] Leader: pos=2109.57 v=55.515 state=Cruising | Follower: pos=1120.52 v=55.515 state=Cruising
+[t= 45] Leader: pos=2165.09 v=55.515 state=Cruising | Follower: pos=1176.04 v=55.515 state=Cruising
+[t= 46] Leader: pos=2220.6 v=55.515 state=Cruising | Follower: pos=1231.55 v=55.515 state=Cruising
+[t= 47] Leader: pos=2276.12 v=55.515 state=Cruising | Follower: pos=1287.07 v=55.515 state=Cruising
+[t= 48] Leader: pos=2331.63 v=55.515 state=Cruising | Follower: pos=1342.58 v=55.515 state=Cruising
+[t= 49] Leader: pos=2387.15 v=55.515 state=Cruising | Follower: pos=1398.1 v=55.515 state=Cruising
+[t= 50] Leader: pos=2442.66 v=55.515 state=Cruising | Follower: pos=1453.61 v=55.515 state=Cruising
+[t= 51] Leader: pos=2498.18 v=55.515 state=Cruising | Follower: pos=1509.13 v=55.515 state=Cruising
+[t= 52] Leader: pos=2553.69 v=55.515 state=Cruising | Follower: pos=1564.64 v=55.515 state=Cruising
+[t= 53] Leader: pos=2609.21 v=55.515 state=Cruising | Follower: pos=1620.16 v=55.515 state=Cruising
+[t= 54] Leader: pos=2664.72 v=55.515 state=Cruising | Follower: pos=1675.67 v=55.515 state=Cruising
+[t= 55] Leader: pos=2720.24 v=55.515 state=Cruising | Follower: pos=1731.19 v=55.515 state=Cruising
+[t= 56] Leader: pos=2775.75 v=55.515 state=Cruising | Follower: pos=1786.7 v=55.515 state=Cruising
+[t= 57] Leader: pos=2831.26 v=55.515 state=Cruising | Follower: pos=1842.22 v=55.515 state=Cruising
+[t= 58] Leader: pos=2886.78 v=55.515 state=Cruising | Follower: pos=1897.73 v=55.515 state=Cruising
+[t= 59] Leader: pos=2942.29 v=55.515 state=Cruising | Follower: pos=1953.25 v=55.515 state=Cruising
+[t= 60] Leader: pos=2997.81 v=55.515 state=Cruising | Follower: pos=2008.76 v=55.515 state=Cruising
+[t= 61] Leader: pos=3053.32 v=55.515 state=Cruising | Follower: pos=2064.28 v=55.515 state=Cruising
+[t= 62] Leader: pos=3108.84 v=55.515 state=Cruising | Follower: pos=2119.79 v=55.515 state=Cruising
+[t= 63] Leader: pos=3164.35 v=55.515 state=Cruising | Follower: pos=2175.31 v=55.515 state=Cruising
+[t= 64] Leader: pos=3219.87 v=55.515 state=Cruising | Follower: pos=2230.82 v=55.515 state=Cruising
+[t= 65] Leader: pos=3275.38 v=55.515 state=Cruising | Follower: pos=2286.34 v=55.515 state=Cruising
+[t= 66] Leader: pos=3330.9 v=55.515 state=Cruising | Follower: pos=2341.85 v=55.515 state=Cruising
+[t= 67] Leader: pos=3386.41 v=55.515 state=Cruising | Follower: pos=2397.37 v=55.515 state=Cruising
+[t= 68] Leader: pos=3441.93 v=55.515 state=Cruising | Follower: pos=2452.88 v=55.515 state=Cruising
+[t= 69] Leader: pos=3497.44 v=55.515 state=Cruising | Follower: pos=2508.4 v=55.515 state=Cruising
+[t= 70] Leader: pos=3552.96 v=55.515 state=Cruising | Follower: pos=2563.91 v=55.515 state=Cruising
+[t= 71] Leader: pos=3608.47 v=55.515 state=Cruising | Follower: pos=2619.43 v=55.515 state=Cruising
+[t= 72] Leader: pos=3663.99 v=55.515 state=Cruising | Follower: pos=2674.94 v=55.515 state=Cruising
+[t= 73] Leader: pos=3719.5 v=55.515 state=Cruising | Follower: pos=2730.46 v=55.515 state=Cruising
+[t= 74] Leader: pos=3775.02 v=55.515 state=Cruising | Follower: pos=2785.97 v=55.515 state=Cruising
+[t= 75] Leader: pos=3830.53 v=55.515 state=Cruising | Follower: pos=2841.49 v=55.515 state=Cruising
+[t= 76] Leader: pos=3886.05 v=55.515 state=Cruising | Follower: pos=  2897 v=55.515 state=Cruising
+[t= 77] Leader: pos=3941.56 v=55.515 state=Cruising | Follower: pos=2952.52 v=55.515 state=Cruising
+[t= 78] Leader: pos=3997.08 v=55.515 state=Cruising | Follower: pos=3008.03 v=55.515 state=Cruising
+[t= 79] Leader: pos=4052.59 v=55.515 state=Cruising | Follower: pos=3063.55 v=55.515 state=Cruising
+[t= 80] Leader: pos=4108.11 v=55.515 state=Cruising | Follower: pos=3119.06 v=55.515 state=Cruising
+[t= 81] Leader: pos=4163.62 v=55.515 state=Cruising | Follower: pos=3174.58 v=55.515 state=Cruising
+[t= 82] Leader: pos=4219.14 v=55.515 state=Cruising | Follower: pos=3230.09 v=55.515 state=Cruising
+[t= 83] Leader: pos=4274.65 v=55.515 state=Cruising | Follower: pos=3285.61 v=55.515 state=Cruising
+[t= 84] Leader: pos=4330.17 v=55.515 state=Cruising | Follower: pos=3341.12 v=55.515 state=Cruising
+[t= 85] Leader: pos=4385.68 v=55.515 state=Cruising | Follower: pos=3396.64 v=55.515 state=Cruising
+[t= 86] Leader: pos=4441.2 v=55.515 state=Cruising | Follower: pos=3452.15 v=55.515 state=Cruising
+[t= 87] Leader: pos=4496.71 v=55.515 state=Cruising | Follower: pos=3507.67 v=55.515 state=Cruising
+[t= 88] Leader: pos=4552.23 v=55.515 state=Cruising | Follower: pos=3563.18 v=55.515 state=Cruising
+[t= 89] Leader: pos=4607.74 v=55.515 state=Cruising | Follower: pos=3618.7 v=55.515 state=Cruising
+[t= 90] Leader: pos=4663.26 v=55.515 state=Cruising | Follower: pos=3674.21 v=55.515 state=Cruising
+[t= 91] Leader: pos=4718.78 v=55.515 state=Cruising | Follower: pos=3729.73 v=55.515 state=Cruising
+[t= 92] Leader: pos=4774.29 v=55.515 state=Cruising | Follower: pos=3785.24 v=55.515 state=Cruising
+[t= 93] Leader: pos=4829.81 v=55.515 state=Cruising | Follower: pos=3840.76 v=55.515 state=Cruising
+[t= 94] Leader: pos=4885.32 v=55.515 state=Cruising | Follower: pos=3896.27 v=55.515 state=Cruising
+[t= 95] Leader: pos=4940.84 v=55.515 state=Cruising | Follower: pos=3951.79 v=55.515 state=Cruising
+[t= 96] Leader: pos=4996.35 v=55.515 state=Cruising | Follower: pos=4007.3 v=55.515 state=Cruising
+[t= 97] Leader: pos=5051.87 v=55.515 state=Cruising | Follower: pos=4062.82 v=55.515 state=Cruising
+[t= 98] Leader: pos=5107.38 v=55.515 state=Cruising | Follower: pos=4118.33 v=55.515 state=Cruising
+[t= 99] Leader: pos=5162.9 v=55.515 state=Cruising | Follower: pos=4173.85 v=55.515 state=Cruising
+
+>>> EVENT: LEADER FORCED TO STOP FOR EXTENDED PERIOD <<<
+[t=100] Leader: pos=5218.41 v=    0 state=Cruising | Follower: pos=4229.36 v=55.515 state=Cruising
+[t=101] Leader: pos=5222.11 v=    0 state=Cruising | Follower: pos=4279.83 v=50.466 state=Braking
+[t=102] Leader: pos=5225.81 v=    0 state=Cruising | Follower: pos=4325.25 v=45.417 state=Braking
+[t=103] Leader: pos=5229.51 v=    0 state=Cruising | Follower: pos=4365.61 v=40.368 state=Braking
+[t=104] Leader: pos=5233.21 v=    0 state=Cruising | Follower: pos=4400.93 v=35.319 state=Braking
+[t=105] Leader: pos=5236.92 v=    0 state=Cruising | Follower: pos=4431.2 v=30.27 state=Braking
+[t=106] Leader: pos=5240.62 v=    0 state=Cruising | Follower: pos=4456.42 v=25.221 state=Braking
+[t=107] Leader: pos=5244.32 v=    0 state=Cruising | Follower: pos=4476.6 v=20.172 state=Braking
+[t=108] Leader: pos=5248.02 v=    0 state=Cruising | Follower: pos=4491.72 v=15.123 state=Braking
+[t=109] Leader: pos=5251.72 v=    0 state=Cruising | Follower: pos=4501.79 v=10.074 state=Braking
+[t=110] Leader: pos=5255.42 v=    0 state=Cruising | Follower: pos=4506.82 v=5.025 state=Braking
+[t=111] Leader: pos=5259.12 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Braking
+[t=112] Leader: pos=5262.82 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Stopped
+[t=113] Leader: pos=5266.52 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=114] Leader: pos=5270.22 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=115] Leader: pos=5273.93 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=116] Leader: pos=5277.63 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=117] Leader: pos=5281.33 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=118] Leader: pos=5285.03 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=119] Leader: pos=5288.73 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=120] Leader: pos=5292.43 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=121] Leader: pos=5296.13 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=122] Leader: pos=5299.83 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=123] Leader: pos=5303.53 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=124] Leader: pos=5307.23 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=125] Leader: pos=5310.94 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=126] Leader: pos=5314.64 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=127] Leader: pos=5318.34 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=128] Leader: pos=5322.04 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=129] Leader: pos=5325.74 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=130] Leader: pos=5329.44 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=131] Leader: pos=5333.14 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=132] Leader: pos=5336.84 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=133] Leader: pos=5340.54 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=134] Leader: pos=5344.24 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=135] Leader: pos=5347.95 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=136] Leader: pos=5351.65 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=137] Leader: pos=5355.35 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=138] Leader: pos=5359.05 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=139] Leader: pos=5362.75 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=140] Leader: pos=5366.45 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=141] Leader: pos=5370.15 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=142] Leader: pos=5373.85 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=143] Leader: pos=5377.55 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=144] Leader: pos=5381.25 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=145] Leader: pos=5384.96 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=146] Leader: pos=5388.66 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=147] Leader: pos=5392.36 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=148] Leader: pos=5396.06 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=149] Leader: pos=5399.76 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=150] Leader: pos=5403.46 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=151] Leader: pos=5407.16 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=152] Leader: pos=5410.86 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=153] Leader: pos=5414.56 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=154] Leader: pos=5418.26 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=155] Leader: pos=5421.97 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=156] Leader: pos=5425.67 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=157] Leader: pos=5429.37 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=158] Leader: pos=5433.07 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=159] Leader: pos=5436.77 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=160] Leader: pos=5440.47 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=161] Leader: pos=5444.17 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=162] Leader: pos=5447.87 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=163] Leader: pos=5451.57 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=164] Leader: pos=5455.27 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=165] Leader: pos=5458.98 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=166] Leader: pos=5462.68 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=167] Leader: pos=5466.38 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=168] Leader: pos=5470.08 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=169] Leader: pos=5473.78 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=170] Leader: pos=5477.48 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=171] Leader: pos=5481.18 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=172] Leader: pos=5484.88 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=173] Leader: pos=5488.58 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=174] Leader: pos=5492.28 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=175] Leader: pos=5495.99 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=176] Leader: pos=5499.69 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=177] Leader: pos=5503.39 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=178] Leader: pos=5507.09 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=179] Leader: pos=5510.79 v=    0 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=180] Leader: pos=5514.49 v=3.701 state=Cruising | Follower: pos=4506.82 v=    0 state=Waiting
+[t=181] Leader: pos=5521.89 v=7.402 state=Cruising | Follower: pos=4510.52 v=3.701 state=Accelerating
+[t=182] Leader: pos=  5533 v=11.103 state=Cruising | Follower: pos=4517.92 v=7.402 state=Accelerating
+[t=183] Leader: pos=5547.8 v=14.804 state=Cruising | Follower: pos=4529.02 v=11.103 state=Accelerating
+[t=184] Leader: pos=5566.3 v=18.505 state=Cruising | Follower: pos=4543.83 v=14.804 state=Accelerating
+[t=185] Leader: pos=5588.51 v=22.206 state=Cruising | Follower: pos=4562.33 v=18.505 state=Accelerating
+[t=186] Leader: pos=5614.42 v=25.907 state=Cruising | Follower: pos=4584.54 v=22.206 state=Accelerating
+[t=187] Leader: pos=5644.03 v=29.608 state=Cruising | Follower: pos=4610.45 v=25.907 state=Accelerating
+[t=188] Leader: pos=5677.33 v=33.309 state=Cruising | Follower: pos=4640.05 v=29.608 state=Accelerating
+[t=189] Leader: pos=5714.34 v=37.01 state=Cruising | Follower: pos=4673.36 v=33.309 state=Accelerating
+[t=190] Leader: pos=5755.06 v=40.711 state=Cruising | Follower: pos=4710.37 v=37.01 state=Accelerating
+[t=191] Leader: pos=5799.47 v=44.412 state=Cruising | Follower: pos=4751.08 v=40.711 state=Accelerating
+[t=192] Leader: pos=5847.58 v=48.113 state=Cruising | Follower: pos=4795.5 v=44.412 state=Accelerating
+[t=193] Leader: pos=5899.39 v=51.814 state=Cruising | Follower: pos=4843.61 v=48.113 state=Accelerating
+[t=194] Leader: pos=5954.91 v=55.515 state=Cruising | Follower: pos=4895.42 v=51.814 state=Accelerating
+[t=195] Leader: pos=6010.42 v=55.515 state=Cruising | Follower: pos=4950.94 v=55.515 state=Accelerating
+[t=196] Leader: pos=6065.94 v=55.515 state=Cruising | Follower: pos=5006.45 v=55.515 state=Cruising
+[t=197] Leader: pos=6121.45 v=55.515 state=Cruising | Follower: pos=5061.97 v=55.515 state=Cruising
+[t=198] Leader: pos=6176.97 v=55.515 state=Cruising | Follower: pos=5117.48 v=55.515 state=Cruising
+[t=199] Leader: pos=6232.48 v=55.515 state=Cruising | Follower: pos=  5173 v=55.515 state=Cruising
+[t=200] Leader: pos=  6288 v=55.515 state=Cruising | Follower: pos=5228.51 v=55.515 state=Cruising
+[t=201] Leader: pos=6343.51 v=55.515 state=Cruising | Follower: pos=5284.03 v=55.515 state=Cruising
+[t=202] Leader: pos=6399.03 v=55.515 state=Cruising | Follower: pos=5339.54 v=55.515 state=Cruising
+[t=203] Leader: pos=6454.54 v=55.515 state=Cruising | Follower: pos=5395.06 v=55.515 state=Cruising
+[t=204] Leader: pos=6510.06 v=55.515 state=Cruising | Follower: pos=5450.57 v=55.515 state=Cruising
+[t=205] Leader: pos=6565.57 v=55.515 state=Cruising | Follower: pos=5506.09 v=55.515 state=Cruising
+[t=206] Leader: pos=6621.09 v=55.515 state=Cruising | Follower: pos=5561.6 v=55.515 state=Cruising
+[t=207] Leader: pos=6676.6 v=55.515 state=Cruising | Follower: pos=5617.12 v=55.515 state=Cruising
+[t=208] Leader: pos=6732.12 v=55.515 state=Cruising | Follower: pos=5672.63 v=55.515 state=Cruising
+[t=209] Leader: pos=6787.63 v=55.515 state=Cruising | Follower: pos=5728.15 v=55.515 state=Cruising
+[t=210] Leader: pos=6843.15 v=55.515 state=Cruising | Follower: pos=5783.66 v=55.515 state=Cruising
+[t=211] Leader: pos=6898.66 v=55.515 state=Cruising | Follower: pos=5839.18 v=55.515 state=Cruising
+[t=212] Leader: pos=6954.18 v=55.515 state=Cruising | Follower: pos=5894.69 v=55.515 state=Cruising
+[t=213] Leader: pos=7009.69 v=55.515 state=Cruising | Follower: pos=5950.21 v=55.515 state=Cruising
+[t=214] Leader: pos=7065.21 v=55.515 state=Cruising | Follower: pos=6005.72 v=55.515 state=Cruising
+[t=215] Leader: pos=7120.72 v=55.515 state=Cruising | Follower: pos=6061.24 v=55.515 state=Cruising
+[t=216] Leader: pos=7176.24 v=55.515 state=Cruising | Follower: pos=6116.75 v=55.515 state=Cruising
+[t=217] Leader: pos=7231.75 v=55.515 state=Cruising | Follower: pos=6172.27 v=55.515 state=Cruising
+[t=218] Leader: pos=7287.27 v=55.515 state=Cruising | Follower: pos=6227.78 v=55.515 state=Cruising
+[t=219] Leader: pos=7342.78 v=55.515 state=Cruising | Follower: pos=6283.3 v=55.515 state=Cruising
+[t=220] Leader: pos=7398.3 v=55.515 state=Cruising | Follower: pos=6338.81 v=55.515 state=Cruising
+[t=221] Leader: pos=7453.81 v=55.515 state=Cruising | Follower: pos=6394.33 v=55.515 state=Cruising
+[t=222] Leader: pos=7509.33 v=55.515 state=Cruising | Follower: pos=6449.84 v=55.515 state=Cruising
+[t=223] Leader: pos=7564.84 v=55.515 state=Cruising | Follower: pos=6505.36 v=55.515 state=Cruising
+[t=224] Leader: pos=7620.36 v=55.515 state=Cruising | Follower: pos=6560.87 v=55.515 state=Cruising
+[t=225] Leader: pos=7675.87 v=55.515 state=Cruising | Follower: pos=6616.39 v=55.515 state=Cruising
+[t=226] Leader: pos=7731.39 v=55.515 state=Cruising | Follower: pos=6671.9 v=55.515 state=Cruising
+[t=227] Leader: pos=7786.9 v=55.515 state=Cruising | Follower: pos=6727.42 v=55.515 state=Cruising
+[t=228] Leader: pos=7842.42 v=55.515 state=Cruising | Follower: pos=6782.93 v=55.515 state=Cruising
+[t=229] Leader: pos=7897.93 v=55.515 state=Cruising | Follower: pos=6838.45 v=55.515 state=Cruising
+[t=230] Leader: pos=7953.45 v=55.515 state=Cruising | Follower: pos=6893.96 v=55.515 state=Cruising
+[t=231] Leader: pos=8008.96 v=55.515 state=Cruising | Follower: pos=6949.48 v=55.515 state=Cruising
+[t=232] Leader: pos=8064.48 v=55.515 state=Cruising | Follower: pos=7004.99 v=55.515 state=Cruising
+[t=233] Leader: pos=8119.99 v=55.515 state=Cruising | Follower: pos=7060.51 v=55.515 state=Cruising
+[t=234] Leader: pos=8175.51 v=55.515 state=Cruising | Follower: pos=7116.02 v=55.515 state=Cruising
+[t=235] Leader: pos=8231.02 v=55.515 state=Cruising | Follower: pos=7171.54 v=55.515 state=Cruising
+[t=236] Leader: pos=8286.54 v=55.515 state=Cruising | Follower: pos=7227.05 v=55.515 state=Cruising
+[t=237] Leader: pos=8342.05 v=55.515 state=Cruising | Follower: pos=7282.57 v=55.515 state=Cruising
+[t=238] Leader: pos=8397.57 v=55.515 state=Cruising | Follower: pos=7338.08 v=55.515 state=Cruising
+[t=239] Leader: pos=8453.08 v=55.515 state=Cruising | Follower: pos=7393.6 v=55.515 state=Cruising
+[t=240] Leader: pos=8508.6 v=55.515 state=Cruising | Follower: pos=7449.11 v=55.515 state=Cruising
+[t=241] Leader: pos=8564.11 v=55.515 state=Cruising | Follower: pos=7504.63 v=55.515 state=Cruising
+[t=242] Leader: pos=8619.63 v=55.515 state=Cruising | Follower: pos=7560.14 v=55.515 state=Cruising
+[t=243] Leader: pos=8675.14 v=55.515 state=Cruising | Follower: pos=7615.66 v=55.515 state=Cruising
+[t=244] Leader: pos=8730.66 v=55.515 state=Cruising | Follower: pos=7671.17 v=55.515 state=Cruising
+[t=245] Leader: pos=8786.17 v=55.515 state=Cruising | Follower: pos=7726.69 v=55.515 state=Cruising
+[t=246] Leader: pos=8841.69 v=55.515 state=Cruising | Follower: pos=7782.2 v=55.515 state=Cruising
+[t=247] Leader: pos=8897.2 v=55.515 state=Cruising | Follower: pos=7837.72 v=55.515 state=Cruising
+[t=248] Leader: pos=8952.72 v=55.515 state=Cruising | Follower: pos=7893.23 v=55.515 state=Cruising
+[t=249] Leader: pos=9008.23 v=55.515 state=Cruising | Follower: pos=7948.75 v=55.515 state=Cruising
+[t=250] Leader: pos=9063.75 v=55.515 state=Cruising | Follower: pos=8004.26 v=55.515 state=Cruising
+[t=251] Leader: pos=9119.26 v=55.515 state=Cruising | Follower: pos=8059.78 v=55.515 state=Cruising
+[t=252] Leader: pos=9174.78 v=55.515 state=Cruising | Follower: pos=8115.29 v=55.515 state=Cruising
+[t=253] Leader: pos=9230.29 v=55.515 state=Cruising | Follower: pos=8170.81 v=55.515 state=Cruising
+[t=254] Leader: pos=9285.81 v=55.515 state=Cruising | Follower: pos=8226.32 v=55.515 state=Cruising
+[t=255] Leader: pos=9341.32 v=55.515 state=Cruising | Follower: pos=8281.84 v=55.515 state=Cruising
+[t=256] Leader: pos=9396.84 v=55.515 state=Cruising | Follower: pos=8337.35 v=55.515 state=Cruising
+[t=257] Leader: pos=9452.35 v=55.515 state=Cruising | Follower: pos=8392.87 v=55.515 state=Cruising
+[t=258] Leader: pos=9507.87 v=55.515 state=Cruising | Follower: pos=8448.38 v=55.515 state=Cruising
+[t=259] Leader: pos=9563.38 v=55.515 state=Cruising | Follower: pos=8503.9 v=55.515 state=Cruising
+[t=260] Leader: pos=9618.9 v=55.515 state=Cruising | Follower: pos=8559.41 v=55.515 state=Cruising
+[t=261] Leader: pos=9674.41 v=55.515 state=Cruising | Follower: pos=8614.93 v=55.515 state=Cruising
+[t=262] Leader: pos=9724.88 v=50.466 state=Braking | Follower: pos=8670.44 v=55.515 state=Cruising
+[t=263] Leader: pos=9770.3 v=45.417 state=Braking | Follower: pos=8725.96 v=55.515 state=Cruising
+[t=264] Leader: pos=9810.67 v=40.368 state=Braking | Follower: pos=8781.47 v=55.515 state=Cruising
+[t=265] Leader: pos=9845.98 v=35.319 state=Braking | Follower: pos=8836.99 v=55.515 state=Cruising
+[t=266] Leader: pos=9876.25 v=30.27 state=Braking | Follower: pos=8892.5 v=55.515 state=Cruising
+[t=267] Leader: pos=9901.48 v=25.221 state=Braking | Follower: pos=8948.02 v=55.515 state=Cruising
+[t=268] Leader: pos=9921.65 v=20.172 state=Braking | Follower: pos=9003.53 v=55.515 state=Cruising
+[t=269] Leader: pos=9936.77 v=15.123 state=Braking | Follower: pos=9059.05 v=55.515 state=Cruising
+[t=270] Leader: pos=9946.84 v=10.074 state=Braking | Follower: pos=9114.56 v=55.515 state=Cruising
+[t=271] Leader: pos=9951.87 v=5.025 state=Braking | Follower: pos=9170.08 v=55.515 state=Cruising
+[t=272] Leader: pos=9951.87 v=    0 state=Braking | Follower: pos=9225.59 v=55.515 state=Cruising
+[t=273] Leader: pos=9951.87 v=    0 state=Stopped | Follower: pos=9276.06 v=50.466 state=Braking
+[t=274] Leader: pos=9955.57 v=3.701 state=Accelerating | Follower: pos=9321.48 v=45.417 state=Braking
+[t=275] Leader: pos=9962.97 v=7.402 state=Accelerating | Follower: pos=9361.84 v=40.368 state=Braking
+[t=276] Leader: pos=9974.08 v=11.103 state=Accelerating | Follower: pos=9397.16 v=35.319 state=Braking
+[t=277] Leader: pos=9988.88 v=14.804 state=Accelerating | Follower: pos=9427.43 v=30.27 state=Braking
+[t=278] Leader: pos=10007.4 v=18.505 state=Accelerating | Follower: pos=9452.65 v=25.221 state=Braking
+[t=279] Leader: pos=10029.6 v=22.206 state=Accelerating | Follower: pos=9472.83 v=20.172 state=Braking
+[t=280] Leader: pos=10055.5 v=25.907 state=Accelerating | Follower: pos=9487.95 v=15.123 state=Braking
+[t=281] Leader: pos=10085.1 v=29.608 state=Accelerating | Follower: pos=9498.02 v=10.074 state=Braking
+[t=282] Leader: pos=10118.4 v=33.309 state=Accelerating | Follower: pos=9503.05 v=5.025 state=Braking
+[t=283] Leader: pos=10155.4 v=37.01 state=Accelerating | Follower: pos=9503.05 v=    0 state=Braking
+[t=284] Leader: pos=10196.1 v=40.711 state=Accelerating | Follower: pos=9503.05 v=    0 state=Stopped
+[t=285] Leader: pos=10240.5 v=44.412 state=Accelerating | Follower: pos=9506.75 v=3.701 state=Accelerating
+[t=286] Leader: pos=10288.7 v=48.113 state=Accelerating | Follower: pos=9514.15 v=7.402 state=Accelerating
+[t=287] Leader: pos=10340.5 v=51.814 state=Accelerating | Follower: pos=9525.25 v=11.103 state=Accelerating
+[t=288] Leader: pos= 10396 v=55.515 state=Accelerating | Follower: pos=9540.06 v=14.804 state=Accelerating
+[t=289] Leader: pos=10451.5 v=55.515 state=Cruising | Follower: pos=9558.56 v=18.505 state=Accelerating
+[t=290] Leader: pos= 10502 v=50.466 state=Braking | Follower: pos=9580.77 v=22.206 state=Accelerating
+[t=291] Leader: pos=10547.4 v=45.417 state=Braking | Follower: pos=9606.68 v=25.907 state=Accelerating
+[t=292] Leader: pos=10587.8 v=40.368 state=Braking | Follower: pos=9636.28 v=29.608 state=Accelerating
+[t=293] Leader: pos=10623.1 v=35.319 state=Braking | Follower: pos=9669.59 v=33.309 state=Accelerating
+[t=294] Leader: pos=10653.3 v=30.27 state=Braking | Follower: pos=9706.6 v=37.01 state=Accelerating
+[t=295] Leader: pos=10678.6 v=25.221 state=Braking | Follower: pos=9747.31 v=40.711 state=Accelerating
+[t=296] Leader: pos=10698.7 v=20.172 state=Braking | Follower: pos=9791.73 v=44.412 state=Accelerating
+[t=297] Leader: pos=10713.9 v=15.123 state=Braking | Follower: pos=9839.84 v=48.113 state=Accelerating
+[t=298] Leader: pos=10723.9 v=10.074 state=Braking | Follower: pos=9891.65 v=51.814 state=Accelerating
+[t=299] Leader: pos= 10729 v=5.025 state=Braking | Follower: pos=9947.17 v=55.515 state=Accelerating
+[t=300] Leader: pos= 10729 v=    0 state=Braking | Follower: pos=10002.7 v=55.515 state=Cruising
+[t=301] Leader: pos= 10729 v=    0 state=Stopped | Follower: pos=10053.1 v=50.466 state=Braking
+[t=302] Leader: pos=10732.7 v=3.701 state=Accelerating | Follower: pos=10098.6 v=45.417 state=Braking
+[t=303] Leader: pos=10740.1 v=7.402 state=Accelerating | Follower: pos=10138.9 v=40.368 state=Braking
+[t=304] Leader: pos=10751.2 v=11.103 state=Accelerating | Follower: pos=10174.3 v=35.319 state=Braking
+[t=305] Leader: pos= 10766 v=14.804 state=Accelerating | Follower: pos=10204.5 v=30.27 state=Braking
+[t=306] Leader: pos=10784.5 v=18.505 state=Accelerating | Follower: pos=10229.7 v=25.221 state=Braking
+[t=307] Leader: pos=10806.7 v=22.206 state=Accelerating | Follower: pos=10249.9 v=20.172 state=Braking
+[t=308] Leader: pos=10832.6 v=25.907 state=Accelerating | Follower: pos= 10265 v=15.123 state=Braking
+[t=309] Leader: pos=10862.2 v=29.608 state=Accelerating | Follower: pos=10275.1 v=10.074 state=Braking
+[t=310] Leader: pos=10895.5 v=33.309 state=Accelerating | Follower: pos=10280.1 v=5.025 state=Braking
+[t=311] Leader: pos=10932.5 v=37.01 state=Accelerating | Follower: pos=10280.1 v=    0 state=Braking
+[t=312] Leader: pos=10973.2 v=40.711 state=Accelerating | Follower: pos=10280.1 v=    0 state=Stopped
+[t=313] Leader: pos=11017.6 v=44.412 state=Accelerating | Follower: pos=10283.8 v=3.701 state=Accelerating
+[t=314] Leader: pos=11065.7 v=48.113 state=Accelerating | Follower: pos=10291.2 v=7.402 state=Accelerating
+[t=315] Leader: pos=11117.6 v=51.814 state=Accelerating | Follower: pos=10302.3 v=11.103 state=Accelerating
+[t=316] Leader: pos=11173.1 v=55.515 state=Accelerating | Follower: pos=10317.1 v=14.804 state=Accelerating
+[t=317] Leader: pos=11228.6 v=55.515 state=Cruising | Follower: pos=10335.7 v=18.505 state=Accelerating
+[t=318] Leader: pos=11279.1 v=50.466 state=Braking | Follower: pos=10357.9 v=22.206 state=Accelerating
+[t=319] Leader: pos=11324.5 v=45.417 state=Braking | Follower: pos=10383.8 v=25.907 state=Accelerating
+[t=320] Leader: pos=11364.8 v=40.368 state=Braking | Follower: pos=10413.4 v=29.608 state=Accelerating
+[t=321] Leader: pos=11400.2 v=35.319 state=Braking | Follower: pos=10446.7 v=33.309 state=Accelerating
+[t=322] Leader: pos=11430.4 v=30.27 state=Braking | Follower: pos=10483.7 v=37.01 state=Accelerating
+[t=323] Leader: pos=11455.7 v=25.221 state=Braking | Follower: pos=10524.4 v=40.711 state=Accelerating
+[t=324] Leader: pos=11475.8 v=20.172 state=Braking | Follower: pos=10568.8 v=44.412 state=Accelerating
+[t=325] Leader: pos=11490.9 v=15.123 state=Braking | Follower: pos=10616.9 v=48.113 state=Accelerating
+[t=326] Leader: pos= 11501 v=10.074 state=Braking | Follower: pos=10668.7 v=51.814 state=Accelerating
+[t=327] Leader: pos= 11506 v=5.025 state=Braking | Follower: pos=10724.3 v=55.515 state=Accelerating
+[t=328] Leader: pos= 11506 v=    0 state=Braking | Follower: pos=10779.8 v=55.515 state=Cruising
+[t=329] Leader: pos= 11506 v=    0 state=Stopped | Follower: pos=10830.2 v=50.466 state=Braking
+[t=330] Leader: pos=11509.7 v=3.701 state=Accelerating | Follower: pos=10875.7 v=45.417 state=Braking
+[t=331] Leader: pos=11517.2 v=7.402 state=Accelerating | Follower: pos= 10916 v=40.368 state=Braking
+[t=332] Leader: pos=11528.3 v=11.103 state=Accelerating | Follower: pos=10951.3 v=35.319 state=Braking
+[t=333] Leader: pos=11543.1 v=14.804 state=Accelerating | Follower: pos=10981.6 v=30.27 state=Braking
+[t=334] Leader: pos=11561.6 v=18.505 state=Accelerating | Follower: pos=11006.8 v=25.221 state=Braking
+[t=335] Leader: pos=11583.8 v=22.206 state=Accelerating | Follower: pos= 11027 v=20.172 state=Braking
+[t=336] Leader: pos=11609.7 v=25.907 state=Accelerating | Follower: pos=11042.1 v=15.123 state=Braking
+[t=337] Leader: pos=11639.3 v=29.608 state=Accelerating | Follower: pos=11052.2 v=10.074 state=Braking
+[t=338] Leader: pos=11672.6 v=33.309 state=Accelerating | Follower: pos=11057.2 v=5.025 state=Braking
+[t=339] Leader: pos=11709.6 v=37.01 state=Accelerating | Follower: pos=11057.2 v=    0 state=Braking
+[t=340] Leader: pos=11750.3 v=40.711 state=Accelerating | Follower: pos=11057.2 v=    0 state=Stopped
+[t=341] Leader: pos=11794.7 v=44.412 state=Accelerating | Follower: pos=11060.9 v=3.701 state=Accelerating
+[t=342] Leader: pos=11842.8 v=48.113 state=Accelerating | Follower: pos=11068.3 v=7.402 state=Accelerating
+[t=343] Leader: pos=11894.7 v=51.814 state=Accelerating | Follower: pos=11079.4 v=11.103 state=Accelerating
+[t=344] Leader: pos=11950.2 v=55.515 state=Accelerating | Follower: pos=11094.2 v=14.804 state=Accelerating
+[t=345] Leader: pos=12005.7 v=55.515 state=Cruising | Follower: pos=11112.7 v=18.505 state=Accelerating
+[t=346] Leader: pos=12056.1 v=50.466 state=Braking | Follower: pos=11134.9 v=22.206 state=Accelerating
+[t=347] Leader: pos=12101.6 v=45.417 state=Braking | Follower: pos=11160.9 v=25.907 state=Accelerating
+[t=348] Leader: pos=12141.9 v=40.368 state=Braking | Follower: pos=11190.5 v=29.608 state=Accelerating
+[t=349] Leader: pos=12177.3 v=35.319 state=Braking | Follower: pos=11223.8 v=33.309 state=Accelerating
+[t=350] Leader: pos=12207.5 v=30.27 state=Braking | Follower: pos=11260.8 v=37.01 state=Accelerating
+[t=351] Leader: pos=12232.7 v=25.221 state=Braking | Follower: pos=11301.5 v=40.711 state=Accelerating
+[t=352] Leader: pos=12252.9 v=20.172 state=Braking | Follower: pos=11345.9 v=44.412 state=Accelerating
+[t=353] Leader: pos= 12268 v=15.123 state=Braking | Follower: pos= 11394 v=48.113 state=Accelerating
+[t=354] Leader: pos=12278.1 v=10.074 state=Braking | Follower: pos=11445.8 v=51.814 state=Accelerating
+[t=355] Leader: pos=12283.1 v=5.025 state=Braking | Follower: pos=11501.3 v=55.515 state=Accelerating
+[t=356] Leader: pos=12283.1 v=    0 state=Braking | Follower: pos=11556.9 v=55.515 state=Cruising
+[t=357] Leader: pos=12283.1 v=    0 state=Stopped | Follower: pos=11607.3 v=50.466 state=Braking
+[t=358] Leader: pos=12286.8 v=3.701 state=Accelerating | Follower: pos=11652.7 v=45.417 state=Braking
+[t=359] Leader: pos=12294.2 v=7.402 state=Accelerating | Follower: pos=11693.1 v=40.368 state=Braking
+[t=360] Leader: pos=12305.3 v=11.103 state=Accelerating | Follower: pos=11728.4 v=35.319 state=Braking
+[t=361] Leader: pos=12320.1 v=14.804 state=Accelerating | Follower: pos=11758.7 v=30.27 state=Braking
+[t=362] Leader: pos=12338.7 v=18.505 state=Accelerating | Follower: pos=11783.9 v=25.221 state=Braking
+[t=363] Leader: pos=12360.9 v=22.206 state=Accelerating | Follower: pos=11804.1 v=20.172 state=Braking
+[t=364] Leader: pos=12386.8 v=25.907 state=Accelerating | Follower: pos=11819.2 v=15.123 state=Braking
+[t=365] Leader: pos=12416.4 v=29.608 state=Accelerating | Follower: pos=11829.3 v=10.074 state=Braking
+[t=366] Leader: pos=12449.7 v=33.309 state=Accelerating | Follower: pos=11834.3 v=5.025 state=Braking
+[t=367] Leader: pos=12486.7 v=37.01 state=Accelerating | Follower: pos=11834.3 v=    0 state=Braking
+[t=368] Leader: pos=12527.4 v=40.711 state=Accelerating | Follower: pos=11834.3 v=    0 state=Stopped
+[t=369] Leader: pos=12571.8 v=44.412 state=Accelerating | Follower: pos= 11838 v=3.701 state=Accelerating
+[t=370] Leader: pos=12619.9 v=48.113 state=Accelerating | Follower: pos=11845.4 v=7.402 state=Accelerating
+[t=371] Leader: pos=12671.7 v=51.814 state=Accelerating | Follower: pos=11856.5 v=11.103 state=Accelerating
+[t=372] Leader: pos=12727.3 v=55.515 state=Accelerating | Follower: pos=11871.3 v=14.804 state=Accelerating
+[t=373] Leader: pos=12782.8 v=55.515 state=Cruising | Follower: pos=11889.8 v=18.505 state=Accelerating
+[t=374] Leader: pos=12833.2 v=50.466 state=Braking | Follower: pos= 11912 v=22.206 state=Accelerating
+[t=375] Leader: pos=12878.7 v=45.417 state=Braking | Follower: pos=11937.9 v=25.907 state=Accelerating
+[t=376] Leader: pos= 12919 v=40.368 state=Braking | Follower: pos=11967.6 v=29.608 state=Accelerating
+[t=377] Leader: pos=12954.3 v=35.319 state=Braking | Follower: pos=12000.9 v=33.309 state=Accelerating
+[t=378] Leader: pos=12984.6 v=30.27 state=Braking | Follower: pos=12037.9 v=37.01 state=Accelerating
+[t=379] Leader: pos=13009.8 v=25.221 state=Braking | Follower: pos=12078.6 v=40.711 state=Accelerating
+[t=380] Leader: pos= 13030 v=20.172 state=Braking | Follower: pos= 12123 v=44.412 state=Accelerating
+[t=381] Leader: pos=13045.1 v=15.123 state=Braking | Follower: pos=12171.1 v=48.113 state=Accelerating
+[t=382] Leader: pos=13055.2 v=10.074 state=Braking | Follower: pos=12222.9 v=51.814 state=Accelerating
+[t=383] Leader: pos=13060.2 v=5.025 state=Braking | Follower: pos=12278.4 v=55.515 state=Accelerating
+[t=384] Leader: pos=13060.2 v=    0 state=Braking | Follower: pos= 12334 v=55.515 state=Cruising
+[t=385] Leader: pos=13060.2 v=    0 state=Stopped | Follower: pos=12384.4 v=50.466 state=Braking
+[t=386] Leader: pos=13063.9 v=3.701 state=Accelerating | Follower: pos=12429.8 v=45.417 state=Braking
+[t=387] Leader: pos=13071.3 v=7.402 state=Accelerating | Follower: pos=12470.2 v=40.368 state=Braking
+[t=388] Leader: pos=13082.4 v=11.103 state=Accelerating | Follower: pos=12505.5 v=35.319 state=Braking
+[t=389] Leader: pos=13097.2 v=14.804 state=Accelerating | Follower: pos=12535.8 v=30.27 state=Braking
+[t=390] Leader: pos=13115.7 v=18.505 state=Accelerating | Follower: pos= 12561 v=25.221 state=Braking
+[t=391] Leader: pos=13137.9 v=22.206 state=Accelerating | Follower: pos=12581.2 v=20.172 state=Braking
+[t=392] Leader: pos=13163.9 v=25.907 state=Accelerating | Follower: pos=12596.3 v=15.123 state=Braking
+[t=393] Leader: pos=13193.5 v=29.608 state=Accelerating | Follower: pos=12606.4 v=10.074 state=Braking
+[t=394] Leader: pos=13226.8 v=33.309 state=Accelerating | Follower: pos=12611.4 v=5.025 state=Braking
+[t=395] Leader: pos=13263.8 v=37.01 state=Accelerating | Follower: pos=12611.4 v=    0 state=Braking
+[t=396] Leader: pos=13304.5 v=40.711 state=Accelerating | Follower: pos=12611.4 v=    0 state=Stopped
+[t=397] Leader: pos=13348.9 v=44.412 state=Accelerating | Follower: pos=12615.1 v=3.701 state=Accelerating
+[t=398] Leader: pos= 13397 v=48.113 state=Accelerating | Follower: pos=12622.5 v=7.402 state=Accelerating
+[t=399] Leader: pos=13448.8 v=51.814 state=Accelerating | Follower: pos=12633.6 v=11.103 state=Accelerating
+
+==== TEST SUMMARY ====
+Saw Braking: YES
+Saw Stopped: YES
+Saw Waiting: YES
+Minimum distance observed: 203.701
+[0;32m[       OK ] [mRealisticFlowTest.SingleRealisticTrafficFlow (1 ms)
+[0;32m[----------] [m1 test from RealisticFlowTest (1 ms total)
+
+[0;32m[----------] [m3 tests from SingleTrainJourneyTest
+[0;32m[ RUN      ] [mSingleTrainJourneyTest.CompleteJourneyWithEstimation
+
+╔════════════════════════════════════════════════╗
+║     RAILWAY SIMULATION - JOURNEY PLANNER       ║
+╚════════════════════════════════════════════════╝
+
+Train: Express (ID: 1)
+Mass: 80 tons
+Max Accel: 356 kN | Max Brake: 500 kN
+
+Route: CityA → CityB
+Path segments: 1
+
+─────────────────────────────────────────────────
+ESTIMATED TRAVEL TIME CALCULATION:
+─────────────────────────────────────────────────
+  CityA → CityB | 50 km @ 250 km/h ⇒ 12 min
+
+Estimated travel time (ideal): 12 minutes
+(Assumes instant acceleration to speed limit)
+
+─────────────────────────────────────────────────
+SIMULATION START
+─────────────────────────────────────────────────
+
+[  0.00s] Accelerating  | v=4.40   m/s | pos=4.40     m | [🚆·····························]
+[10.00 s] Accelerating  | v=48.41  m/s | pos=290.47   m | [🚆·····························]
+
+>>> Reached cruising speed: 250.00 km/h
+
+[20.00 s] Cruising      | v=69.44  m/s | pos=944.79   m | [🚆·····························]
+[30.00 s] Cruising      | v=69.44  m/s | pos=1639.23  m | [🚆·····························]
+[40.00 s] Cruising      | v=69.44  m/s | pos=2333.68  m | [·🚆····························]
+[50.00 s] Cruising      | v=69.44  m/s | pos=3028.12  m | [·🚆····························]
+[60.00 s] Cruising      | v=69.44  m/s | pos=3722.56  m | [··🚆···························]
+[70.00 s] Cruising      | v=69.44  m/s | pos=4417.01  m | [··🚆···························]
+[80.00 s] Cruising      | v=69.44  m/s | pos=5111.45  m | [···🚆··························]
+[90.00 s] Cruising      | v=69.44  m/s | pos=5805.90  m | [···🚆··························]
+[100.00s] Cruising      | v=69.44  m/s | pos=6500.34  m | [···🚆··························]
+[110.00s] Cruising      | v=69.44  m/s | pos=7194.79  m | [····🚆·························]
+[120.00s] Cruising      | v=69.44  m/s | pos=7889.23  m | [····🚆·························]
+[130.00s] Cruising      | v=69.44  m/s | pos=8583.68  m | [·····🚆························]
+[140.00s] Cruising      | v=69.44  m/s | pos=9278.12  m | [·····🚆························]
+[150.00s] Cruising      | v=69.44  m/s | pos=9972.56  m | [·····🚆························]
+[160.00s] Cruising      | v=69.44  m/s | pos=10667.01 m | [······🚆·······················]
+[170.00s] Cruising      | v=69.44  m/s | pos=11361.45 m | [······🚆·······················]
+[180.00s] Cruising      | v=69.44  m/s | pos=12055.90 m | [·······🚆······················]
+[190.00s] Cruising      | v=69.44  m/s | pos=12750.34 m | [·······🚆······················]
+[200.00s] Cruising      | v=69.44  m/s | pos=13444.79 m | [········🚆·····················]
+[210.00s] Cruising      | v=69.44  m/s | pos=14139.23 m | [········🚆·····················]
+[220.00s] Cruising      | v=69.44  m/s | pos=14833.68 m | [········🚆·····················]
+[230.00s] Cruising      | v=69.44  m/s | pos=15528.12 m | [·········🚆····················]
+[240.00s] Cruising      | v=69.44  m/s | pos=16222.56 m | [·········🚆····················]
+[250.00s] Cruising      | v=69.44  m/s | pos=16917.01 m | [··········🚆···················]
+[260.00s] Cruising      | v=69.44  m/s | pos=17611.45 m | [··········🚆···················]
+[270.00s] Cruising      | v=69.44  m/s | pos=18305.90 m | [··········🚆···················]
+[280.00s] Cruising      | v=69.44  m/s | pos=19000.34 m | [···········🚆··················]
+[290.00s] Cruising      | v=69.44  m/s | pos=19694.79 m | [···········🚆··················]
+[300.00s] Cruising      | v=69.44  m/s | pos=20389.23 m | [············🚆·················]
+[310.00s] Cruising      | v=69.44  m/s | pos=21083.68 m | [············🚆·················]
+[320.00s] Cruising      | v=69.44  m/s | pos=21778.12 m | [·············🚆················]
+[330.00s] Cruising      | v=69.44  m/s | pos=22472.56 m | [·············🚆················]
+[340.00s] Cruising      | v=69.44  m/s | pos=23167.01 m | [·············🚆················]
+[350.00s] Cruising      | v=69.44  m/s | pos=23861.45 m | [··············🚆···············]
+[360.00s] Cruising      | v=69.44  m/s | pos=24555.90 m | [··············🚆···············]
+[370.00s] Cruising      | v=69.44  m/s | pos=25250.34 m | [···············🚆··············]
+[380.00s] Cruising      | v=69.44  m/s | pos=25944.79 m | [···············🚆··············]
+[390.00s] Cruising      | v=69.44  m/s | pos=26639.23 m | [···············🚆··············]
+[400.00s] Cruising      | v=69.44  m/s | pos=27333.68 m | [················🚆·············]
+[410.00s] Cruising      | v=69.44  m/s | pos=28028.12 m | [················🚆·············]
+[420.00s] Cruising      | v=69.44  m/s | pos=28722.56 m | [·················🚆············]
+[430.00s] Cruising      | v=69.44  m/s | pos=29417.01 m | [·················🚆············]
+[440.00s] Cruising      | v=69.44  m/s | pos=30111.45 m | [··················🚆···········]
+[450.00s] Cruising      | v=69.44  m/s | pos=30805.90 m | [··················🚆···········]
+[460.00s] Cruising      | v=69.44  m/s | pos=31500.34 m | [··················🚆···········]
+[470.00s] Cruising      | v=69.44  m/s | pos=32194.79 m | [···················🚆··········]
+[480.00s] Cruising      | v=69.44  m/s | pos=32889.23 m | [···················🚆··········]
+[490.00s] Cruising      | v=69.44  m/s | pos=33583.68 m | [····················🚆·········]
+[500.00s] Cruising      | v=69.44  m/s | pos=34278.12 m | [····················🚆·········]
+[510.00s] Cruising      | v=69.44  m/s | pos=34972.56 m | [····················🚆·········]
+[520.00s] Cruising      | v=69.44  m/s | pos=35667.01 m | [·····················🚆········]
+[530.00s] Cruising      | v=69.44  m/s | pos=36361.45 m | [·····················🚆········]
+[540.00s] Cruising      | v=69.44  m/s | pos=37055.90 m | [······················🚆·······]
+[550.00s] Cruising      | v=69.44  m/s | pos=37750.34 m | [······················🚆·······]
+[560.00s] Cruising      | v=69.44  m/s | pos=38444.79 m | [·······················🚆······]
+[570.00s] Cruising      | v=69.44  m/s | pos=39139.23 m | [·······················🚆······]
+[580.00s] Cruising      | v=69.44  m/s | pos=39833.68 m | [·······················🚆······]
+[590.00s] Cruising      | v=69.44  m/s | pos=40528.12 m | [························🚆·····]
+[600.00s] Cruising      | v=69.44  m/s | pos=41222.56 m | [························🚆·····]
+[610.00s] Cruising      | v=69.44  m/s | pos=41917.01 m | [·························🚆····]
+[620.00s] Cruising      | v=69.44  m/s | pos=42611.45 m | [·························🚆····]
+[630.00s] Cruising      | v=69.44  m/s | pos=43305.90 m | [·························🚆····]
+[640.00s] Cruising      | v=69.44  m/s | pos=44000.34 m | [··························🚆···]
+[650.00s] Cruising      | v=69.44  m/s | pos=44694.79 m | [··························🚆···]
+[660.00s] Cruising      | v=69.44  m/s | pos=45389.23 m | [···························🚆··]
+[670.00s] Cruising      | v=69.44  m/s | pos=46083.68 m | [···························🚆··]
+[680.00s] Cruising      | v=69.44  m/s | pos=46778.12 m | [····························🚆·]
+[690.00s] Cruising      | v=69.44  m/s | pos=47472.56 m | [····························🚆·]
+[700.00s] Cruising      | v=69.44  m/s | pos=48167.01 m | [····························🚆·]
+[710.00s] Cruising      | v=69.44  m/s | pos=48861.45 m | [·····························🚆]
+[720.00s] Cruising      | v=69.44  m/s | pos=49555.90 m | [·····························🚆]
+
+>>> Initiating braking (distance remaining: 374.66 m)
+
+[730.00s] Braking       | v=12.75  m/s | pos=49966.89 m | [·····························🚆]
+
+─────────────────────────────────────────────────
+JOURNEY COMPLETE ✓
+─────────────────────────────────────────────────
+Estimated time: 12.00 min
+Actual time:    12.25 min
+Difference:     +0.25 min (due to acceleration/braking)
+Final position: 50.00 km
+Final velocity: 0.00 m/s
+
+[0;32m[       OK ] [mSingleTrainJourneyTest.CompleteJourneyWithEstimation (0 ms)
+[0;32m[ RUN      ] [mSingleTrainJourneyTest.AllStateTransitions
+
+╔════════════════════════════════════════════════╗
+║         STATE TRANSITION TEST                  ║
+╚════════════════════════════════════════════════╝
+
+✓ Idle state
+✓ Accelerating state
+✓ Cruising state
+✓ Braking state
+✓ Stopped state
+
+[0;32m[       OK ] [mSingleTrainJourneyTest.AllStateTransitions (0 ms)
+[0;32m[ RUN      ] [mSingleTrainJourneyTest.PhysicsAccuracyValidation
+
+╔════════════════════════════════════════════════╗
+║       PHYSICS ACCURACY VALIDATION              ║
+╚════════════════════════════════════════════════╝
+
+After 10 seconds of acceleration:
+  Position: 0.00 → 242.05 m
+  Velocity: 0.00 → 44.01 m/s
+  Distance traveled: 242.05 m
+
+[0;32m[       OK ] [mSingleTrainJourneyTest.PhysicsAccuracyValidation (0 ms)
+[0;32m[----------] [m3 tests from SingleTrainJourneyTest (0 ms total)
+
+[0;32m[----------] [m1 test from ComplexPathfindingTest
+[0;32m[ RUN      ] [mComplexPathfindingTest.MultipleRoutesOptimalSelection
+
+╔════════════════════════════════════════════════╗
+║   COMPLEX PATHFINDING TEST (2 ROUTES)          ║
+╚════════════════════════════════════════════════╝
+
+Route 1: A → B → D (10+10 km @ 100 km/h) = 12 min
+Route 2: A → C → D (25+10 km @ 250/100 km/h) = 12 min
+
+Selected path:
+  CityA → CityC (25.00 km @ 250.00 km/h) = 6.00 min
+  CityC → CityD (10.00 km @ 100.00 km/h) = 6.00 min
+
+Total estimated time: 12.00 minutes
+
+[0;32m[       OK ] [mComplexPathfindingTest.MultipleRoutesOptimalSelection (0 ms)
+[0;32m[----------] [m1 test from ComplexPathfindingTest (0 ms total)
+
+[0;32m[----------] [m1 test from MultiHopJourneyTest
+[0;32m[ RUN      ] [mMultiHopJourneyTest.ThreeStationJourney
+
+╔════════════════════════════════════════════════╗
+║       MULTI-HOP JOURNEY TEST (A→B→C)           ║
+╚════════════════════════════════════════════════╝
+
+Path:
+  Segment 1: CityA → CityB (30.00 km @ 200.00 km/h) = 9.00 min
+  Segment 2: CityB → CityC (20.00 km @ 150.00 km/h) = 8.00 min
+
+Total estimated time: 17.00 minutes
+
+[0;32m[       OK ] [mMultiHopJourneyTest.ThreeStationJourney (0 ms)
+[0;32m[----------] [m1 test from MultiHopJourneyTest (0 ms total)
+
+[0;32m[----------] [m1 test from NetworkTest
+[0;32m[ RUN      ] [mNetworkTest.ComplexNetworkStructure
+
+╔════════════════════════════════════════════════╗
+║       COMPLEX NETWORK STRUCTURE TEST           ║
+╚════════════════════════════════════════════════╝
+
+Network: 5 cities, 7 rails
+Pathfinding A → E:
+  CityA → CityC (30.00 km)
+  CityC → CityE (35.00 km)
+
+Path length: 2 segments
+Estimated time: 17.75 minutes
+
+[0;32m[       OK ] [mNetworkTest.ComplexNetworkStructure (0 ms)
+[0;32m[----------] [m1 test from NetworkTest (0 ms total)
+
+[0;32m[----------] [m17 tests from GraphTest
+[0;32m[ RUN      ] [mGraphTest.DefaultConstructor
+[0;32m[       OK ] [mGraphTest.DefaultConstructor (0 ms)
+[0;32m[ RUN      ] [mGraphTest.AddSingleNode
+[0;32m[       OK ] [mGraphTest.AddSingleNode (0 ms)
+[0;32m[ RUN      ] [mGraphTest.AddDuplicateNodeByName
+[0;32m[       OK ] [mGraphTest.AddDuplicateNodeByName (0 ms)
+[0;32m[ RUN      ] [mGraphTest.GetNodeNonExistent
+[0;32m[       OK ] [mGraphTest.GetNodeNonExistent (0 ms)
+[0;32m[ RUN      ] [mGraphTest.AddRailBetweenTwoNodes
+[0;32m[       OK ] [mGraphTest.AddRailBetweenTwoNodes (0 ms)
+[0;32m[ RUN      ] [mGraphTest.AddRailFailsIfNodeMissing
+[0;32m[       OK ] [mGraphTest.AddRailFailsIfNodeMissing (0 ms)
+[0;32m[ RUN      ] [mGraphTest.GetRailsFromNode
+[0;32m[       OK ] [mGraphTest.GetRailsFromNode (0 ms)
+[0;32m[ RUN      ] [mGraphTest.GetNeighbors
+[0;32m[       OK ] [mGraphTest.GetNeighbors (0 ms)
+[0;32m[ RUN      ] [mGraphTest.ValidationFailsWithInvalidNode
+[0;32m[       OK ] [mGraphTest.ValidationFailsWithInvalidNode (0 ms)
+[0;32m[ RUN      ] [mGraphTest.InvalidRailIsIgnored
+[0;32m[       OK ] [mGraphTest.InvalidRailIsIgnored (0 ms)
+[0;32m[ RUN      ] [mGraphTest.ClearGraph
+[0;32m[       OK ] [mGraphTest.ClearGraph (0 ms)
+[0;32m[ RUN      ] [mGraphTest.AddNullNodeIsIgnored
+[0;32m[       OK ] [mGraphTest.AddNullNodeIsIgnored (0 ms)
+[0;32m[ RUN      ] [mGraphTest.AddNullRailIsIgnored
+[0;32m[       OK ] [mGraphTest.AddNullRailIsIgnored (0 ms)
+[0;32m[ RUN      ] [mGraphTest.GetRailsFromIsolatedNode
+[0;32m[       OK ] [mGraphTest.GetRailsFromIsolatedNode (0 ms)
+[0;32m[ RUN      ] [mGraphTest.GetNeighborsFromIsolatedNode
+[0;32m[       OK ] [mGraphTest.GetNeighborsFromIsolatedNode (0 ms)
+[0;32m[ RUN      ] [mGraphTest.GetRailsFromUnknownNode
+[0;32m[       OK ] [mGraphTest.GetRailsFromUnknownNode (0 ms)
+[0;32m[ RUN      ] [mGraphTest.ClearRemovesAdjacency
+[0;32m[       OK ] [mGraphTest.ClearRemovesAdjacency (0 ms)
+[0;32m[----------] [m17 tests from GraphTest (0 ms total)
+
+[0;32m[----------] [m11 tests from NodeTest
+[0;32m[ RUN      ] [mNodeTest.DefaultConstructor
+[0;32m[       OK ] [mNodeTest.DefaultConstructor (0 ms)
+[0;32m[ RUN      ] [mNodeTest.ParameterizedConstructor
+[0;32m[       OK ] [mNodeTest.ParameterizedConstructor (0 ms)
+[0;32m[ RUN      ] [mNodeTest.ConstructorDefaultsToCity
+[0;32m[       OK ] [mNodeTest.ConstructorDefaultsToCity (0 ms)
+[0;32m[ RUN      ] [mNodeTest.JunctionTypeWorks
+[0;32m[       OK ] [mNodeTest.JunctionTypeWorks (0 ms)
+[0;32m[ RUN      ] [mNodeTest.CopyConstructor
+[0;32m[       OK ] [mNodeTest.CopyConstructor (0 ms)
+[0;32m[ RUN      ] [mNodeTest.AssignmentOperator
+[0;32m[       OK ] [mNodeTest.AssignmentOperator (0 ms)
+[0;32m[ RUN      ] [mNodeTest.SelfAssignment
+[0;32m[       OK ] [mNodeTest.SelfAssignment (0 ms)
+[0;32m[ RUN      ] [mNodeTest.IsValidEmptyName
+[0;32m[       OK ] [mNodeTest.IsValidEmptyName (0 ms)
+[0;32m[ RUN      ] [mNodeTest.IsValidWithName
+[0;32m[       OK ] [mNodeTest.IsValidWithName (0 ms)
+[0;32m[ RUN      ] [mNodeTest.GetTypeStringCity
+[0;32m[       OK ] [mNodeTest.GetTypeStringCity (0 ms)
+[0;32m[ RUN      ] [mNodeTest.GetTypeStringJunction
+[0;32m[       OK ] [mNodeTest.GetTypeStringJunction (0 ms)
+[0;32m[----------] [m11 tests from NodeTest (0 ms total)
+
+[0;32m[----------] [m17 tests from PathfindingTest
+[0;32m[ RUN      ] [mPathfindingTest.DirectConnection
+[0;32m[       OK ] [mPathfindingTest.DirectConnection (0 ms)
+[0;32m[ RUN      ] [mPathfindingTest.TwoHopPath
+[0;32m[       OK ] [mPathfindingTest.TwoHopPath (0 ms)
+[0;32m[ RUN      ] [mPathfindingTest.MultipleRoutesPicksShortest
+[0;32m[       OK ] [mPathfindingTest.MultipleRoutesPicksShortest (0 ms)
+[0;32m[ RUN      ] [mPathfindingTest.SpeedLimitAffectsCost
+[0;32m[       OK ] [mPathfindingTest.SpeedLimitAffectsCost (0 ms)
+[0;32m[ RUN      ] [mPathfindingTest.NoPathExists
+[0;32m[       OK ] [mPathfindingTest.NoPathExists (0 ms)
+[0;32m[ RUN      ] [mPathfindingTest.StartEqualsEnd
+[0;32m[       OK ] [mPathfindingTest.StartEqualsEnd (0 ms)
+[0;32m[ RUN      ] [mPathfindingTest.NullGraph
+[0;32m[       OK ] [mPathfindingTest.NullGraph (0 ms)
+[0;32m[ RUN      ] [mPathfindingTest.NullStartNode
+[0;32m[       OK ] [mPathfindingTest.NullStartNode (0 ms)
+[0;32m[ RUN      ] [mPathfindingTest.NullEndNode
+[0;32m[       OK ] [mPathfindingTest.NullEndNode (0 ms)
+[0;32m[ RUN      ] [mPathfindingTest.ComplexNetwork
+[0;32m[       OK ] [mPathfindingTest.ComplexNetwork (0 ms)
+[0;32m[ RUN      ] [mPathfindingTest.GetStrategyName
+[0;32m[       OK ] [mPathfindingTest.GetStrategyName (0 ms)
+[0;32m[ RUN      ] [mPathfindingTest.PathFinderDefaultConstructor
+[0;32m[       OK ] [mPathfindingTest.PathFinderDefaultConstructor (0 ms)
+[0;32m[ RUN      ] [mPathfindingTest.PathFinderWithStrategy
+[0;32m[       OK ] [mPathfindingTest.PathFinderWithStrategy (0 ms)
+[0;32m[ RUN      ] [mPathfindingTest.PathFinderSetStrategy
+[0;32m[       OK ] [mPathfindingTest.PathFinderSetStrategy (0 ms)
+[0;32m[ RUN      ] [mPathfindingTest.PathFinderFindPath
+[0;32m[       OK ] [mPathfindingTest.PathFinderFindPath (0 ms)
+[0;32m[ RUN      ] [mPathfindingTest.PathFinderNoStrategy
+[0;32m[       OK ] [mPathfindingTest.PathFinderNoStrategy (0 ms)
+[0;32m[ RUN      ] [mPathfindingTest.PathFinderSwitchStrategy
+[0;32m[       OK ] [mPathfindingTest.PathFinderSwitchStrategy (0 ms)
+[0;32m[----------] [m17 tests from PathfindingTest (0 ms total)
+
+[0;32m[----------] [m21 tests from PhysicsSystemTest
+[0;32m[ RUN      ] [mPhysicsSystemTest.TonsToKg
+[0;32m[       OK ] [mPhysicsSystemTest.TonsToKg (0 ms)
+[0;32m[ RUN      ] [mPhysicsSystemTest.KNtoN
+[0;32m[       OK ] [mPhysicsSystemTest.KNtoN (0 ms)
+[0;32m[ RUN      ] [mPhysicsSystemTest.KmhToMs
+[0;32m[       OK ] [mPhysicsSystemTest.KmhToMs (0 ms)
+[0;32m[ RUN      ] [mPhysicsSystemTest.KmToM
+[0;32m[       OK ] [mPhysicsSystemTest.KmToM (0 ms)
+[0;32m[ RUN      ] [mPhysicsSystemTest.MsToKmh
+[0;32m[       OK ] [mPhysicsSystemTest.MsToKmh (0 ms)
+[0;32m[ RUN      ] [mPhysicsSystemTest.CalculateFriction
+[0;32m[       OK ] [mPhysicsSystemTest.CalculateFriction (0 ms)
+[0;32m[ RUN      ] [mPhysicsSystemTest.CalculateFrictionNullTrain
+[0;32m[       OK ] [mPhysicsSystemTest.CalculateFrictionNullTrain (0 ms)
+[0;32m[ RUN      ] [mPhysicsSystemTest.CalculateNetForce
+[0;32m[       OK ] [mPhysicsSystemTest.CalculateNetForce (0 ms)
+[0;32m[ RUN      ] [mPhysicsSystemTest.CalculateNetForceZeroApplied
+[0;32m[       OK ] [mPhysicsSystemTest.CalculateNetForceZeroApplied (0 ms)
+[0;32m[ RUN      ] [mPhysicsSystemTest.CalculateBrakingDeceleration
+[0;32m[       OK ] [mPhysicsSystemTest.CalculateBrakingDeceleration (0 ms)
+[0;32m[ RUN      ] [mPhysicsSystemTest.CalculateBrakingDistance
+[0;32m[       OK ] [mPhysicsSystemTest.CalculateBrakingDistance (0 ms)
+[0;32m[ RUN      ] [mPhysicsSystemTest.BrakingDistanceAtRest
+[0;32m[       OK ] [mPhysicsSystemTest.BrakingDistanceAtRest (0 ms)
+[0;32m[ RUN      ] [mPhysicsSystemTest.BrakingDistanceAtLowSpeed
+[0;32m[       OK ] [mPhysicsSystemTest.BrakingDistanceAtLowSpeed (0 ms)
+[0;32m[ RUN      ] [mPhysicsSystemTest.UpdateVelocityAcceleration
+[0;32m[       OK ] [mPhysicsSystemTest.UpdateVelocityAcceleration (0 ms)
+[0;32m[ RUN      ] [mPhysicsSystemTest.UpdateVelocityMultipleTimesteps
+[0;32m[       OK ] [mPhysicsSystemTest.UpdateVelocityMultipleTimesteps (0 ms)
+[0;32m[ RUN      ] [mPhysicsSystemTest.UpdateVelocityNoNegative
+[0;32m[       OK ] [mPhysicsSystemTest.UpdateVelocityNoNegative (0 ms)
+[0;32m[ RUN      ] [mPhysicsSystemTest.UpdatePosition
+[0;32m[       OK ] [mPhysicsSystemTest.UpdatePosition (0 ms)
+[0;32m[ RUN      ] [mPhysicsSystemTest.UpdatePositionMultipleTimesteps
+[0;32m[       OK ] [mPhysicsSystemTest.UpdatePositionMultipleTimesteps (0 ms)
+[0;32m[ RUN      ] [mPhysicsSystemTest.UpdatePositionWithAcceleration
+[0;32m[       OK ] [mPhysicsSystemTest.UpdatePositionWithAcceleration (0 ms)
+[0;32m[ RUN      ] [mPhysicsSystemTest.UpdateVelocityNullTrain
+[0;32m[       OK ] [mPhysicsSystemTest.UpdateVelocityNullTrain (0 ms)
+[0;32m[ RUN      ] [mPhysicsSystemTest.UpdatePositionNullTrain
+[0;32m[       OK ] [mPhysicsSystemTest.UpdatePositionNullTrain (0 ms)
+[0;32m[----------] [m21 tests from PhysicsSystemTest (0 ms total)
+
+[0;32m[----------] [m15 tests from RailTest
+[0;32m[ RUN      ] [mRailTest.DefaultConstructor
+[0;32m[       OK ] [mRailTest.DefaultConstructor (0 ms)
+[0;32m[ RUN      ] [mRailTest.ParameterizedConstructor
+[0;32m[       OK ] [mRailTest.ParameterizedConstructor (0 ms)
+[0;32m[ RUN      ] [mRailTest.IsOccupiedInitiallyFalse
+[0;32m[       OK ] [mRailTest.IsOccupiedInitiallyFalse (0 ms)
+[0;32m[ RUN      ] [mRailTest.SetAndClearOccupied
+[0;32m[       OK ] [mRailTest.SetAndClearOccupied (0 ms)
+[0;32m[ RUN      ] [mRailTest.GetOtherNodeFromA
+[0;32m[       OK ] [mRailTest.GetOtherNodeFromA (0 ms)
+[0;32m[ RUN      ] [mRailTest.GetOtherNodeFromB
+[0;32m[       OK ] [mRailTest.GetOtherNodeFromB (0 ms)
+[0;32m[ RUN      ] [mRailTest.GetOtherNodeInvalidNode
+[0;32m[       OK ] [mRailTest.GetOtherNodeInvalidNode (0 ms)
+[0;32m[ RUN      ] [mRailTest.CopyConstructor
+[0;32m[       OK ] [mRailTest.CopyConstructor (0 ms)
+[0;32m[ RUN      ] [mRailTest.AssignmentOperator
+[0;32m[       OK ] [mRailTest.AssignmentOperator (0 ms)
+[0;32m[ RUN      ] [mRailTest.IsValidNullNodeA
+[0;32m[       OK ] [mRailTest.IsValidNullNodeA (0 ms)
+[0;32m[ RUN      ] [mRailTest.IsValidNullNodeB
+[0;32m[       OK ] [mRailTest.IsValidNullNodeB (0 ms)
+[0;32m[ RUN      ] [mRailTest.IsValidNegativeLength
+[0;32m[       OK ] [mRailTest.IsValidNegativeLength (0 ms)
+[0;32m[ RUN      ] [mRailTest.IsValidZeroLength
+[0;32m[       OK ] [mRailTest.IsValidZeroLength (0 ms)
+[0;32m[ RUN      ] [mRailTest.IsValidNegativeSpeedLimit
+[0;32m[       OK ] [mRailTest.IsValidNegativeSpeedLimit (0 ms)
+[0;32m[ RUN      ] [mRailTest.IsValidZeroSpeedLimit
+[0;32m[       OK ] [mRailTest.IsValidZeroSpeedLimit (0 ms)
+[0;32m[----------] [m15 tests from RailTest (0 ms total)
+
+[0;32m[----------] [m24 tests from TimeTest
+[0;32m[ RUN      ] [mTimeTest.DefaultConstructor
+[0;32m[       OK ] [mTimeTest.DefaultConstructor (0 ms)
+[0;32m[ RUN      ] [mTimeTest.ParameterizedConstructor
+[0;32m[       OK ] [mTimeTest.ParameterizedConstructor (0 ms)
+[0;32m[ RUN      ] [mTimeTest.ParseValidString
+[0;32m[       OK ] [mTimeTest.ParseValidString (0 ms)
+[0;32m[ RUN      ] [mTimeTest.ParseStringWithLeadingZeros
+[0;32m[       OK ] [mTimeTest.ParseStringWithLeadingZeros (0 ms)
+[0;32m[ RUN      ] [mTimeTest.ParseStringMidnight
+[0;32m[       OK ] [mTimeTest.ParseStringMidnight (0 ms)
+[0;32m[ RUN      ] [mTimeTest.ParseInvalidString
+[0;32m[       OK ] [mTimeTest.ParseInvalidString (0 ms)
+[0;32m[ RUN      ] [mTimeTest.ToMinutesConversion
+[0;32m[       OK ] [mTimeTest.ToMinutesConversion (0 ms)
+[0;32m[ RUN      ] [mTimeTest.ToStringFormatting
+[0;32m[       OK ] [mTimeTest.ToStringFormatting (0 ms)
+[0;32m[ RUN      ] [mTimeTest.ValidationValid
+[0;32m[       OK ] [mTimeTest.ValidationValid (0 ms)
+[0;32m[ RUN      ] [mTimeTest.ValidationInvalidHours
+[0;32m[       OK ] [mTimeTest.ValidationInvalidHours (0 ms)
+[0;32m[ RUN      ] [mTimeTest.ValidationInvalidMinutes
+[0;32m[       OK ] [mTimeTest.ValidationInvalidMinutes (0 ms)
+[0;32m[ RUN      ] [mTimeTest.EqualityOperator
+[0;32m[       OK ] [mTimeTest.EqualityOperator (0 ms)
+[0;32m[ RUN      ] [mTimeTest.InequalityOperator
+[0;32m[       OK ] [mTimeTest.InequalityOperator (0 ms)
+[0;32m[ RUN      ] [mTimeTest.LessThanOperator
+[0;32m[       OK ] [mTimeTest.LessThanOperator (0 ms)
+[0;32m[ RUN      ] [mTimeTest.LessThanOrEqualOperator
+[0;32m[       OK ] [mTimeTest.LessThanOrEqualOperator (0 ms)
+[0;32m[ RUN      ] [mTimeTest.GreaterThanOperator
+[0;32m[       OK ] [mTimeTest.GreaterThanOperator (0 ms)
+[0;32m[ RUN      ] [mTimeTest.GreaterThanOrEqualOperator
+[0;32m[       OK ] [mTimeTest.GreaterThanOrEqualOperator (0 ms)
+[0;32m[ RUN      ] [mTimeTest.AdditionOperator
+[0;32m[       OK ] [mTimeTest.AdditionOperator (0 ms)
+[0;32m[ RUN      ] [mTimeTest.AdditionWithMinuteOverflow
+[0;32m[       OK ] [mTimeTest.AdditionWithMinuteOverflow (0 ms)
+[0;32m[ RUN      ] [mTimeTest.SubtractionOperator
+[0;32m[       OK ] [mTimeTest.SubtractionOperator (0 ms)
+[0;32m[ RUN      ] [mTimeTest.SubtractionWithMinuteBorrow
+[0;32m[       OK ] [mTimeTest.SubtractionWithMinuteBorrow (0 ms)
+[0;32m[ RUN      ] [mTimeTest.SubtractionNegativeResult
+[0;32m[       OK ] [mTimeTest.SubtractionNegativeResult (0 ms)
+[0;32m[ RUN      ] [mTimeTest.CopyConstructor
+[0;32m[       OK ] [mTimeTest.CopyConstructor (0 ms)
+[0;32m[ RUN      ] [mTimeTest.AssignmentOperator
+[0;32m[       OK ] [mTimeTest.AssignmentOperator (0 ms)
+[0;32m[----------] [m24 tests from TimeTest (0 ms total)
+
+[0;32m[----------] [m18 tests from TrainTest
+[0;32m[ RUN      ] [mTrainTest.DefaultConstructor
+[0;32m[       OK ] [mTrainTest.DefaultConstructor (0 ms)
+[0;32m[ RUN      ] [mTrainTest.ParameterizedConstructor
+[0;32m[       OK ] [mTrainTest.ParameterizedConstructor (0 ms)
+[0;32m[ RUN      ] [mTrainTest.SequentialIDGeneration
+[0;32m[       OK ] [mTrainTest.SequentialIDGeneration (0 ms)
+[0;32m[ RUN      ] [mTrainTest.CopyConstructor
+[0;32m[       OK ] [mTrainTest.CopyConstructor (0 ms)
+[0;32m[ RUN      ] [mTrainTest.AssignmentOperator
+[0;32m[       OK ] [mTrainTest.AssignmentOperator (0 ms)
+[0;32m[ RUN      ] [mTrainTest.VelocityGetterSetter
+[0;32m[       OK ] [mTrainTest.VelocityGetterSetter (0 ms)
+[0;32m[ RUN      ] [mTrainTest.PositionGetterSetter
+[0;32m[       OK ] [mTrainTest.PositionGetterSetter (0 ms)
+[0;32m[ RUN      ] [mTrainTest.PathManagement
+[0;32m[       OK ] [mTrainTest.PathManagement (0 ms)
+[0;32m[ RUN      ] [mTrainTest.AdvanceToNextRail
+[0;32m[       OK ] [mTrainTest.AdvanceToNextRail (0 ms)
+[0;32m[ RUN      ] [mTrainTest.ValidationEmptyName
+[0;32m[       OK ] [mTrainTest.ValidationEmptyName (0 ms)
+[0;32m[ RUN      ] [mTrainTest.ValidationZeroMass
+[0;32m[       OK ] [mTrainTest.ValidationZeroMass (0 ms)
+[0;32m[ RUN      ] [mTrainTest.ValidationNegativeMass
+[0;32m[       OK ] [mTrainTest.ValidationNegativeMass (0 ms)
+[0;32m[ RUN      ] [mTrainTest.ValidationZeroAccelForce
+[0;32m[       OK ] [mTrainTest.ValidationZeroAccelForce (0 ms)
+[0;32m[ RUN      ] [mTrainTest.ValidationZeroBrakeForce
+[0;32m[       OK ] [mTrainTest.ValidationZeroBrakeForce (0 ms)
+[0;32m[ RUN      ] [mTrainTest.ValidationEmptyStations
+[0;32m[       OK ] [mTrainTest.ValidationEmptyStations (0 ms)
+[0;32m[ RUN      ] [mTrainTest.StateManagement
+[0;32m[       OK ] [mTrainTest.StateManagement (0 ms)
+[0;32m[ RUN      ] [mTrainTest.ResetIDCounter
+[0;32m[       OK ] [mTrainTest.ResetIDCounter (0 ms)
+[0;32m[ RUN      ] [mTrainTest.GetNextID
+[0;32m[       OK ] [mTrainTest.GetNextID (0 ms)
+[0;32m[----------] [m18 tests from TrainTest (0 ms total)
+
+[0;32m[----------] [m13 tests from TrainFactoryTest
+[0;32m[ RUN      ] [mTrainFactoryTest.CreateValidTrain
+[0;32m[       OK ] [mTrainFactoryTest.CreateValidTrain (0 ms)
+[0;32m[ RUN      ] [mTrainFactoryTest.CreateMultipleTrainsSequentialID
+[0;32m[       OK ] [mTrainFactoryTest.CreateMultipleTrainsSequentialID (0 ms)
+[0;32m[ RUN      ] [mTrainFactoryTest.CreateNullNetwork
+[0;32m[       OK ] [mTrainFactoryTest.CreateNullNetwork (0 ms)
+[0;32m[ RUN      ] [mTrainFactoryTest.CreateEmptyName
+[0;32m[       OK ] [mTrainFactoryTest.CreateEmptyName (0 ms)
+[0;32m[ RUN      ] [mTrainFactoryTest.CreateNegativeMass
+[0;32m[       OK ] [mTrainFactoryTest.CreateNegativeMass (0 ms)
+[0;32m[ RUN      ] [mTrainFactoryTest.CreateZeroMass
+[0;32m[       OK ] [mTrainFactoryTest.CreateZeroMass (0 ms)
+[0;32m[ RUN      ] [mTrainFactoryTest.CreateNegativeFriction
+[0;32m[       OK ] [mTrainFactoryTest.CreateNegativeFriction (0 ms)
+[0;32m[ RUN      ] [mTrainFactoryTest.CreateZeroAccelForce
+[0;32m[       OK ] [mTrainFactoryTest.CreateZeroAccelForce (0 ms)
+[0;32m[ RUN      ] [mTrainFactoryTest.CreateZeroBrakeForce
+[0;32m[       OK ] [mTrainFactoryTest.CreateZeroBrakeForce (0 ms)
+[0;32m[ RUN      ] [mTrainFactoryTest.CreateInvalidDepartureStation
+[0;32m[       OK ] [mTrainFactoryTest.CreateInvalidDepartureStation (0 ms)
+[0;32m[ RUN      ] [mTrainFactoryTest.CreateInvalidArrivalStation
+[0;32m[       OK ] [mTrainFactoryTest.CreateInvalidArrivalStation (0 ms)
+[0;32m[ RUN      ] [mTrainFactoryTest.CreateInvalidDepartureTime
+[0;32m[       OK ] [mTrainFactoryTest.CreateInvalidDepartureTime (0 ms)
+[0;32m[ RUN      ] [mTrainFactoryTest.CreateInvalidStopDuration
+[0;32m[       OK ] [mTrainFactoryTest.CreateInvalidStopDuration (0 ms)
+[0;32m[----------] [m13 tests from TrainFactoryTest (0 ms total)
+
+[0;32m[----------] [m8 tests from TrainStateTest
+[0;32m[ RUN      ] [mTrainStateTest.IdleStateKeepsVelocityZero
+[0;32m[       OK ] [mTrainStateTest.IdleStateKeepsVelocityZero (0 ms)
+[0;32m[ RUN      ] [mTrainStateTest.AcceleratingStateIncreasesVelocity
+[0;32m[       OK ] [mTrainStateTest.AcceleratingStateIncreasesVelocity (0 ms)
+[0;32m[ RUN      ] [mTrainStateTest.AcceleratingStateRespectsSpeedLimit
+[0;32m[       OK ] [mTrainStateTest.AcceleratingStateRespectsSpeedLimit (0 ms)
+[0;32m[ RUN      ] [mTrainStateTest.StoppedStateKeepsVelocityZero
+[0;32m[       OK ] [mTrainStateTest.StoppedStateKeepsVelocityZero (0 ms)
+[0;32m[ RUN      ] [mTrainStateTest.StoppedStateExternalDurationManagement
+[0;32m[       OK ] [mTrainStateTest.StoppedStateExternalDurationManagement (0 ms)
+[0;32m[ RUN      ] [mTrainStateTest.StoppedStateDurationReachesZero
+[0;32m[       OK ] [mTrainStateTest.StoppedStateDurationReachesZero (0 ms)
+[0;32m[ RUN      ] [mTrainStateTest.StoppedStateDurationDoesNotGoNegative
+[0;32m[       OK ] [mTrainStateTest.StoppedStateDurationDoesNotGoNegative (0 ms)
+[0;32m[ RUN      ] [mTrainStateTest.StateTransitionAcceleratingToStopped
+[0;32m[       OK ] [mTrainStateTest.StateTransitionAcceleratingToStopped (0 ms)
+[0;32m[----------] [m8 tests from TrainStateTest (0 ms total)
+
+[0;32m[----------] [mGlobal test environment tear-down
+[0;32m[==========] [m151 tests from 14 test suites ran. (2 ms total)
+[0;32m[  PASSED  ] [m151 tests.
+
+[0;32mTests complete![0m

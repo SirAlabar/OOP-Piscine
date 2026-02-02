@@ -5,15 +5,29 @@ stateDiagram-v2
     Idle --> Accelerating : departure_time reached
     
     Accelerating --> Cruising : v >= speed_limit
-    Accelerating --> Braking : need to stop
-    Accelerating --> Waiting : rail occupied
     
-    Cruising --> Braking : approaching station
-    Cruising --> Waiting : rail occupied
+    %% Reação a tráfego
+    Accelerating --> Braking : leader stopped or too close
+    Cruising --> Braking : leader stopped or too close
     
-    Braking --> Stopped : v = 0 at station
+    %% Fim de trilho também exige frenagem
+    Cruising --> Braking : approaching station or rail end
     
-    Stopped --> Accelerating : after stop_duration
+    %% Fluxo de frenagem normal
+    Braking --> Stopped : v = 0 and gap safe
+    
+    %% Situação crítica durante frenagem
+    Braking --> Emergency : gap unsafe while braking
+    
+    %% Frenagem de emergência
+    Emergency --> Stopped : v = 0 after emergency stop
+    
+    %% Parado fisicamente
+    Stopped --> Waiting : leader still stopped
+    Stopped --> Accelerating : no blocking train
+    
+    %% Estado lógico de espera
+    Waiting --> Accelerating : leader moves or rail cleared
+    
+    %% Chegada final
     Stopped --> [*] : at final destination
-    
-    Waiting --> Accelerating : rail cleared

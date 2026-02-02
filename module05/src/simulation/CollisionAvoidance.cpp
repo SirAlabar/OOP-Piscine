@@ -1,11 +1,36 @@
 #include "simulation/CollisionAvoidance.hpp"
 #include "simulation/RiskData.hpp"
-#include "simulation/SafetyConstants.hpp"
 #include "core/Train.hpp"
 #include "core/Rail.hpp"
 #include "core/Graph.hpp"
 #include "simulation/PhysicsSystem.hpp"
 #include <limits>
+
+void CollisionAvoidance::refreshRailOccupancy(const std::vector<Train*>& trains, const Graph* network)
+{
+	if (!network)
+	{
+		return;
+	}
+	
+	// Clear all occupancy
+	for (Rail* rail : network->getRails())
+	{
+		if (rail)
+		{
+			rail->clearOccupied();
+		}
+	}
+	
+	// Mark current rail as occupied
+	for (Train* train : trains)
+	{
+		if (train && train->getCurrentRail())
+		{
+			train->getCurrentRail()->setOccupiedBy(train);
+		}
+	}
+}
 
 RiskData CollisionAvoidance::assessRisk(const Train* train, const std::vector<Train*>& allTrains) const
 {
@@ -37,65 +62,131 @@ RiskData CollisionAvoidance::assessRisk(const Train* train, const std::vector<Tr
 	return data;
 }
 
-Train* CollisionAvoidance::findLeaderOnRoute(const Train* train, const std::vector<Train*>& allTrains) const
+// ===== ROUTE-AWARE HELPER METHODS =====
+
+double CollisionAvoidance::calculateAbsoluteRoutePosition(const Train* train) const
 {
 	if (!train)
 	{
-		return nullptr;
+		return 0.0;
 	}
 	
-	Rail* myRail = train->getCurrentRail();
-	if (!myRail)
+	const auto& path = train->getPath();
+	size_t currentIndex = train->getCurrentRailIndex();
+	
+	// Sum distance of completed rails
+	double totalDistance = 0.0;
+	for (size_t i = 0; i < currentIndex && i < path.size(); ++i)
 	{
-		return nullptr;
+		totalDistance += PhysicsSystem::kmToM(path[i]->getLength());
 	}
 	
-	double myPos = train->getPosition();
-	Train* closest = nullptr;
-	double minDistance = std::numeric_limits<double>::infinity();
+	// Add current position on current rail
+	totalDistance += train->getPosition();
 	
-	// Check all trains on same rail
-	for (Train* other : allTrains)
-	{
-		if (!other || other == train)
-		{
-			continue;
-		}
-		
-		if (other->getCurrentRail() == myRail)
-		{
-			double otherPos = other->getPosition();
-			
-			// Leader is ahead of me
-			if (otherPos > myPos)
-			{
-				double distance = otherPos - myPos;
-				if (distance < minDistance)
-				{
-					minDistance = distance;
-					closest = other;
-				}
-			}
-		}
-	}
-	
-	return closest;
+	return totalDistance;
+}
+
+bool CollisionAvoidance::findRailIndexInPath(const Train* t, const Rail* rail, size_t startIndex, size_t& outIndex) const
+{
+    const auto& path = t->getPath();
+    for (size_t i = startIndex; i < path.size(); ++i)
+    {
+        if (path[i] == rail)
+        {
+            outIndex = i;
+            return true;
+        }
+    }
+    return false;
+}
+
+Train* CollisionAvoidance::findLeaderOnRoute(const Train* train, const std::vector<Train*>& allTrains) const
+{
+    if (!train || !train->getCurrentRail())
+    {
+        return nullptr;
+    }
+
+    Train* best = nullptr;
+    double bestGap = std::numeric_limits<double>::infinity();
+
+    for (Train* other : allTrains)
+    {
+        if (!other || other == train)
+        {
+            continue;
+        }
+
+        // Ignore trains that are not active yet
+        if (!other->getCurrentRail())
+        {
+            continue;
+        }
+
+        // Ignore trains behind or on different routes
+        double gap = calculateGap(train, other);
+
+        if (gap < 0.0)
+        {
+            continue;
+        }
+
+        if (gap < bestGap)
+        {
+            bestGap = gap;
+            best = other;
+        }
+    }
+
+    return best;
 }
 
 double CollisionAvoidance::calculateGap(const Train* train, const Train* leader) const
 {
-	if (!train || !leader)
-	{
-		return -1.0;
-	}
-	
-	// Gap on same rail
-	if (train->getCurrentRail() == leader->getCurrentRail())
-	{
-		return leader->getPosition() - train->getPosition();
-	}
-	
-	return -1.0;
+    if (!train || !leader)
+    {
+        return -1.0;
+    }
+
+    Rail* leaderRail = leader->getCurrentRail();
+    Rail* myRail = train->getCurrentRail();
+
+    if (!leaderRail || !myRail)
+    {
+        return -1.0;
+    }
+
+    const auto& myPath = train->getPath();
+    size_t myIndex = train->getCurrentRailIndex();
+
+    size_t leaderIndex = 0;
+
+    if (!findRailIndexInPath(train, leaderRail, myIndex, leaderIndex))
+    {
+        return -1.0;
+    }
+
+    // Case where both trains are on the same rail
+    if (leaderIndex == myIndex)
+    {
+        double gap = leader->getPosition() - train->getPosition();
+        return (gap > 0.0) ? gap : -1.0;
+    }
+
+    // Distance from the train position to the end of its current rail
+    double gap = PhysicsSystem::kmToM(myPath[myIndex]->getLength()) - train->getPosition();
+
+    // Add the full length of all intermediate rails between the two trains
+    for (size_t i = myIndex + 1; i < leaderIndex; ++i)
+    {
+        gap += PhysicsSystem::kmToM(myPath[i]->getLength());
+    }
+
+    // Add the position of the leader on its own rail
+    gap += leader->getPosition();
+
+    return (gap > 0.0) ? gap : -1.0;
 }
 
 double CollisionAvoidance::calculateClosingSpeed(const Train* train, const Train* leader) const
@@ -126,10 +217,17 @@ double CollisionAvoidance::calculateSafeDistance(const Train* train) const
 		return 100.0;
 	}
 	
-	double speedBasedMargin = train->getVelocity() * SafetyConstants::SAFE_TIME_HEADWAY;
-	double minClearance = SafetyConstants::MINIMUM_CLEARANCE;
+	// Base calculation: 2-second time headway
+	double timeHeadway = 2.0;  // seconds
+	double speedBasedMargin = train->getVelocity() * timeHeadway;
 	
-	return minClearance + speedBasedMargin;
+	// Add braking distance buffer
+	double brakingMargin = calculateBrakingDistance(train);
+	
+	// Minimum clearance
+	double minClearance = 50.0;  // meters
+	
+	return minClearance + speedBasedMargin + brakingMargin;
 }
 
 double CollisionAvoidance::getCurrentSpeedLimit(const Train* train) const
@@ -163,34 +261,4 @@ double CollisionAvoidance::getNextSpeedLimit(const Train* train) const
 	
 	Rail* nextRail = train->getPath()[nextIndex];
 	return PhysicsSystem::kmhToMs(nextRail->getSpeedLimit());
-}
-
-void CollisionAvoidance::refreshRailOccupancy(const std::vector<Train*>& trains, const Graph* network)
-{
-	if (!network)
-	{
-		return;
-	}
-	
-	for (Rail* rail : network->getRails())
-	{
-		if (rail)
-		{
-			rail->clearOccupied();
-		}
-	}
-	
-	for (Train* train : trains)
-	{
-		if (!train)
-		{
-			continue;
-		}
-		
-		Rail* currentRail = train->getCurrentRail();
-		if (currentRail)
-		{
-			currentRail->setOccupiedBy(train);
-		}
-	}
 }

@@ -5,6 +5,7 @@
 #include "core/Rail.hpp"
 #include "simulation/SimulationContext.hpp"
 #include "simulation/PhysicsSystem.hpp"
+#include "simulation/RiskData.hpp"
 
 void BrakingState::update(Train* train, double dt)
 {
@@ -29,46 +30,37 @@ void BrakingState::update(Train* train, double dt)
 
 ITrainState* BrakingState::checkTransition(Train* train, SimulationContext* ctx)
 {
-	if (!train || !ctx)
-	{
-		return nullptr;
-	}
-	
-	double railLength = ctx->getCurrentRailLength(train);
-	
-	if (train->getVelocity() <= 0.01 && train->getPosition() >= railLength * 0.99)
-	{
-		train->setVelocity(0.0);
-		train->setPosition(railLength);
-		
-		Rail* currentRail = train->getCurrentRail();
-		if (currentRail)
-		{
-			currentRail->clearOccupied();
-		}
-		
-		Node* arrivalNode = ctx->getCurrentArrivalNode(train);
-		
-		train->advanceToNextRail();
-		
-		if (!train->getCurrentRail())
-		{
-			return nullptr;
-		}
-		
-		train->setPosition(0.0);
-		
-		if (arrivalNode && arrivalNode->getType() == NodeType::CITY)
-		{
-			double stopSeconds = train->getStopDuration().toMinutes() * 60.0;
-			ctx->setStopDuration(train, stopSeconds);
-			return ctx->states().stopped();
-		}
-		
-		return ctx->states().accelerating();
-	}
-	
-	return nullptr;
+    if (!train || !ctx)
+    {
+        return nullptr;
+    }
+
+    const RiskData& risk = ctx->getRisk(train);
+
+    // 1. If the train is still moving, remain in Braking state
+    if (train->getVelocity() > 0.1)
+    {
+        // While braking, if the situation becomes critical, switch to Emergency
+        if (risk.hasLeader() && risk.gap < risk.safeDistance)
+        {
+            return ctx->states().emergency();
+        }
+
+        return nullptr;
+    }
+
+    // From this point on, velocity is considered to be effectively zero
+
+    train->setVelocity(0.0);
+
+    // 2. If there is a leader and the distance is not safe, go to Emergency
+    if (risk.hasLeader() && risk.gap < risk.safeDistance)
+    {
+        return ctx->states().emergency();
+    }
+
+    // 3. Otherwise, the train has stopped safely
+    return ctx->states().stopped();
 }
 
 std::string BrakingState::getName() const

@@ -2,11 +2,12 @@
 #include "core/Train.hpp"
 #include "simulation/SimulationContext.hpp"
 #include "patterns/states/StateRegistry.hpp"
+#include "simulation/RiskData.hpp"
 
 void StoppedState::update(Train* train, double dt)
 {
     (void)dt;
-    
+
 	if (!train)
 	{
 		return;
@@ -18,22 +19,30 @@ void StoppedState::update(Train* train, double dt)
 
 ITrainState* StoppedState::checkTransition(Train* train, SimulationContext* ctx)
 {
-	if (!train || !ctx)
-	{
-		return nullptr;
-	}
-	
-	// Decrement stop duration
-	bool expired = ctx->decrementStopDuration(train, 1.0);
-	
-	if (expired)
-	{
-		// Clear duration and transition to Accelerating
-		ctx->clearStopDuration(train);
-		return ctx->states().accelerating();
-	}
-	
-	return nullptr;
+    if (!train || !ctx)
+    {
+        return nullptr;
+    }
+
+    const RiskData& risk = ctx->getRisk(train);
+
+    // Ensure the train is fully stopped
+    train->setVelocity(0.0);
+
+    // If there is no leader ahead, movement can resume
+    if (!risk.hasLeader())
+    {
+        return ctx->states().accelerating();
+    }
+
+    // If the leader is still stopped, transition to Waiting state
+    if (risk.leader->getVelocity() < 0.1)
+    {
+        return ctx->states().waiting();
+    }
+
+    // Leader started moving again, resume movement
+    return ctx->states().accelerating();
 }
 
 std::string StoppedState::getName() const

@@ -5,6 +5,7 @@
 
 class Train;
 class Graph;
+class Rail;
 struct RiskData;
 
 class CollisionAvoidance
@@ -25,6 +26,11 @@ private:
 	double calculateSafeDistance(const Train* train) const;
 	double getCurrentSpeedLimit(const Train* train) const;
 	double getNextSpeedLimit(const Train* train) const;
+
+	// Route-aware helpers
+	double calculateAbsoluteRoutePosition(const Train* train) const;
+	// bool sharesRoute(const Train* train, const Train* other) const;
+    bool findRailIndexInPath(const Train* t, const Rail* rail, size_t startIndex, size_t& outIndex) const;
 };
 
 #endif
