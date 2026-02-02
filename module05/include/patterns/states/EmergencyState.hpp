@@ -10,7 +10,7 @@ public:
 	~EmergencyState() override = default;
 	
 	void update(Train* train, double dt) override;
-	ITrainState* checkTransition(Train* train, const SimulationContext* ctx) override;
+	ITrainState* checkTransition(Train* train, SimulationContext* ctx) override;
 	std::string getName() const override;
 };
 

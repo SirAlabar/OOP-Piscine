@@ -1,28 +1,19 @@
 #include "patterns/states/StoppedState.hpp"
-#include "patterns/states/AcceleratingState.hpp"
 #include "core/Train.hpp"
 #include "simulation/SimulationContext.hpp"
-
-StoppedState::StoppedState(double stopDuration)
-	: _timeRemaining(stopDuration)
-{
-}
+#include "patterns/states/StateRegistry.hpp"
 
 void StoppedState::update(Train* train, double dt)
 {
+    (void)dt;
+    
 	if (!train)
 	{
 		return;
 	}
 	
-	// Stopped: velocity = 0, countdown timer
+	// Ensure velocity is zero while stopped
 	train->setVelocity(0.0);
-	
-	_timeRemaining -= dt;
-	if (_timeRemaining < 0.0)
-	{
-		_timeRemaining = 0.0;
-	}
 }
 
 ITrainState* StoppedState::checkTransition(Train* train, SimulationContext* ctx)
@@ -32,13 +23,14 @@ ITrainState* StoppedState::checkTransition(Train* train, SimulationContext* ctx)
 		return nullptr;
 	}
 	
-	// Transition: Stopped → Accelerating (stop duration elapsed)
-	if (_timeRemaining <= 0.0)
+	// Decrement stop duration
+	bool expired = ctx->decrementStopDuration(train, 1.0);
+	
+	if (expired)
 	{
-		ctx->releaseStoppedState(train); // Clean up this state
-		
-		static AcceleratingState accelState;
-		return &accelState;
+		// Clear duration and transition to Accelerating
+		ctx->clearStopDuration(train);
+		return ctx->states().accelerating();
 	}
 	
 	return nullptr;
@@ -47,9 +39,4 @@ ITrainState* StoppedState::checkTransition(Train* train, SimulationContext* ctx)
 std::string StoppedState::getName() const
 {
 	return "Stopped";
-}
-
-double StoppedState::getTimeRemaining() const
-{
-	return _timeRemaining;
 }

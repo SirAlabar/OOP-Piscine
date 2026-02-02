@@ -1,7 +1,9 @@
 #include "simulation/CollisionAvoidance.hpp"
 #include "simulation/RiskData.hpp"
+#include "simulation/SafetyConstants.hpp"
 #include "core/Train.hpp"
 #include "core/Rail.hpp"
+#include "core/Graph.hpp"
 #include "simulation/PhysicsSystem.hpp"
 #include <limits>
 
@@ -124,17 +126,10 @@ double CollisionAvoidance::calculateSafeDistance(const Train* train) const
 		return 100.0;
 	}
 	
-	// Base calculation: 2-second time headway
-	double timeHeadway = 2.0;  // seconds
-	double speedBasedMargin = train->getVelocity() * timeHeadway;
+	double speedBasedMargin = train->getVelocity() * SafetyConstants::SAFE_TIME_HEADWAY;
+	double minClearance = SafetyConstants::MINIMUM_CLEARANCE;
 	
-	// Add braking distance buffer
-	double brakingMargin = calculateBrakingDistance(train);
-	
-	// Minimum clearance
-	double minClearance = 50.0;  // meters
-	
-	return minClearance + speedBasedMargin + brakingMargin;
+	return minClearance + speedBasedMargin;
 }
 
 double CollisionAvoidance::getCurrentSpeedLimit(const Train* train) const
@@ -168,4 +163,34 @@ double CollisionAvoidance::getNextSpeedLimit(const Train* train) const
 	
 	Rail* nextRail = train->getPath()[nextIndex];
 	return PhysicsSystem::kmhToMs(nextRail->getSpeedLimit());
+}
+
+void CollisionAvoidance::refreshRailOccupancy(const std::vector<Train*>& trains, const Graph* network)
+{
+	if (!network)
+	{
+		return;
+	}
+	
+	for (Rail* rail : network->getRails())
+	{
+		if (rail)
+		{
+			rail->clearOccupied();
+		}
+	}
+	
+	for (Train* train : trains)
+	{
+		if (!train)
+		{
+			continue;
+		}
+		
+		Rail* currentRail = train->getCurrentRail();
+		if (currentRail)
+		{
+			currentRail->setOccupiedBy(train);
+		}
+	}
 }

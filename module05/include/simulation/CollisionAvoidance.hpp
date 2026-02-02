@@ -4,6 +4,7 @@
 #include <vector>
 
 class Train;
+class Graph;
 struct RiskData;
 
 class CollisionAvoidance
@@ -11,12 +12,12 @@ class CollisionAvoidance
 public:
 	CollisionAvoidance() = default;
 	~CollisionAvoidance() = default;
-	
-	// LEVEL 1: Pure observation - returns factual data only
+
+	void refreshRailOccupancy(const std::vector<Train*>& trains, const Graph* network);
 	RiskData assessRisk(const Train* train, const std::vector<Train*>& allTrains) const;
 	
 private:
-	// Internal helpers (all const, no side effects, no decisions)
+	// Internal helpers (all const, no side effects)
 	Train* findLeaderOnRoute(const Train* train, const std::vector<Train*>& allTrains) const;
 	double calculateGap(const Train* train, const Train* leader) const;
 	double calculateClosingSpeed(const Train* train, const Train* leader) const;

@@ -7,8 +7,9 @@
 class Train;
 class Graph;
 class Node;
-class StoppedState;
 class CollisionAvoidance;
+class StateRegistry;
+struct RiskData;
 
 class SimulationContext
 {
@@ -16,7 +17,11 @@ private:
 	Graph* _network;
 	CollisionAvoidance* _collisionSystem;
 	const std::vector<Train*>* _trains;
-	std::map<Train*, StoppedState*> _stoppedStates;
+	// ===== STATE MANAGEMENT =====
+	StateRegistry* _states;
+	// ===== CACHED RISK DATA =====
+	std::map<Train*, RiskData> _riskMap;  // Refreshed once per frame
+	std::map<Train*, double> _stopDurations;
 
 public:
 	SimulationContext(
@@ -24,27 +29,37 @@ public:
 		CollisionAvoidance* collisionSystem,
 		const std::vector<Train*>* trains
 	);
-
 	~SimulationContext();
 
-	// Physics Queries
+	// ===== RISK DATA ACCESS (READ-ONLY) =====
+
+	const RiskData& getRisk(const Train* train) const;
+	void refreshAllRiskData();
+
+	// ===== PHYSICS QUERIES =====
+	
 	double getCurrentRailSpeedLimit(const Train* train) const;
 	double getCurrentRailLength(const Train* train) const;
 	double getBrakingDistance(const Train* train) const;
 	double getDistanceToRailEnd(const Train* train) const;
 
-	// Network Queries
+	// ===== NETWORK QUERIES =====
+	
 	Node* getCurrentArrivalNode(const Train* train) const;
 
-	// SAfety Queries
-	double distanceToNextTrain(const Train* train) const;
-	double getMinimumSafeDistance(const Train* train) const;
-    const RiskData& getRisk(const Train* train) const;
+	// ===== STATE REGISTRY ACCESS =====
 
+	StateRegistry& states();
 
-	// State Lifecycle
-	StoppedState* getOrCreateStoppedState(Train* train, double durationSeconds);
-	void releaseStoppedState(Train* train);
+	// ===== EXTERNALIZED STATE DATA =====
+	void setStopDuration(Train* train, double durationSeconds);
+	double getStopDuration(const Train* train) const;
+	bool decrementStopDuration(Train* train, double dt);
+	void clearStopDuration(Train* train);
+
+	// ===== PHYSICS ABSTRACTION =====
+
+	void applyForce(Train* train, double force, double dt);
 };
 
 #endif

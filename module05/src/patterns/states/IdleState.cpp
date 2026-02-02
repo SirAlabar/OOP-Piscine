@@ -1,6 +1,7 @@
 #include "patterns/states/IdleState.hpp"
 #include "core/Train.hpp"
 #include "simulation/SimulationContext.hpp"
+#include "patterns/states/StateRegistry.hpp"
 
 void IdleState::update(Train* train, double dt)
 {

@@ -73,18 +73,11 @@ void SimulationManager::step()
 		return;
 	}
 
-	// 1) departures
 	checkDepartures();
-
-	// 2) refresh occupancy BEFORE deciding transitions
 	_collisionSystem->refreshRailOccupancy(_trains, _network);
-
-	// 3) transitions (Waiting etc.)
+	_context->refreshAllRiskData();
 	handleStateTransitions();
-
-	// 4) physics update last (WaitingState deve segurar movimento)
 	updateTrainStates(_timestep);
-
 	_currentTime += _timestep;
 }
 

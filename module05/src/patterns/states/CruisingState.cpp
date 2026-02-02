@@ -1,10 +1,11 @@
 #include "patterns/states/CruisingState.hpp"
-#include "patterns/states/WaitingState.hpp"
-#include "patterns/states/BrakingState.hpp"
+#include "patterns/states/StateRegistry.hpp"
 #include "core/Train.hpp"
 #include "core/Rail.hpp"
-#include "simulation/PhysicsSystem.hpp"
 #include "simulation/SimulationContext.hpp"
+#include "simulation/PhysicsSystem.hpp"
+#include "simulation/SafetyConstants.hpp"
+#include "simulation/RiskData.hpp"
 
 void CruisingState::update(Train* train, double dt)
 {
@@ -13,18 +14,13 @@ void CruisingState::update(Train* train, double dt)
 		return;
 	}
 	
-	// Get current rail to check speed limit
 	Rail* currentRail = train->getCurrentRail();
 	if (!currentRail)
 	{
-		// No rail, stay at current velocity
 		return;
 	}
 	
-	// Convert speed limit to m/s
 	double speedLimitMs = PhysicsSystem::kmhToMs(currentRail->getSpeedLimit());
-	
-	// Maintain speed at or below limit
 	double currentVelocity = train->getVelocity();
 	
 	if (currentVelocity > speedLimitMs)
@@ -35,7 +31,7 @@ void CruisingState::update(Train* train, double dt)
 		
 		PhysicsSystem::updateVelocity(train, netForce, dt);
 	}
-	else if (currentVelocity < speedLimitMs)
+	else if (currentVelocity < speedLimitMs * 0.95)
 	{
 		// Below limit - apply traction to reach it
 		double accelForceN = PhysicsSystem::kNtoN(train->getMaxAccelForce());
@@ -49,9 +45,7 @@ void CruisingState::update(Train* train, double dt)
 			train->setVelocity(speedLimitMs);
 		}
 	}
-	// else: exactly at limit, maintain (friction balanced by traction)
 	
-	// Update position
 	PhysicsSystem::updatePosition(train, dt);
 }
 
@@ -61,25 +55,32 @@ ITrainState* CruisingState::checkTransition(Train* train, SimulationContext* ctx
 	{
 		return nullptr;
 	}
-
-	if (ctx->shouldWaitForTrainAhead(train))
+	
+	const RiskData& risk = ctx->getRisk(train);
+	
+	// Priority 1: Emergency zone
+	if (SafetyConstants::isEmergencyZone(risk.gap, risk.brakingDistance))
 	{
-		static WaitingState waitingState;
-		return &waitingState;
+		return ctx->states().emergency();
 	}
-
+	
+	// Priority 2: Following zone
+	if (SafetyConstants::isFollowingZone(risk.gap, risk.brakingDistance, risk.safeDistance))
+	{
+		return ctx->states().waiting();
+	}
+	
+	// Priority 3: Need to brake for station/rail end
 	double brakingDist = ctx->getBrakingDistance(train);
 	double distRemaining = ctx->getDistanceToRailEnd(train);
-
-	if (distRemaining <= brakingDist * 1.1)
+	
+	if (distRemaining <= brakingDist * SafetyConstants::BRAKING_MARGIN)
 	{
-		static BrakingState brakingState;
-		return &brakingState;
+		return ctx->states().braking();
 	}
-
+	
 	return nullptr;
 }
-
 
 std::string CruisingState::getName() const
 {

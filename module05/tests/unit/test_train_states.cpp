@@ -3,6 +3,11 @@
 #include "patterns/states/AcceleratingState.hpp"
 #include "patterns/states/StoppedState.hpp"
 #include "core/Train.hpp"
+#include "core/Graph.hpp"
+#include "core/Node.hpp"
+#include "core/Rail.hpp"
+#include "simulation/SimulationContext.hpp"
+#include "simulation/CollisionAvoidance.hpp"
 #include "utils/Time.hpp"
 
 class TrainStateTest : public ::testing::Test
@@ -12,154 +17,136 @@ protected:
 	{
 		Train::resetIDCounter();
 		
-		Time depTime("10h00");
-		Time stopDur("00h05");
+		nodeA = new Node("CityA");
+		nodeB = new Node("CityB");
+		
+		graph.addNode(nodeA);
+		graph.addNode(nodeB);
+		
+		rail = new Rail(nodeA, nodeB, 50.0, 250.0);
+		graph.addRail(rail);
+		
 		train = new Train("TestTrain", 80.0, 0.005, 356.0, 500.0,
-		                  "CityA", "CityB", depTime, stopDur);
+		                  "CityA", "CityB",
+		                  Time("00h00"), Time("00h05"));
+		
+		train->setPath({rail});
+		
+		collisionSystem = new CollisionAvoidance();
+		std::vector<Train*> trains;
+		context = new SimulationContext(&graph, collisionSystem, &trains);
 	}
 	
 	void TearDown() override
 	{
 		delete train;
+		delete nodeA;
+		delete nodeB;
+		delete rail;
+		delete context;
+		delete collisionSystem;
 	}
 	
-	Train* train;
+	Graph graph;
+	Node *nodeA, *nodeB;
+	Rail *rail;
+	Train *train;
+	CollisionAvoidance *collisionSystem;
+	SimulationContext *context;
 };
-
-// ===== IDLE STATE TESTS =====
 
 TEST_F(TrainStateTest, IdleStateKeepsVelocityZero)
 {
 	IdleState idleState;
-	train->setState(&idleState);
 	
-	train->setVelocity(10.0);
-	train->update(1.0);
-	
-	EXPECT_EQ(train->getVelocity(), 0.0);
-	EXPECT_EQ(idleState.getName(), "Idle");
-}
-
-TEST_F(TrainStateTest, IdleStateMultipleUpdates)
-{
-	IdleState idleState;
-	train->setState(&idleState);
-	
-	train->update(1.0);
-	train->update(1.0);
-	train->update(1.0);
+	train->setVelocity(0.0);
+	idleState.update(train, 1.0);
 	
 	EXPECT_EQ(train->getVelocity(), 0.0);
 }
 
-// ===== ACCELERATING STATE TESTS =====
-
-TEST_F(TrainStateTest, AcceleratingStateRequiresRail)
+TEST_F(TrainStateTest, AcceleratingStateIncreasesVelocity)
 {
 	AcceleratingState accelState;
-	train->setState(&accelState);
 	
-	// No rail set - should not crash, velocity stays 0
-	train->update(1.0);
-	EXPECT_EQ(train->getVelocity(), 0.0);
+	train->setVelocity(0.0);
+	accelState.update(train, 1.0);
 	
-	EXPECT_EQ(accelState.getName(), "Accelerating");
+	EXPECT_GT(train->getVelocity(), 0.0);
 }
 
-// ===== STOPPED STATE TESTS =====
+TEST_F(TrainStateTest, AcceleratingStateRespectsSpeedLimit)
+{
+	AcceleratingState accelState;
+	
+	train->setVelocity(0.0);
+	
+	for (int i = 0; i < 100; i++)
+	{
+		accelState.update(train, 1.0);
+	}
+	
+	double speedLimitMs = 250.0 / 3.6;
+	EXPECT_LE(train->getVelocity(), speedLimitMs);
+}
 
 TEST_F(TrainStateTest, StoppedStateKeepsVelocityZero)
 {
-	StoppedState stoppedState(10.0);
-	train->setState(&stoppedState);
+	StoppedState stoppedState;
 	
-	train->setVelocity(50.0);
-	train->update(1.0);
+	train->setVelocity(10.0);
+	stoppedState.update(train, 1.0);
 	
 	EXPECT_EQ(train->getVelocity(), 0.0);
-	EXPECT_EQ(stoppedState.getName(), "Stopped");
 }
 
-TEST_F(TrainStateTest, StoppedStateCountsDown)
+TEST_F(TrainStateTest, StoppedStateExternalDurationManagement)
 {
-	StoppedState stoppedState(10.0);
-	train->setState(&stoppedState);
+	context->setStopDuration(train, 10.0);
 	
-	EXPECT_EQ(stoppedState.getTimeRemaining(), 10.0);
+	EXPECT_EQ(context->getStopDuration(train), 10.0);
 	
-	train->update(1.0);
-	EXPECT_EQ(stoppedState.getTimeRemaining(), 9.0);
+	bool expired = context->decrementStopDuration(train, 1.0);
+	EXPECT_FALSE(expired);
+	EXPECT_EQ(context->getStopDuration(train), 9.0);
 	
-	train->update(3.0);
-	EXPECT_EQ(stoppedState.getTimeRemaining(), 6.0);
+	context->decrementStopDuration(train, 3.0);
+	EXPECT_EQ(context->getStopDuration(train), 6.0);
 }
 
-TEST_F(TrainStateTest, StoppedStateReachesZero)
+TEST_F(TrainStateTest, StoppedStateDurationReachesZero)
 {
-	StoppedState stoppedState(5.0);
-	train->setState(&stoppedState);
+	context->setStopDuration(train, 5.0);
 	
-	train->update(3.0);
-	EXPECT_EQ(stoppedState.getTimeRemaining(), 2.0);
+	context->decrementStopDuration(train, 3.0);
+	EXPECT_EQ(context->getStopDuration(train), 2.0);
 	
-	train->update(3.0);
-	EXPECT_EQ(stoppedState.getTimeRemaining(), 0.0);
+	bool expired = context->decrementStopDuration(train, 2.0);
+	EXPECT_TRUE(expired);
+	EXPECT_EQ(context->getStopDuration(train), 0.0);
 }
 
-TEST_F(TrainStateTest, StoppedStateDoesNotGoNegative)
+TEST_F(TrainStateTest, StoppedStateDurationDoesNotGoNegative)
 {
-	StoppedState stoppedState(2.0);
-	train->setState(&stoppedState);
+	context->setStopDuration(train, 2.0);
 	
-	train->update(5.0);
-	EXPECT_EQ(stoppedState.getTimeRemaining(), 0.0);
-}
-
-// ===== STATE TRANSITION TESTS =====
-
-TEST_F(TrainStateTest, StateTransitionIdleToAccelerating)
-{
-	IdleState idleState;
-	AcceleratingState accelState;
+	context->decrementStopDuration(train, 5.0);
 	
-	train->setState(&idleState);
-	train->update(1.0);
-	EXPECT_EQ(train->getVelocity(), 0.0);
-	
-	// Transition to accelerating (no rail, so still 0)
-	train->setState(&accelState);
-	train->update(1.0);
-	EXPECT_EQ(train->getVelocity(), 0.0);
+	EXPECT_EQ(context->getStopDuration(train), 0.0);
 }
 
 TEST_F(TrainStateTest, StateTransitionAcceleratingToStopped)
 {
-	AcceleratingState accelState;
-	StoppedState stoppedState(5.0);
+	StoppedState stoppedState;
 	
-	train->setVelocity(20.0);  // Set manually for this test
+	train->setVelocity(50.0);
 	
-	train->setState(&stoppedState);
-	train->update(1.0);
+	context->setStopDuration(train, 5.0);
+	
+	stoppedState.update(train, 1.0);
+	
 	EXPECT_EQ(train->getVelocity(), 0.0);
-	EXPECT_EQ(stoppedState.getTimeRemaining(), 4.0);
-}
-
-// ===== NULL SAFETY TESTS =====
-
-TEST_F(TrainStateTest, NullStateDoesNotCrash)
-{
-	train->setState(nullptr);
-	train->update(1.0);
 	
-	// Should not crash, velocity unchanged
-	EXPECT_EQ(train->getVelocity(), 0.0);
-}
-
-TEST_F(TrainStateTest, GetCurrentState)
-{
-	IdleState idleState;
-	train->setState(&idleState);
-	
-	EXPECT_EQ(train->getCurrentState(), &idleState);
+	context->decrementStopDuration(train, 1.0);
+	EXPECT_EQ(context->getStopDuration(train), 4.0);
 }

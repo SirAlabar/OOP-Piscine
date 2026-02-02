@@ -151,7 +151,7 @@ TEST_F(SingleTrainJourneyTest, CompleteJourneyWithEstimation)
 	AcceleratingState accelState;
 	CruisingState cruisingState;
 	BrakingState brakingState;
-	StoppedState stoppedState(0.0);
+	StoppedState stoppedState;
 	
 	train->setState(&accelState);
 	
@@ -510,7 +510,7 @@ TEST_F(SingleTrainJourneyTest, AllStateTransitions)
 	AcceleratingState accelState;
 	CruisingState cruisingState;
 	BrakingState brakingState;
-	StoppedState stoppedState(0.0);
+	StoppedState stoppedState;
 	
 	if (ENABLE_VISUALIZATION)
 	{
