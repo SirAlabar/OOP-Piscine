@@ -1,4 +1,5 @@
 #include "io/RailNetworkParser.hpp"
+#include "utils/StringUtils.hpp"
 #include "core/Node.hpp"
 #include "core/Rail.hpp"
 #include <sstream>
@@ -50,23 +51,89 @@ Graph* RailNetworkParser::parse()
 
 void RailNetworkParser::parseLine(const std::string& line, Graph* graph)
 {
-	std::istringstream iss(line);
-	std::string keyword;
-	iss >> keyword;
+    auto tokens = StringUtils::splitTokens(line);
 
-	if (keyword == "Node")
-	{
-		parseNode(line, graph);
-	}
-	else if (keyword == "Rail")
-	{
-		parseRail(line, graph);
-	}
-	else
-	{
-		throw std::runtime_error("Unknown keyword '" + keyword + "'");
-	}
+    if (tokens.empty())
+        return;
+
+    const std::string& keyword = tokens[0];
+
+    if (keyword == "Node")
+    {
+        if (tokens.size() != 2)
+        {
+            throw std::runtime_error(
+                "Invalid Node format. Expected: Node <name>"
+            );
+        }
+
+        const std::string& nodeName = tokens[1];
+
+        if (nodeName.empty())
+            throw std::runtime_error("Node name cannot be empty");
+
+        if (graph->hasNode(nodeName))
+            throw std::runtime_error("Duplicate node: '" + nodeName + "'");
+
+        graph->addNode(new Node(nodeName));
+        std::cout << "[PARSE] Node added: " << nodeName << std::endl;
+        return;
+    }
+
+    if (keyword == "Rail")
+    {
+        if (tokens.size() != 5)
+        {
+            throw std::runtime_error(
+                "Invalid Rail format. Expected: Rail <nodeA> <nodeB> <length> <speedLimit>"
+            );
+        }
+
+        const std::string& nodeA = tokens[1];
+        const std::string& nodeB = tokens[2];
+
+        if (nodeA == nodeB)
+            throw std::runtime_error("Rail cannot connect node to itself: '" + nodeA + "'");
+
+        if (!graph->hasNode(nodeA))
+            throw std::runtime_error("Unknown node: '" + nodeA + "'");
+
+        if (!graph->hasNode(nodeB))
+            throw std::runtime_error("Unknown node: '" + nodeB + "'");
+
+        double length;
+        double speed;
+
+        try
+        {
+            length = std::stod(tokens[3]);
+            speed  = std::stod(tokens[4]);
+        }
+        catch (...)
+        {
+            throw std::runtime_error("Length and speed must be numeric values");
+        }
+
+        if (length <= 0.0)
+            throw std::runtime_error("Rail length must be positive");
+
+        if (speed <= 0.0)
+            throw std::runtime_error("Speed limit must be positive");
+
+        Node* a = graph->getNode(nodeA);
+        Node* b = graph->getNode(nodeB);
+
+        graph->addRail(new Rail(a, b, length, speed));
+        std::cout << "[PARSE] Rail added: "
+          << nodeA << " <-> " << nodeB
+          << " | length=" << length
+          << " | speed=" << speed << std::endl;
+        return;
+    }
+
+    throw std::runtime_error("Unknown keyword: '" + keyword + "'");
 }
+
 
 void RailNetworkParser::parseNode(const std::string& line, Graph* graph)
 {

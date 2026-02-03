@@ -9,6 +9,8 @@
 #include "simulation/SimulationManager.hpp"
 #include "core/Train.hpp"
 #include "core/Graph.hpp"
+#include "core/Node.hpp"
+#include "core/Rail.hpp"
 #include <iostream>
 
 Application::Application(int argc, char* argv[]) : _cli(argc, argv)
@@ -60,6 +62,23 @@ int Application::run()
 		std::cout << "Parsing network file..." << std::endl;
 		RailNetworkParser networkParser(networkFile);
 		graph = networkParser.parse();
+
+        std::cout << "\n=== GRAPH CONTENT ===" << std::endl;
+        for (const Node* n : graph->getNodes())
+        {
+            std::cout << "Node: " << n->getName() << std::endl;
+        }
+
+        for (const Rail* r : graph->getRails())
+        {
+            std::cout << "Rail: "
+                    << r->getNodeA()->getName()
+                    << " <-> "
+                    << r->getNodeB()->getName()
+                    << std::endl;
+        }
+        std::cout << "=====================\n" << std::endl;
+
 		std::cout << "  Nodes: " << graph->getNodeCount() << std::endl;
 		std::cout << "  Rails: " << graph->getRailCount() << std::endl;
 		std::cout << std::endl;

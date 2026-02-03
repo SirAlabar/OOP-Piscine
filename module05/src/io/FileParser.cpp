@@ -15,20 +15,29 @@ FileParser::FileParser(const std::string& filepath) : _filepath(filepath)
 
 std::vector<std::string> FileParser::readLines()
 {
-	std::vector<std::string> lines;
-	std::string line;
+    std::vector<std::string> lines;
+    std::string line;
 
-	while (std::getline(_file, line))
-	{
-		line = trim(line);
-		if (!isEmptyOrComment(line))
-		{
-			lines.push_back(line);
-		}
-	}
+    while (std::getline(_file, line))
+    {
+        // Remove inline comments
+        auto commentPos = line.find('#');
+        if (commentPos != std::string::npos)
+        {
+            line = line.substr(0, commentPos);
+        }
 
-	return lines;
+        line = trim(line);
+
+        if (!line.empty())
+        {
+            lines.push_back(line);
+        }
+    }
+
+    return lines;
 }
+
 
 bool FileParser::isEmptyOrComment(const std::string& line) const
 {

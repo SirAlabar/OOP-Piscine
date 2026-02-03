@@ -14,6 +14,7 @@ public:
 
 	// Parse file and return train configurations
 	std::vector<TrainConfig> parse();
+    void validateUniqueNames(const std::vector<TrainConfig>& configs) const;
 
 private:
 	TrainConfig parseLine(const std::string& line);

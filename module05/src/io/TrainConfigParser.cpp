@@ -1,7 +1,9 @@
 #include "io/TrainConfigParser.hpp"
+#include "utils/StringUtils.hpp"
 #include "utils/Time.hpp"
 #include <sstream>
 #include <stdexcept>
+#include <set>
 
 TrainConfigParser::TrainConfigParser(const std::string& filepath)
 	: FileParser(filepath)
@@ -31,82 +33,102 @@ std::vector<TrainConfig> TrainConfigParser::parse()
 		}
 	}
 
+    validateUniqueNames(configs);
+
 	return configs;
+}
+
+void TrainConfigParser::validateUniqueNames(const std::vector<TrainConfig>& configs) const
+{
+    std::set<std::string> seenNames;
+
+    for (const auto& config : configs)
+    {
+        if (!seenNames.insert(config.name).second)
+        {
+            throw std::runtime_error("Duplicate train name detected: '" + config.name + "'");
+        }
+    }
 }
 
 TrainConfig TrainConfigParser::parseLine(const std::string& line)
 {
-	std::istringstream iss(line);
-	TrainConfig config;
+    auto tokens = StringUtils::splitTokens(line);
 
-	std::string departureTimeStr;
-	std::string stopDurationStr;
+    if (tokens.size() != 9)
+    {
+        throw std::runtime_error(
+            "Invalid train format. Expected 9 fields: "
+            "<name> <mass> <friction> <accel> <brake> <departure> <arrival> <time> <duration>"
+        );
+    }
 
-	iss >> config.name 
-	    >> config.mass 
-	    >> config.frictionCoef 
-	    >> config.maxAccelForce 
-	    >> config.maxBrakeForce
-	    >> config.departureStation 
-	    >> config.arrivalStation 
-	    >> departureTimeStr 
-	    >> stopDurationStr;
+    TrainConfig config;
 
-	if (iss.fail())
-	{
-		throw std::runtime_error(
-			"Invalid train format. Expected 9 fields: "
-			"<name> <mass> <friction> <accel> <brake> <departure> <arrival> <time> <duration>"
-		);
-	}
+    config.name = tokens[0];
 
-	if (config.name.empty())
-	{
-		throw std::runtime_error("Train name cannot be empty");
-	}
+    try
+    {
+        config.mass          = std::stod(tokens[1]);
+        config.frictionCoef  = std::stod(tokens[2]);
+        config.maxAccelForce = std::stod(tokens[3]);
+        config.maxBrakeForce = std::stod(tokens[4]);
+    }
+    catch (...)
+    {
+        throw std::runtime_error("Invalid numeric value in train configuration");
+    }
 
-	if (config.mass <= 0.0)
-	{
-		throw std::runtime_error("Train mass must be positive");
-	}
+    if (config.mass <= 0.0)
+        throw std::runtime_error("Train mass must be positive");
 
-	if (config.frictionCoef < 0.0)
-	{
-		throw std::runtime_error("Friction coefficient must be non-negative");
-	}
+    if (config.frictionCoef < 0.0)
+        throw std::runtime_error("Friction coefficient must be non-negative");
 
-	if (config.maxAccelForce <= 0.0)
-	{
-		throw std::runtime_error("Maximum acceleration force must be positive");
-	}
+    if (config.maxAccelForce <= 0.0)
+        throw std::runtime_error("Maximum acceleration force must be positive");
 
-	if (config.maxBrakeForce <= 0.0)
-	{
-		throw std::runtime_error("Maximum brake force must be positive");
-	}
+    if (config.maxBrakeForce <= 0.0)
+        throw std::runtime_error("Maximum brake force must be positive");
 
-	if (config.departureStation.empty() || config.arrivalStation.empty())
-	{
-		throw std::runtime_error("Departure and arrival stations cannot be empty");
-	}
+    config.departureStation = tokens[5];
+    config.arrivalStation   = tokens[6];
 
-	config.departureTime = Time(departureTimeStr);
-	if (!config.departureTime.isValid())
-	{
-		throw std::runtime_error(
-			"Invalid departure time format '" + departureTimeStr + 
-			"'. Expected HHhMM (e.g., 14h10)"
-		);
-	}
+    if (config.departureStation.empty() || config.arrivalStation.empty())
+        throw std::runtime_error("Departure and arrival stations cannot be empty");
 
-	config.stopDuration = Time(stopDurationStr);
-	if (!config.stopDuration.isValid())
-	{
-		throw std::runtime_error(
-			"Invalid stop duration format '" + stopDurationStr + 
-			"'. Expected HHhMM (e.g., 00h10)"
-		);
-	}
+    if (config.departureStation == config.arrivalStation)
+        throw std::runtime_error("Departure and arrival stations must be different");
 
-	return config;
+    config.departureTime = Time(tokens[7]);
+    if (!config.departureTime.isValid())
+    {
+        throw std::runtime_error(
+            "Invalid departure time format '" + tokens[7] +
+            "'. Expected HHhMM (e.g., 14h10)"
+        );
+    }
+
+    config.stopDuration = Time(tokens[8]);
+    if (!config.stopDuration.isValid())
+    {
+        throw std::runtime_error(
+            "Invalid stop duration format '" + tokens[8] +
+            "'. Expected HHhMM (e.g., 00h10)"
+        );
+    }
+
+    std::cout << "[PARSE] Train: " << config.name
+          << " | mass=" << config.mass
+          << " | friction=" << config.frictionCoef
+          << " | accel=" << config.maxAccelForce
+          << " | brake=" << config.maxBrakeForce
+          << " | from=" << config.departureStation
+          << " | to=" << config.arrivalStation
+          << " | depart=" << tokens[7]
+          << " | stop=" << tokens[8]
+          << std::endl;
+
+
+    return config;
 }
