@@ -29,6 +29,11 @@ double PhysicsSystem::msToKmh(double ms)
 	return ms * 3.6;
 }
 
+double PhysicsSystem::mToKm(double meters)
+{
+	return meters / 1000.0;
+}
+
 // Force calculations
 double PhysicsSystem::calculateFriction(const Train* train)
 {

@@ -18,6 +18,7 @@ public:
 	static double kmhToMs(double kmh);
 	static double kmToM(double km);
 	static double msToKmh(double ms);
+    static double mToKm(double meters);
 	
 	// Force calculations
 	static double calculateFriction(const Train* train);
