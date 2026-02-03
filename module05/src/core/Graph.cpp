@@ -21,6 +21,18 @@ void Graph::addNode(Node* node)
 }
 
 // Get node by name (returns nullptr if not found)
+Node* Graph::getNode(const std::string& name)
+{
+    for (auto* node : _nodes)
+    {
+        if (node && node->getName() == name)
+        {
+            return node;
+        }
+    }
+    return nullptr;
+}
+
 const Node* Graph::getNode(const std::string& name) const
 {
 	for (const auto* node : _nodes)

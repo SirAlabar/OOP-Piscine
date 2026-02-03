@@ -137,8 +137,8 @@ void RailNetworkParser::parseRail(const std::string& line, Graph* graph)
 		);
 	}
 
-	Node* nodeA = const_cast<Node*>(graph->getNode(nodeAName));
-	Node* nodeB = const_cast<Node*>(graph->getNode(nodeBName));
+	Node* nodeA = graph->getNode(nodeAName);
+	Node* nodeB = graph->getNode(nodeBName);
 
 	Rail* rail = new Rail(nodeA, nodeB, length, speedLimit);
 	graph->addRail(rail);

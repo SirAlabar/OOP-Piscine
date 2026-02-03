@@ -32,6 +32,7 @@ public:
 
 	// Node management
 	void addNode(Node* node);
+    Node* getNode(const std::string& name);
 	const Node* getNode(const std::string& name) const;
 	const NodeList& getNodes() const;
 	bool hasNode(const std::string& name) const;

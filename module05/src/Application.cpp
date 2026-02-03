@@ -87,8 +87,8 @@ int Application::run()
 			}
 
 			// Find path
-			const Node* startNode = graph->getNode(config.departureStation);
-			const Node* endNode = graph->getNode(config.arrivalStation);
+			Node* startNode = graph->getNode(config.departureStation);
+			Node* endNode = graph->getNode(config.arrivalStation);
 
 			if (!startNode || !endNode)
 			{
@@ -97,9 +97,7 @@ int Application::run()
 				continue;
 			}
 
-			auto path = dijkstra.findPath(graph, 
-			                               const_cast<Node*>(startNode), 
-			                               const_cast<Node*>(endNode));
+			auto path = dijkstra.findPath(graph, startNode, endNode);
 
 			if (path.empty())
 			{

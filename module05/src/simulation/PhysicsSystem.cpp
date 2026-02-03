@@ -109,7 +109,7 @@ double PhysicsSystem::calculateBrakingDistance(const Train* train)
 // Motion updates
 void PhysicsSystem::updateVelocity(Train* train, double netForce, double dt)
 {
-	if (!train)
+	if (!train || dt <= 0)
 	{
 		return;
 	}
@@ -133,7 +133,7 @@ void PhysicsSystem::updateVelocity(Train* train, double netForce, double dt)
 
 void PhysicsSystem::updatePosition(Train* train, double dt)
 {
-	if (!train)
+	if (!train || dt <= 0)
 	{
 		return;
 	}
