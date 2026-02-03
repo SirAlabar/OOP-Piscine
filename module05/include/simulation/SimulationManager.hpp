@@ -2,12 +2,14 @@
 #define SIMULATIONMANAGER_HPP
 
 #include <vector>
+#include <map>
 #include "utils/Time.hpp"
 
 class Train;
 class Graph;
 class CollisionAvoidance;
 class SimulationContext;
+class OutputWriter;
 
 class SimulationManager
 {
@@ -26,9 +28,15 @@ private:
 	double _timestep;
 	bool _running;
 	
+	// Output management
+	std::map<Train*, OutputWriter*> _outputWriters;
+	int _lastSnapshotMinute;
+	
 	void updateTrainStates(double dt);
 	void checkDepartures();
 	void handleStateTransitions();
+	void writeSnapshots();
+	void cleanupOutputWriters();
 
 public:
 	static SimulationManager& getInstance()
@@ -59,8 +67,7 @@ public:
 	const Graph* getNetwork() const;
 	bool isRunning() const;
 	
-SimulationContext* getContext() const { return _context; }
-
+	SimulationContext* getContext() const { return _context; }
 
 	void reset();
 };

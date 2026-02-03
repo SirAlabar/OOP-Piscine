@@ -4,7 +4,10 @@
 #include "simulation/PhysicsSystem.hpp"
 #include "core/Train.hpp"
 #include "core/Graph.hpp"
+#include "core/Rail.hpp"
 #include "patterns/states/AcceleratingState.hpp"
+#include "io/OutputWriter.hpp"
+#include <iostream>
 
 // Constructor
 SimulationManager::SimulationManager()
@@ -13,13 +16,15 @@ SimulationManager::SimulationManager()
 	  _context(nullptr),
 	  _currentTime(0.0),
 	  _timestep(1.0),
-	  _running(false)
+	  _running(false),
+	  _lastSnapshotMinute(-1)
 {
 }
 
 // Destructor
 SimulationManager::~SimulationManager()
 {
+	cleanupOutputWriters();
 	delete _collisionSystem;
 	delete _context;
 }
@@ -33,10 +38,7 @@ void SimulationManager::setNetwork(Graph* network)
 	{
 		delete _context;
 	}
-	_context = new SimulationContext(
-    _network,
-    _collisionSystem,
-    &_trains);
+	_context = new SimulationContext(_network, _collisionSystem, &_trains);
 }
 
 void SimulationManager::addTrain(Train* train)
@@ -58,52 +60,109 @@ void SimulationManager::setTimestep(double timestep)
 // Simulation control
 void SimulationManager::start()
 {
-    _running = true;
+	_running = true;
+	_lastSnapshotMinute = -1;
 
-    if (!_network || !_context)
-    {
-        return;
-    }
+	if (!_network || !_context)
+	{
+		return;
+	}
 
-    checkDepartures();
+	// Create output writers and calculate estimated times
+	for (Train* train : _trains)
+	{
+		if (!train)
+		{
+			continue;
+		}
 
-    _collisionSystem->refreshRailOccupancy(_trains, _network);
-    _context->refreshAllRiskData();
+		try
+		{
+			OutputWriter* writer = new OutputWriter(train);
+			writer->open();
 
-    handleStateTransitions();
+			// Calculate estimated travel time
+			double estimatedMinutes = 0.0;
+			const auto& path = train->getPath();
+			
+			for (Rail* rail : path)
+			{
+				if (rail)
+				{
+					double segmentTimeHours = rail->getLength() / rail->getSpeedLimit();
+					estimatedMinutes += segmentTimeHours * 60.0;
+				}
+			}
 
-    // Ensure initial consistency after transitions
-    _context->refreshAllRiskData();
+			writer->writeHeader(estimatedMinutes);
+			_outputWriters[train] = writer;
+
+			std::cout << "  Created output: " << train->getName() << "_" 
+			          << train->getDepartureTime().toString() << ".result" 
+			          << " (estimated: " << static_cast<int>(estimatedMinutes) << " min)" 
+			          << std::endl;
+		}
+		catch (const std::exception& e)
+		{
+			std::cerr << "Failed to create output for train " << train->getName() 
+			          << ": " << e.what() << std::endl;
+		}
+	}
+
+	checkDepartures();
+	_collisionSystem->refreshRailOccupancy(_trains, _network);
+	_context->refreshAllRiskData();
+	handleStateTransitions();
+	_context->refreshAllRiskData();
+
+	// Write initial snapshots for all trains at departure
+	writeSnapshots();
 }
 
 void SimulationManager::stop()
 {
-    _running = false;
+	_running = false;
+
+	// Write final snapshots for all trains
+	for (auto& pair : _outputWriters)
+	{
+		Train* train = pair.first;
+		OutputWriter* writer = pair.second;
+
+		if (train && writer)
+		{
+			writer->writeSnapshot(_currentTime);
+		}
+	}
+
+	cleanupOutputWriters();
 }
 
 void SimulationManager::step()
 {
-    if (!_network || !_context)
-    {
-        return;
-    }
+	if (!_network || !_context)
+	{
+		return;
+	}
 
-    checkDepartures();
+	checkDepartures();
 
-    // Update current rail occupancy status
-    _collisionSystem->refreshRailOccupancy(_trains, _network);
-    // Compute risk information based on the current state
-    _context->refreshAllRiskData();
-    // Perform state transitions before applying physics
-    handleStateTransitions();
-    // Refresh risk data again after possible state changes
-    _context->refreshAllRiskData();
-    // Apply physics updates according to the current state of each train
-    updateTrainStates(_timestep);
+	_collisionSystem->refreshRailOccupancy(_trains, _network);
+	_context->refreshAllRiskData();
+	handleStateTransitions();
+	_context->refreshAllRiskData();
+	updateTrainStates(_timestep);
 
-    _currentTime += _timestep;
+	_currentTime += _timestep;
+
+	// Write snapshots every 2 minutes
+	int currentMinute = static_cast<int>(_currentTime / 60.0);
+	if (currentMinute % 2 == 0 && currentMinute != _lastSnapshotMinute)
+	{
+		writeSnapshots();
+		_lastSnapshotMinute = currentMinute;
+	}
 }
-
 
 void SimulationManager::run(double maxTime)
 {
@@ -163,9 +222,11 @@ bool SimulationManager::isRunning() const
 // Cleanup
 void SimulationManager::reset()
 {
+	cleanupOutputWriters();
 	_trains.clear();
 	_currentTime = 0.0;
 	_running = false;
+	_lastSnapshotMinute = -1;
 
 	if (_context)
 	{
@@ -175,14 +236,9 @@ void SimulationManager::reset()
 
 	if (_network)
 	{
-		_context = new SimulationContext(
-                    _network,
-                    _collisionSystem,
-                    &_trains);
-
+		_context = new SimulationContext(_network, _collisionSystem, &_trains);
 	}
 }
-
 
 // Helper methods
 void SimulationManager::updateTrainStates(double dt)
@@ -227,7 +283,6 @@ void SimulationManager::handleStateTransitions()
 			continue;
 		}
 		
-		// Ask state if it wants to transition
 		ITrainState* newState = train->getCurrentState()->checkTransition(train, _context);
 		
 		if (newState)
@@ -235,4 +290,35 @@ void SimulationManager::handleStateTransitions()
 			train->setState(newState);
 		}
 	}
+}
+
+void SimulationManager::writeSnapshots()
+{
+	for (auto& pair : _outputWriters)
+	{
+		Train* train = pair.first;
+		OutputWriter* writer = pair.second;
+
+		if (train && writer)
+		{
+			// Only write if train has departed
+			if (train->getCurrentState()->getName() != "Idle")
+			{
+				writer->writeSnapshot(_currentTime);
+			}
+		}
+	}
+}
+
+void SimulationManager::cleanupOutputWriters()
+{
+	for (auto& pair : _outputWriters)
+	{
+		if (pair.second)
+		{
+			pair.second->close();
+			delete pair.second;
+		}
+	}
+	_outputWriters.clear();
 }
