@@ -17,6 +17,38 @@ Application::Application(int argc, char* argv[]) : _cli(argc, argv)
 {
 }
 
+static void printPath(const Train* train)
+{
+    std::cout << "\n[DEBUG] PATH FOR TRAIN: " << train->getName() << "\n";
+
+    const auto& path = train->getPath();
+
+    if (path.empty())
+    {
+        std::cout << "  -> NO PATH FOUND!\n";
+        return;
+    }
+
+    for (size_t i = 0; i < path.size(); ++i)
+    {
+        Rail* rail = path[i];
+
+        std::cout << "  Segment " << i
+                  << ": "
+                  << rail->getNodeA()->getName()
+                  << " <-> "
+                  << rail->getNodeB()->getName()
+                  << " | length="
+                  << rail->getLength()
+                  << " | speed="
+                  << rail->getSpeedLimit()
+                  << "\n";
+    }
+
+    std::cout << std::endl;
+}
+
+
 int Application::run()
 {
 	if (_cli.shouldShowHelp())
@@ -128,6 +160,7 @@ int Application::run()
 			}
 
 			train->setPath(path);
+            printPath(train);
 			train->setState(&idleState);
 			trains.push_back(train);
 
@@ -180,6 +213,16 @@ int Application::run()
 		std::cout << std::endl;
 		std::cout << "===== SIMULATION START =====" << std::endl;
 		std::cout << std::endl;
+
+        for (Train* train : trains)
+        {
+            std::cout << "Train "
+                    << train->getName()
+                    << " scheduled for "
+                    << train->getDepartureTime().toString()
+                    << std::endl;
+        }
+
 
 		// Run simulation step by step with snapshot writing
 		sim.start();
@@ -268,3 +311,4 @@ int Application::run()
 
 	return 0;
 }
+
