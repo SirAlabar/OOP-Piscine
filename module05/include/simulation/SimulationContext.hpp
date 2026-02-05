@@ -17,9 +17,9 @@ private:
 	Graph* _network;
 	CollisionAvoidance* _collisionSystem;
 	const std::vector<Train*>* _trains;
-	// ===== STATE MANAGEMENT =====
+	// State Management
 	StateRegistry* _states;
-	// ===== CACHED RISK DATA =====
+	// Cached Risk Data
 	std::map<Train*, RiskData> _riskMap;  // Refreshed once per frame
 	std::map<Train*, double> _stopDurations;
 
@@ -31,34 +31,33 @@ public:
 	);
 	~SimulationContext();
 
-	// ===== RISK DATA ACCESS (READ-ONLY) =====
+	// Risk Data Access
 
 	const RiskData& getRisk(const Train* train) const;
 	void refreshAllRiskData();
 
-	// ===== PHYSICS QUERIES =====
+	// Physics Queries
 	
 	double getCurrentRailSpeedLimit(const Train* train) const;
 	double getCurrentRailLength(const Train* train) const;
 	double getBrakingDistance(const Train* train) const;
 	double getDistanceToRailEnd(const Train* train) const;
 
-	// ===== NETWORK QUERIES =====
+	// Network Queries
 	
 	Node* getCurrentArrivalNode(const Train* train) const;
 
-	// ===== STATE REGISTRY ACCESS =====
+	// State Registry Access =====
 
 	StateRegistry& states();
 
-	// ===== EXTERNALIZED STATE DATA =====
+	// Externalized State Data
 	void setStopDuration(Train* train, double durationSeconds);
 	double getStopDuration(const Train* train) const;
 	bool decrementStopDuration(Train* train, double dt);
 	void clearStopDuration(Train* train);
 
-	// ===== PHYSICS ABSTRACTION =====
-
+	//Physics Abstraction
 	void applyForce(Train* train, double force, double dt);
 };
 
