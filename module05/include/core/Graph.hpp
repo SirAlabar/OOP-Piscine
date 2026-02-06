@@ -49,7 +49,7 @@ public:
 
 	// Validation
 	bool isValid() const;
-
+    // void printAsciiMap() const;
 	// Cleanup
 	void clear();
 };

@@ -19,6 +19,7 @@ private:
 	// Identity
 	std::string _name;
 	int         _id;  // Sequential deterministic ID
+	bool _finished;
 
 	// Physical properties
 	double _mass;           // tons
@@ -59,6 +60,8 @@ public:
 	// Identity getters
 	std::string getName() const;
 	int         getID() const;
+	bool		isFinished() const;
+	void		markFinished();
 
 	// Physical property getters
 	double getMass() const;

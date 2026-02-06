@@ -6,6 +6,7 @@
 #include "core/Train.hpp"
 #include "core/Rail.hpp"
 #include "core/Node.hpp"
+#include "core/Graph.hpp"
 
 SimulationContext::SimulationContext(
 	Graph* network,
@@ -22,8 +23,6 @@ SimulationContext::~SimulationContext()
 {
 	delete _states;
 }
-
-// ===== RISK DATA ACCESS =====
 
 const RiskData& SimulationContext::getRisk(const Train* train) const
 {
@@ -98,14 +97,10 @@ Node* SimulationContext::getCurrentArrivalNode(const Train* train) const
 	return train->getCurrentRail()->getNodeB();
 }
 
-// ===== STATE REGISTRY ACCESS =====
-
 StateRegistry& SimulationContext::states()
 {
 	return *_states;
 }
-
-// ===== EXTERNALIZED STATE DATA =====
 
 void SimulationContext::setStopDuration(Train* train, double durationSeconds)
 {
@@ -144,8 +139,6 @@ void SimulationContext::clearStopDuration(Train* train)
 {
 	_stopDurations.erase(train);
 }
-
-// ===== PHYSICS ABSTRACTION =====
 
 void SimulationContext::applyForce(Train* train, double force, double dt)
 {

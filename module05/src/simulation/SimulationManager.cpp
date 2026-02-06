@@ -1,4 +1,5 @@
 #include "simulation/SimulationManager.hpp"
+#include "simulation/MovementSystem.hpp"
 #include "simulation/SimulationContext.hpp"
 #include "simulation/CollisionAvoidance.hpp"
 #include "simulation/PhysicsSystem.hpp"
@@ -152,12 +153,13 @@ void SimulationManager::step()
 	handleStateTransitions();
 	_context->refreshAllRiskData();
 	updateTrainStates(_timestep);
+	checkFinishedTrains();
 
 	_currentTime += _timestep;
 
 	// Write snapshots every 2 minutes
 	int currentMinute = static_cast<int>(_currentTime / 60.0);
-	if (currentMinute % 2 == 0 && currentMinute != _lastSnapshotMinute)
+	if (currentMinute % 1 == 0 && currentMinute != _lastSnapshotMinute)
 	{
 		writeSnapshots();
 		_lastSnapshotMinute = currentMinute;
@@ -176,13 +178,12 @@ void SimulationManager::run(double maxTime)
 		bool allFinished = true;
 		for (Train* train : _trains)
 		{
-			if (train && train->getCurrentRail() != nullptr)
+			if (train && !train->isFinished())
 			{
 				allFinished = false;
 				break;
 			}
-		}
-		
+		}		
 		if (allFinished)
 		{
 			stop();
@@ -243,14 +244,23 @@ void SimulationManager::reset()
 // Helper methods
 void SimulationManager::updateTrainStates(double dt)
 {
-	for (Train* train : _trains)
-	{
-		if (train)
+    for (Train* train : _trains)
+    {
+        if (!train)
 		{
-			train->update(dt);
+            continue;
 		}
-	}
+
+        if (train->isFinished())
+		{
+            continue;
+		}
+
+        train->update(dt);
+        MovementSystem::resolveProgress(train, _context);
+    }
 }
+
 
 void SimulationManager::checkDepartures()
 {
@@ -262,6 +272,11 @@ void SimulationManager::checkDepartures()
 		{
 			continue;
 		}
+
+		if (train->isFinished())
+        {
+            continue;
+        }
 		
 		if (train->getCurrentState()->getName() == "Idle")
 		{
@@ -274,6 +289,27 @@ void SimulationManager::checkDepartures()
 	}
 }
 
+void SimulationManager::checkFinishedTrains()
+{
+    for (Train* train : _trains)
+    {
+        if (!train || train->isFinished())
+		{
+            continue;
+		}
+
+        if (train->getCurrentRail() == nullptr)
+        {
+            std::cout << "[MOVEMENT] "
+                      << train->getName()
+                      << " COMPLETED JOURNEY\n";
+
+            train->markFinished();
+        }
+    }
+}
+
+
 void SimulationManager::handleStateTransitions()
 {
 	for (Train* train : _trains)
@@ -282,6 +318,11 @@ void SimulationManager::handleStateTransitions()
 		{
 			continue;
 		}
+
+		if (train->isFinished())
+        {
+            continue;
+        }
 		
 		ITrainState* newState = train->getCurrentState()->checkTransition(train, _context);
 		
@@ -301,6 +342,7 @@ void SimulationManager::writeSnapshots()
 
 		if (train && writer)
 		{
+			
 			// Only write if train has departed
 			if (train->getCurrentState()->getName() != "Idle")
 			{

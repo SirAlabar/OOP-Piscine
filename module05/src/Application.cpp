@@ -98,7 +98,8 @@ int Application::run()
         std::cout << "\n=== GRAPH CONTENT ===" << std::endl;
         for (const Node* n : graph->getNodes())
         {
-            std::cout << "Node: " << n->getName() << std::endl;
+            std::cout << "Node: " << n->getName() << " | type=" << n->getTypeString()
+              << std::endl;
         }
 
         for (const Rail* r : graph->getRails())
@@ -170,6 +171,10 @@ int Application::run()
 			          << " (" << path.size() << " segments)" << std::endl;
 		}
 
+
+		// graph->printAsciiMap();
+
+
 		std::cout << std::endl;
 
 		// Create output writers
@@ -225,36 +230,8 @@ int Application::run()
 
 
 		// Run simulation step by step with snapshot writing
-		sim.start();
-		
-		int lastSnapshotMinute = -1;
-		int lastProgressHour = -1;
+		sim.run(106400.0);
 
-		while (sim.isRunning() && sim.getCurrentTime() < 86400.0) // 24 hours max
-		{
-			sim.step();
-			
-			double currentTime = sim.getCurrentTime();
-			int currentMinute = static_cast<int>(currentTime / 60.0);
-			int currentHour = currentMinute / 60;
-			
-			// Write snapshots every 5 minutes
-			if (currentMinute % 5 == 0 && currentMinute != lastSnapshotMinute)
-			{
-				for (OutputWriter* writer : writers)
-				{
-					writer->writeSnapshot(currentTime);
-				}
-				lastSnapshotMinute = currentMinute;
-			}
-			
-			// Print progress every hour
-			if (currentHour > lastProgressHour && currentHour > 0)
-			{
-				std::cout << "  Simulation time: " << currentHour << "h" << std::endl;
-				lastProgressHour = currentHour;
-			}
-		}
 
 		// Write final snapshots
 		std::cout << std::endl;

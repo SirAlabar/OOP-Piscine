@@ -121,27 +121,16 @@ std::string OutputWriter::getStatusString() const
 
 double OutputWriter::calculateRemainingDistance() const
 {
-	double totalRemaining = 0.0;
-	const auto& path = _train->getPath();
-	size_t currentRailIndex = _train->getCurrentRailIndex();
-
-	// Distance remaining on current rail
-	Rail* currentRail = _train->getCurrentRail();
-	if (currentRail)
+    Rail* currentRail = _train->getCurrentRail();
+    if (!currentRail)
 	{
-		double currentRailLengthM = PhysicsSystem::kmToM(currentRail->getLength());
-		double remainingOnCurrentRail = currentRailLengthM - _train->getPosition();
-		totalRemaining += PhysicsSystem::mToKm(remainingOnCurrentRail);
+        return 0.0;
 	}
 
-	// Add length of all remaining rails
-	for (size_t i = currentRailIndex + 1; i < path.size(); ++i)
-	{
-		totalRemaining += path[i]->getLength();
-	}
-
-	return totalRemaining;
+    double posM = _train->getPosition();
+    return PhysicsSystem::mToKm(posM);
 }
+
 
 std::string OutputWriter::generateRailVisualization() const
 {

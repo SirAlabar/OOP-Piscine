@@ -1,6 +1,11 @@
 #include "core/Graph.hpp"
 #include "core/Node.hpp"
 #include "core/Rail.hpp"
+// #include <set>
+// #include <queue>
+// #include <iostream>
+// #include <algorithm>
+
 
 // Add node to graph (checks for duplicates)
 void Graph::addNode(Node* node)
@@ -178,3 +183,108 @@ void Graph::clear()
 	_rails.clear();
 	_adjacency.clear();
 }
+
+
+// void Graph::printAsciiMap() const
+// {
+//     std::cout << "\n=== ASCII RAIL MAP ===\n\n";
+
+//     std::set<const Node*> visited;
+
+//     // Escolher nós iniciais (preferir cidades)
+//     std::vector<Node*> roots;
+
+//     for (Node* node : getNodes())
+//     {
+//         if (node->getType() == NodeType::CITY)
+//         {
+//             roots.push_back(node);
+//         }
+//     }
+
+//     // Se não houver cidades, usa qualquer nó como raiz
+//     if (roots.empty())
+//     {
+//         for (Node* node : getNodes())
+//         {
+//             roots.push_back(node);
+//             break;
+//         }
+//     }
+
+//     // Pilha manual para simular a recursão
+//     struct Frame
+//     {
+//         const Node* node;
+//         int indent;
+//     };
+
+//     std::vector<Frame> stack;
+
+//     for (const Node* root : roots)
+//     {
+//         if (visited.count(root))
+//             continue;
+
+//         stack.push_back({root, 0});
+
+//         while (!stack.empty())
+//         {
+//             Frame current = stack.back();
+//             stack.pop_back();
+
+//             const Node* node = current.node;
+//             int indent = current.indent;
+
+//             if (!node || visited.count(node))
+//                 continue;
+
+//             visited.insert(node);
+
+//             std::string spacing(indent * 4, ' ');
+
+//             std::cout << spacing
+//                       << node->getName()
+//                       << " (" << node->getTypeString() << ")\n";
+
+//             auto rails = getRailsFromNode(const_cast<Node*>(node));
+
+//             // Ordenar para mostrar conexões com cidades primeiro
+//             std::sort(rails.begin(), rails.end(),
+//                 [](Rail* a, Rail* b)
+//                 {
+//                     NodeType ta = a->getNodeB()->getType();
+//                     NodeType tb = b->getNodeB()->getType();
+//                     return ta < tb;
+//                 });
+
+//             // Empilhar conexões em ordem inversa para manter leitura correta
+//             for (auto it = rails.rbegin(); it != rails.rend(); ++it)
+//             {
+//                 Rail* rail = *it;
+
+//                 Node* next = rail->getOtherNode(const_cast<Node*>(node));
+
+//                 if (!next)
+//                     continue;
+
+//                 if (visited.count(next))
+//                     continue;
+
+//                 std::cout << spacing << "  |\n";
+//                 std::cout << spacing
+//                           << "  +--["
+//                           << rail->getLength()
+//                           << "km @ "
+//                           << rail->getSpeedLimit()
+//                           << "km/h]---> "
+//                           << next->getName()
+//                           << "\n";
+
+//                 stack.push_back({next, indent + 1});
+//             }
+//         }
+//     }
+
+//     std::cout << "\n======================\n\n";
+// }

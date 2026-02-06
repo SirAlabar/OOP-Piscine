@@ -2,13 +2,14 @@
 #include "core/Rail.hpp"
 #include "utils/Time.hpp"
 #include "patterns/states/ITrainState.hpp" 
+#include <iostream>
 
 // Initialize static ID counter
 int Train::_nextID = 1;
 
 // Default constructor
 Train::Train()
-	: _name(""), _id(_nextID++), _mass(0.0), _frictionCoef(0.0),
+	: _name(""), _id(_nextID++), _finished(false), _mass(0.0), _frictionCoef(0.0),
 	  _maxAccelForce(0.0), _maxBrakeForce(0.0),
 	  _velocity(0.0), _position(0.0),
 	  _departureStation(""), _arrivalStation(""),
@@ -22,7 +23,7 @@ Train::Train(const std::string& name, double mass, double frictionCoef,
              double maxAccelForce, double maxBrakeForce,
              const std::string& departureStation, const std::string& arrivalStation,
              const Time& departureTime, const Time& stopDuration)
-	: _name(name), _id(_nextID++),
+	: _name(name), _id(_nextID++), _finished(false),
 	  _mass(mass), _frictionCoef(frictionCoef),
 	  _maxAccelForce(maxAccelForce), _maxBrakeForce(maxBrakeForce),
 	  _velocity(0.0), _position(0.0),
@@ -37,6 +38,7 @@ Train::Train(const std::string& name, double mass, double frictionCoef,
 // Copy constructor
 Train::Train(const Train& other)
 	: _name(other._name), _id(other._id),
+	  _finished(other._finished),
 	  _mass(other._mass), _frictionCoef(other._frictionCoef),
 	  _maxAccelForce(other._maxAccelForce),
 	  _maxBrakeForce(other._maxBrakeForce),
@@ -59,6 +61,7 @@ Train& Train::operator=(const Train& other)
 	{
 		_name = other._name;
 		_id = other._id;
+		_finished = other._finished;
 		_mass = other._mass;
 		_frictionCoef = other._frictionCoef;
 		_maxAccelForce = other._maxAccelForce;
@@ -178,6 +181,11 @@ size_t Train::getCurrentRailIndex() const
 
 void Train::advanceToNextRail()
 {
+	if (_path.empty())
+	{
+        return;
+	}
+
 	if (_currentRailIndex < _path.size())
 	{
 		_currentRailIndex++;
@@ -192,6 +200,19 @@ ITrainState* Train::getCurrentState() const
 
 void Train::setState(ITrainState* state)
 {
+	if (_finished)
+	{
+        return;
+	}
+
+	    std::cout << "[STATE] Train " << _name
+              << " changing state from "
+              << (_currentState ? _currentState->getName() : "NULL")
+              << " to "
+              << (state ? state->getName() : "NULL")
+              << " | finished=" << (_finished ? "YES" : "NO")
+              << std::endl;
+
 	_currentState = state;
 }
 
@@ -219,6 +240,29 @@ int Train::getNextID()
 {
 	return _nextID;
 }
+
+bool Train::isFinished() const
+{
+    return _finished;
+}
+
+void Train::markFinished()
+{
+    if (_finished)
+    {
+        std::cout << "[FINISHED] Train " << _name 
+                  << " already finished, markFinished() called again"
+                  << std::endl;
+        return;
+    }
+
+    std::cout << "[FINISHED] Train " << _name 
+              << " is now FINISHED"
+              << std::endl;
+
+    _finished = true;
+}
+
 
 // Delegate update to current state
 void Train::update(double dt)
