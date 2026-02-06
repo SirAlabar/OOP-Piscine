@@ -1,0 +1,1 @@
+/usr/bin/c++ -O3 -DNDEBUG CMakeFiles/Railway_Simulator.dir/src/main.cpp.o -o Railway_Simulator  libRailwaySimCore.a 
