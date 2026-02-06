@@ -1,6 +1,0 @@
-/home/hugo/OPP-Piscine/module05/build/CMakeFiles/RailwaySimCore.dir
-/home/hugo/OPP-Piscine/module05/build/CMakeFiles/Railway_Simulator.dir
-/home/hugo/OPP-Piscine/module05/build/CMakeFiles/Railway_Simulator_tests.dir
-/home/hugo/OPP-Piscine/module05/build/CMakeFiles/test.dir
-/home/hugo/OPP-Piscine/module05/build/CMakeFiles/edit_cache.dir
-/home/hugo/OPP-Piscine/module05/build/CMakeFiles/rebuild_cache.dir
