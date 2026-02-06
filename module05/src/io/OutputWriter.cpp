@@ -6,9 +6,10 @@
 #include <sstream>
 #include <cmath>
 
-OutputWriter::OutputWriter(Train* train) : _train(train)
+OutputWriter::OutputWriter(Train* train) : _train(train), _totalPathDistance(0.0), _finalSnapshotWritten(false)
 {
 	_filename = generateFilename();
+	_totalPathDistance = calculateTotalPathDistance();
 }
 
 OutputWriter::~OutputWriter()
@@ -46,11 +47,61 @@ void OutputWriter::writeHeader(double estimatedTimeMinutes)
 	_file << std::endl;
 }
 
+void OutputWriter::writePathInfo()
+{
+	const auto& path = _train->getPath();
+	
+	_file << "PATH:" << std::endl;
+	
+	for (size_t i = 0; i < path.size(); ++i)
+	{
+		const PathSegment& segment = path[i];
+		if (!segment.rail)
+		{
+			continue;
+		}
+		
+		_file << "  Segment " << i << ": "
+		      << segment.from->getName() << " <-> " << segment.to->getName()
+		      << " | length=" << std::fixed << std::setprecision(2) << segment.rail->getLength() << "km"
+		      << " | speed=" << static_cast<int>(segment.rail->getSpeedLimit()) << "km/h"
+		      << std::endl;
+	}
+	
+	_file << "  Total distance: " << std::fixed << std::setprecision(2) 
+	      << _totalPathDistance << "km" << std::endl;
+	_file << std::endl;
+}
+
 void OutputWriter::writeSnapshot(double currentTimeSeconds)
 {
 	Rail* currentRail = _train->getCurrentRail();
+	
+	// Handle finished train - write final snapshot at destination (ONCE ONLY)
 	if (!currentRail)
 	{
+		// Skip if we already wrote the final snapshot
+		if (_finalSnapshotWritten)
+		{
+			return;
+		}
+		
+		std::string timeStr = formatTime(currentTimeSeconds);
+		std::string arrivalStation = _train->getArrivalStation();
+		
+		// Format final snapshot: train at destination with 0.00km remaining
+		std::ostringstream nodeStr, statusStr;
+		nodeStr << std::setw(10) << std::left << arrivalStation;
+		statusStr << std::setw(9) << std::left << "Stopped";
+		
+		_file << "[" << timeStr << "] - "
+		      << "[" << nodeStr.str() << "]"
+		      << "[" << std::setw(10) << std::left << "          " << "] - "
+		      << "[" << std::fixed << std::setprecision(2) << 0.00 << "km] - "
+		      << "[" << statusStr.str() << "] - "
+		      << "[ ]" << std::endl;
+		
+		_finalSnapshotWritten = true;
 		return;
 	}
 
@@ -119,6 +170,22 @@ std::string OutputWriter::getStatusString() const
 	return "Unknown";
 }
 
+double OutputWriter::calculateTotalPathDistance() const
+{
+	const auto& path = _train->getPath();
+	double totalKm = 0.0;
+	
+	for (const auto& segment : path)
+	{
+		if (segment.rail)
+		{
+			totalKm += segment.rail->getLength();
+		}
+	}
+	
+	return totalKm;
+}
+
 double OutputWriter::calculateRemainingDistance() const
 {
     Rail* currentRail = _train->getCurrentRail();
@@ -127,8 +194,24 @@ double OutputWriter::calculateRemainingDistance() const
         return 0.0;
 	}
 
-    double posM = _train->getPosition();
-    return PhysicsSystem::mToKm(posM);
+    const auto& path = _train->getPath();
+    size_t currentIndex = _train->getCurrentRailIndex();
+    
+    // Calculate remaining distance on current rail
+    double currentRailLengthM = PhysicsSystem::kmToM(currentRail->getLength());
+    double remainingOnCurrentRail = currentRailLengthM - _train->getPosition();
+    
+    // Add all subsequent rails
+    double totalRemaining = remainingOnCurrentRail;
+    for (size_t i = currentIndex + 1; i < path.size(); ++i)
+    {
+        if (path[i].rail)
+        {
+            totalRemaining += PhysicsSystem::kmToM(path[i].rail->getLength());
+        }
+    }
+    
+    return PhysicsSystem::mToKm(totalRemaining);
 }
 
 
@@ -176,29 +259,32 @@ std::string OutputWriter::generateRailVisualization() const
 		}
 	}
 
-	// Check for blocking train
-	Train* blockingTrain = currentRail->getOccupiedBy();
-	if (blockingTrain && blockingTrain != _train)
+	// Check for other trains on the same rail
+	const auto& trainsOnRail = currentRail->getTrainsOnRail();
+	std::string vizStr = oss.str();
+	
+	for (Train* otherTrain : trainsOnRail)
 	{
-		// Calculate blocking train position
-		double blockingProgressRatio = blockingTrain->getPosition() / railLengthM;
-		int blockingCell = static_cast<int>(blockingProgressRatio * cellCount);
-
-		if (blockingCell >= 0 && blockingCell < cellCount && blockingCell != trainCell)
+		if (otherTrain && otherTrain != _train)
 		{
-			// Insert [O] for blocking train
-			std::string vizStr = oss.str();
-			int insertPos = blockingCell * 3; // Each cell is 3 chars: "[ ]"
+			// Calculate other train position
+			double otherProgressRatio = otherTrain->getPosition() / railLengthM;
+			int otherCell = static_cast<int>(otherProgressRatio * cellCount);
 
-			if (insertPos < static_cast<int>(vizStr.length()))
+			if (otherCell >= 0 && otherCell < cellCount && otherCell != trainCell)
 			{
-				vizStr[insertPos + 1] = 'O';
-				return vizStr;
+				// Insert [O] for other train
+				int insertPos = otherCell * 3; // Each cell is 3 chars: "[ ]"
+
+				if (insertPos < static_cast<int>(vizStr.length()))
+				{
+					vizStr[insertPos + 1] = 'O';
+				}
 			}
 		}
 	}
 
-	return oss.str();
+	return vizStr;
 }
 
 std::string OutputWriter::formatTime(double seconds) const

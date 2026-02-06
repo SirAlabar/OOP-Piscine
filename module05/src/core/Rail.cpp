@@ -7,8 +7,7 @@ Rail::Rail()
 	: _nodeA(nullptr),
 	  _nodeB(nullptr),
 	  _length(0.0),
-	  _speedLimit(0.0),
-	  _occupiedBy(nullptr)
+	  _speedLimit(0.0)
 {
 }
 
@@ -17,8 +16,7 @@ Rail::Rail(Node* nodeA, Node* nodeB, double length, double speedLimit)
 	: _nodeA(nodeA),
 	  _nodeB(nodeB),
 	  _length(length),
-	  _speedLimit(speedLimit),
-	  _occupiedBy(nullptr)
+	  _speedLimit(speedLimit)
 {
 }
 
@@ -43,27 +41,98 @@ double Rail::getSpeedLimit() const
 	return _speedLimit;
 }
 
-Train* Rail::getOccupiedBy() const
+// Multi-train rail occupancy management
+void Rail::addTrain(Train* train)
 {
-	return _occupiedBy;
+	if (!train)
+	{
+		return;
+	}
+
+	// Avoid duplicates
+	for (Train* t : _trainsOnRail)
+	{
+		if (t == train)
+		{
+			return;
+		}
+	}
+
+	_trainsOnRail.push_back(train);
 }
 
-// Check if rail is currently occupied by a train
-bool Rail::isOccupied() const
+void Rail::removeTrain(Train* train)
 {
-	return _occupiedBy != nullptr;
+	if (!train)
+	{
+		return;
+	}
+
+	for (auto it = _trainsOnRail.begin(); it != _trainsOnRail.end(); ++it)
+	{
+		if (*it == train)
+		{
+			_trainsOnRail.erase(it);
+			return;
+		}
+	}
 }
 
-// Mark rail as occupied by a train
-void Rail::setOccupiedBy(Train* train)
+const std::vector<Train*>& Rail::getTrainsOnRail() const
 {
-	_occupiedBy = train;
+	return _trainsOnRail;
 }
 
-// Clear occupancy (train has left the rail)
-void Rail::clearOccupied()
+bool Rail::hasTrains() const
 {
-	_occupiedBy = nullptr;
+	return !_trainsOnRail.empty();
+}
+
+Train* Rail::findLeaderFor(Train* follower, Node* directionTo) const
+{
+	if (!follower || !directionTo)
+	{
+		return nullptr;
+	}
+
+	Train* nearestLeader = nullptr;
+	double minGap = 1e9;
+
+	for (Train* other : _trainsOnRail)
+	{
+		if (!other || other == follower || other->isFinished())
+		{
+			continue;
+		}
+
+		// Check if other train is traveling in the same direction
+		// by comparing the path direction
+		const auto& otherPath = other->getPath();
+		size_t otherIdx = other->getCurrentRailIndex();
+		
+		if (otherIdx >= otherPath.size())
+		{
+			continue;
+		}
+
+		// Check if traveling toward the same destination node
+		if (otherPath[otherIdx].to != directionTo)
+		{
+			continue;  // Different direction, not a leader
+		}
+
+		// Calculate gap (leader position - follower position)
+		double gap = other->getPosition() - follower->getPosition();
+
+		// Only consider trains ahead (positive gap)
+		if (gap > 0.0 && gap < minGap)
+		{
+			minGap = gap;
+			nearestLeader = other;
+		}
+	}
+
+	return nearestLeader;
 }
 
 // Validation - both nodes exist, length and speed limit are positive

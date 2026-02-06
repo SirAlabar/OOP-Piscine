@@ -3,6 +3,7 @@
 #include "simulation/SimulationContext.hpp"
 #include "simulation/CollisionAvoidance.hpp"
 #include "simulation/PhysicsSystem.hpp"
+#include "patterns/mediator/TrafficController.hpp"
 #include "core/Train.hpp"
 #include "core/Graph.hpp"
 #include "core/Rail.hpp"
@@ -14,6 +15,7 @@
 SimulationManager::SimulationManager()
 	: _network(nullptr),
 	  _collisionSystem(new CollisionAvoidance()),
+	  _trafficController(nullptr),
 	  _context(nullptr),
 	  _currentTime(0.0),
 	  _timestep(1.0),
@@ -27,6 +29,7 @@ SimulationManager::~SimulationManager()
 {
 	cleanupOutputWriters();
 	delete _collisionSystem;
+	delete _trafficController;
 	delete _context;
 }
 
@@ -39,7 +42,17 @@ void SimulationManager::setNetwork(Graph* network)
 	{
 		delete _context;
 	}
-	_context = new SimulationContext(_network, _collisionSystem, &_trains);
+	
+	if (_trafficController)
+	{
+		delete _trafficController;
+	}
+	
+	// Create TrafficController (Mediator)
+	_trafficController = new TrafficController(_network, _collisionSystem, &_trains);
+	
+	// Create SimulationContext with TrafficController
+	_context = new SimulationContext(_network, _collisionSystem, &_trains, _trafficController);
 }
 
 void SimulationManager::addTrain(Train* train)
@@ -96,6 +109,7 @@ void SimulationManager::start()
 			}
 
 			writer->writeHeader(estimatedMinutes);
+			writer->writePathInfo();
 			_outputWriters[train] = writer;
 
 			std::cout << "  Created output: " << train->getName() << "_" 
@@ -124,18 +138,7 @@ void SimulationManager::stop()
 {
 	_running = false;
 
-	// Write final snapshots for all trains
-	for (auto& pair : _outputWriters)
-	{
-		Train* train = pair.first;
-		OutputWriter* writer = pair.second;
-
-		if (train && writer)
-		{
-			writer->writeSnapshot(_currentTime);
-		}
-	}
-
+	// Close all output files (final snapshots already written when trains finished)
 	cleanupOutputWriters();
 }
 
@@ -157,13 +160,8 @@ void SimulationManager::step()
 
 	_currentTime += _timestep;
 
-	// Write snapshots every 2 minutes
-	int currentMinute = static_cast<int>(_currentTime / 60.0);
-	if (currentMinute % 1 == 0 && currentMinute != _lastSnapshotMinute)
-	{
-		writeSnapshots();
-		_lastSnapshotMinute = currentMinute;
-	}
+	// Write snapshots (handles state changes + periodic writes internally)
+	writeSnapshots();
 }
 
 void SimulationManager::run(double maxTime)
@@ -225,6 +223,7 @@ void SimulationManager::reset()
 {
 	cleanupOutputWriters();
 	_trains.clear();
+	_previousStates.clear();  // Clear state tracking
 	_currentTime = 0.0;
 	_running = false;
 	_lastSnapshotMinute = -1;
@@ -234,10 +233,17 @@ void SimulationManager::reset()
 		delete _context;
 		_context = nullptr;
 	}
+	
+	if (_trafficController)
+	{
+		delete _trafficController;
+		_trafficController = nullptr;
+	}
 
 	if (_network)
 	{
-		_context = new SimulationContext(_network, _collisionSystem, &_trains);
+		_trafficController = new TrafficController(_network, _collisionSystem, &_trains);
+		_context = new SimulationContext(_network, _collisionSystem, &_trains, _trafficController);
 	}
 }
 
@@ -294,8 +300,27 @@ void SimulationManager::checkDepartures()
 		{
 			if (currentTimeFormatted >= train->getDepartureTime())
 			{
-				static AcceleratingState accelState;
-				train->setState(&accelState);
+				// Train wants to depart - check first rail in path
+				const auto& path = train->getPath();
+				if (path.empty() || !path[0].rail)
+				{
+					continue;
+				}
+
+				// Request access through TrafficController (Mediator pattern)
+				if (_trafficController)
+				{
+					TrafficController::AccessDecision decision = 
+						_trafficController->requestRailAccess(train, path[0].rail);
+					
+					if (decision == TrafficController::GRANT)
+					{
+						// Permission granted - depart!
+						static AcceleratingState accelState;
+						train->setState(&accelState);
+					}
+					// If DENY, stay in Idle and try again next step
+				}
 			}
 		}
 	}
@@ -347,6 +372,15 @@ void SimulationManager::handleStateTransitions()
 
 void SimulationManager::writeSnapshots()
 {
+	// Write snapshots every 2 minutes
+	int currentMinute = static_cast<int>(_currentTime / 60.0);
+	bool periodicWrite = (currentMinute % 2 == 0 && currentMinute != _lastSnapshotMinute);
+	
+	if (periodicWrite)
+	{
+		_lastSnapshotMinute = currentMinute;
+	}
+	
 	for (auto& pair : _outputWriters)
 	{
 		Train* train = pair.first;
@@ -354,11 +388,36 @@ void SimulationManager::writeSnapshots()
 
 		if (train && writer)
 		{
+			// Skip trains that haven't departed yet
+			if (train->getCurrentState()->getName() == "Idle")
+			{
+				continue;
+			}
 			
-			// Only write if train has departed
-			if (train->getCurrentState()->getName() != "Idle")
+			// Get current state name
+			std::string currentStateName = train->getCurrentState()->getName();
+			
+			// Check if state changed
+			bool stateChanged = false;
+			auto prevStateIt = _previousStates.find(train);
+			if (prevStateIt != _previousStates.end())
+			{
+				stateChanged = (prevStateIt->second != currentStateName);
+			}
+			else
+			{
+				// First time tracking this train - initialize
+				_previousStates[train] = currentStateName;
+				stateChanged = true;  // Write first snapshot after departure
+			}
+			
+			// Write snapshot if: state changed OR periodic interval
+			if (stateChanged || periodicWrite)
 			{
 				writer->writeSnapshot(_currentTime);
+				
+				// Update previous state
+				_previousStates[train] = currentStateName;
 			}
 		}
 	}

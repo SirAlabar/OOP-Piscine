@@ -13,21 +13,26 @@ void CollisionAvoidance::refreshRailOccupancy(const std::vector<Train*>& trains,
 		return;
 	}
 	
-	// Clear all occupancy
+	// Clear all trains from all rails
 	for (Rail* rail : network->getRails())
 	{
 		if (rail)
 		{
-			rail->clearOccupied();
+			// Create a copy of the trains list to avoid iterator invalidation
+			std::vector<Train*> trainsOnRail = rail->getTrainsOnRail();
+			for (Train* train : trainsOnRail)
+			{
+				rail->removeTrain(train);
+			}
 		}
 	}
 	
-	// Mark current rail as occupied
+	// Add each train to its current rail
 	for (Train* train : trains)
 	{
-		if (train && train->getCurrentRail())
+		if (train && !train->isFinished() && train->getCurrentRail())
 		{
-			train->getCurrentRail()->setOccupiedBy(train);
+			train->getCurrentRail()->addTrain(train);
 		}
 	}
 }
@@ -110,7 +115,7 @@ bool CollisionAvoidance::areTravelingSameDirection(const Train* train1, size_t i
         return false;
     }
 
-    // Same direction if both have same from→to nodes
+    // Same direction if both have same fromâ†’to nodes
     return (path1[idx1].from == path2[idx2].from && path1[idx1].to == path2[idx2].to);
 }
 

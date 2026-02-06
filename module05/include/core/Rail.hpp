@@ -1,6 +1,8 @@
 #ifndef RAIL_HPP
 #define RAIL_HPP
 
+#include <vector>
+
 class Node;
 class Train;
 
@@ -12,7 +14,9 @@ private:
 	Node*  _nodeB;
 	double _length;      // km
 	double _speedLimit;  // km/h
-	Train* _occupiedBy;  // nullptr if free, pointer to train if occupied
+	
+	// Multi-train tracking: rails can hold multiple trains with safe spacing
+	std::vector<Train*> _trainsOnRail;
 
 public:
 	Rail();
@@ -25,11 +29,14 @@ public:
 	Node*  getNodeB() const;
 	double getLength() const;
 	double getSpeedLimit() const;
-	Train* getOccupiedBy() const;
-
-	bool isOccupied() const;
-	void setOccupiedBy(Train* train);
-	void clearOccupied();
+	
+	// Multi-train rail occupancy management
+	void addTrain(Train* train);
+	void removeTrain(Train* train);
+	const std::vector<Train*>& getTrainsOnRail() const;
+	bool hasTrains() const;
+	Train* findLeaderFor(Train* follower, Node* directionTo) const;
+	
 	bool isValid() const;
 
 	// Get the other node (if current is nodeA, return nodeB and vice versa)

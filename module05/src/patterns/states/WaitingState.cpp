@@ -1,6 +1,8 @@
 #include "patterns/states/WaitingState.hpp"
 #include "patterns/states/StateRegistry.hpp"
+#include "patterns/mediator/TrafficController.hpp"
 #include "core/Train.hpp"
+#include "core/Rail.hpp"
 #include "simulation/SimulationContext.hpp"
 #include "simulation/PhysicsSystem.hpp"
 #include "simulation/SafetyConstants.hpp"
@@ -27,21 +29,27 @@ ITrainState* WaitingState::checkTransition(Train* train, SimulationContext* ctx)
         return nullptr;
     }
 
-    const RiskData& risk = ctx->getRisk(train);
+    // Get current rail
+    Rail* currentRail = train->getCurrentRail();
+    if (!currentRail)
+    {
+        return nullptr;
+    }
 
-    // If there is no leader ahead anymore, the train can resume movement
-    if (!risk.hasLeader())
+    // Request access through TrafficController (Mediator pattern)
+    TrafficController* controller = ctx->getTrafficController();
+    if (!controller)
+    {
+        return nullptr;
+    }
+
+    // Check if we have permission to resume movement
+    if (controller->requestRailAccess(train, currentRail) == TrafficController::GRANT)
     {
         return ctx->states().accelerating();
     }
 
-    // If the leader has started moving again, resume movement
-    if (risk.leader->getVelocity() > 0.1)
-    {
-        return ctx->states().accelerating();
-    }
-
-    // While the leader remains stopped, stay in Waiting state
+    // Access denied - remain in Waiting state
     return nullptr;
 }
 

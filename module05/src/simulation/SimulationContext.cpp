@@ -3,6 +3,7 @@
 #include "simulation/PhysicsSystem.hpp"
 #include "simulation/RiskData.hpp"
 #include "patterns/states/StateRegistry.hpp"
+#include "patterns/mediator/TrafficController.hpp"
 #include "core/Train.hpp"
 #include "core/Rail.hpp"
 #include "core/Node.hpp"
@@ -11,9 +12,11 @@
 SimulationContext::SimulationContext(
 	Graph* network,
 	CollisionAvoidance* collisionSystem,
-	const std::vector<Train*>* trains)
+	const std::vector<Train*>* trains,
+	TrafficController* trafficController)
 	: _network(network),
 	  _collisionSystem(collisionSystem),
+	  _trafficController(trafficController),
 	  _trains(trains),
 	  _states(new StateRegistry())
 {
@@ -109,6 +112,11 @@ Node* SimulationContext::getCurrentArrivalNode(const Train* train) const
 StateRegistry& SimulationContext::states()
 {
 	return *_states;
+}
+
+TrafficController* SimulationContext::getTrafficController() const
+{
+	return _trafficController;
 }
 
 void SimulationContext::setStopDuration(Train* train, double durationSeconds)

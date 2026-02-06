@@ -8,6 +8,7 @@ class Train;
 class Graph;
 class Node;
 class CollisionAvoidance;
+class TrafficController;
 class StateRegistry;
 struct RiskData;
 
@@ -16,6 +17,7 @@ class SimulationContext
 private:
 	Graph* _network;
 	CollisionAvoidance* _collisionSystem;
+	TrafficController* _trafficController;
 	const std::vector<Train*>* _trains;
 	// State Management
 	StateRegistry* _states;
@@ -27,7 +29,8 @@ public:
 	SimulationContext(
 		Graph* network,
 		CollisionAvoidance* collisionSystem,
-		const std::vector<Train*>* trains
+		const std::vector<Train*>* trains,
+		TrafficController* trafficController
 	);
 	~SimulationContext();
 
@@ -50,6 +53,9 @@ public:
 	// State Registry Access =====
 
 	StateRegistry& states();
+	
+	// TrafficController Access
+	TrafficController* getTrafficController() const;
 
 	// Externalized State Data
 	void setStopDuration(Train* train, double durationSeconds);

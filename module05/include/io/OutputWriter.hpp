@@ -20,6 +20,9 @@ public:
 
 	// Write header with estimated time
 	void writeHeader(double estimatedTimeMinutes);
+	
+	// Write path information (segments, distances, speeds)
+	void writePathInfo();
 
 	// Write snapshot at current simulation time
 	void writeSnapshot(double currentTimeSeconds);
@@ -31,9 +34,14 @@ private:
 	Train* _train;
 	std::ofstream _file;
 	std::string _filename;
+	double _totalPathDistance;  // Total journey distance in kilometers
+	bool _finalSnapshotWritten;  // Track if final destination snapshot has been written
 
 	// Generate filename: TrainName_DepartureTime.result
 	std::string generateFilename() const;
+	
+	// Calculate total distance of train's path
+	double calculateTotalPathDistance() const;
 
 	// Get status string from current state
 	std::string getStatusString() const;

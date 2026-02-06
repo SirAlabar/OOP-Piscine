@@ -1,5 +1,6 @@
 #include "patterns/states/CruisingState.hpp"
 #include "patterns/states/StateRegistry.hpp"
+#include "patterns/mediator/TrafficController.hpp"
 #include "core/Train.hpp"
 #include "core/Rail.hpp"
 #include "simulation/SimulationContext.hpp"
@@ -57,7 +58,7 @@ ITrainState* CruisingState::checkTransition(Train* train, SimulationContext* ctx
 
     const RiskData& risk = ctx->getRisk(train);
 
-    // 1. Emergency situations always have highest priority
+    // 1. Emergency situations always have highest priority (safety override)
     if (SafetyConstants::isEmergencyZone(risk.gap, risk.brakingDistance))
     {
         return ctx->states().emergency();
@@ -66,16 +67,45 @@ ITrainState* CruisingState::checkTransition(Train* train, SimulationContext* ctx
     // 2. Check if there is a leader ahead
     if (risk.hasLeader())
     {
-        // If the leader has stopped, transition to Braking first
-        if (risk.leader->getVelocity() < 0.1)
+        // Check priority through TrafficController
+        TrafficController* controller = ctx->getTrafficController();
+        Rail* currentRail = train->getCurrentRail();
+        
+        if (controller && currentRail)
         {
-            return ctx->states().braking();
-        }
+            // Request access - if GRANTED, we have higher priority than leader
+            TrafficController::AccessDecision decision = 
+                controller->requestRailAccess(train, currentRail);
+            
+            if (decision == TrafficController::DENY)
+            {
+                // Leader has higher priority - must yield
+                // If the leader has stopped, transition to Braking first
+                if (risk.leader->getVelocity() < 0.1)
+                {
+                    return ctx->states().braking();
+                }
 
-        // If too close to a moving leader, also start braking
-        if (risk.gap < risk.safeDistance)
+                // If too close to a moving leader, also start braking
+                if (risk.gap < risk.safeDistance)
+                {
+                    return ctx->states().braking();
+                }
+            }
+            // If GRANT: we have priority, ignore leader and continue
+        }
+        else
         {
-            return ctx->states().braking();
+            // Fallback: no controller, use old logic
+            if (risk.leader->getVelocity() < 0.1)
+            {
+                return ctx->states().braking();
+            }
+
+            if (risk.gap < risk.safeDistance)
+            {
+                return ctx->states().braking();
+            }
         }
     }
 

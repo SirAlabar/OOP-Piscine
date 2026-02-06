@@ -10,6 +10,7 @@ class Graph;
 class CollisionAvoidance;
 class SimulationContext;
 class OutputWriter;
+class TrafficController;
 
 class SimulationManager
 {
@@ -22,6 +23,7 @@ private:
 	Graph* _network;
 	TrainList _trains;
 	CollisionAvoidance* _collisionSystem;
+	TrafficController* _trafficController;
 	SimulationContext* _context;
 	
 	double _currentTime;
@@ -30,6 +32,7 @@ private:
 	
 	// Output management
 	std::map<Train*, OutputWriter*> _outputWriters;
+	std::map<Train*, std::string> _previousStates;  // Track previous state for each train
 	int _lastSnapshotMinute;
 	
 	void updateTrainStates(double dt);
