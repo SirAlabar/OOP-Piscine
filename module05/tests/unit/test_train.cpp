@@ -119,7 +119,9 @@ TEST_F(TrainTest, PathManagement)
 	Rail r1(&a, &b, 10.0, 100.0);
 	Rail r2(&b, &c, 15.0, 120.0);
 	
-	std::vector<Rail*> path = {&r1, &r2};
+	std::vector<PathSegment> path;
+	path.push_back({&r1, &a, &b});
+	path.push_back({&r2, &b, &c});
 	t.setPath(path);
 	
 	EXPECT_EQ(t.getPath().size(), 2);
@@ -137,7 +139,9 @@ TEST_F(TrainTest, AdvanceToNextRail)
 	Rail r1(&a, &b, 10.0, 100.0);
 	Rail r2(&b, &c, 15.0, 120.0);
 	
-	std::vector<Rail*> path = {&r1, &r2};
+	std::vector<PathSegment> path;
+	path.push_back({&r1, &a, &b});
+	path.push_back({&r2, &b, &c});
 	t.setPath(path);
 	
 	t.advanceToNextRail();
@@ -206,7 +210,6 @@ TEST_F(TrainTest, StateManagement)
 	Train t("Express", 80.0, 0.005, 356.0, 500.0, "A", "B", depTime, stopDur);
 	
 	EXPECT_EQ(t.getCurrentState(), nullptr);
-	// setState tested in Week 3 with actual ITrainState implementations
 }
 
 TEST_F(TrainTest, ResetIDCounter)

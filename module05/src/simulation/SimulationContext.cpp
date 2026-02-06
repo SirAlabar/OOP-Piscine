@@ -94,7 +94,16 @@ Node* SimulationContext::getCurrentArrivalNode(const Train* train) const
 		return nullptr;
 	}
 
-	return train->getCurrentRail()->getNodeB();
+	const auto& path = train->getPath();
+	size_t currentIndex = train->getCurrentRailIndex();
+
+	if (currentIndex >= path.size())
+	{
+		return nullptr;
+	}
+
+	// Return the destination node from PathSegment
+	return path[currentIndex].to;
 }
 
 StateRegistry& SimulationContext::states()

@@ -6,6 +6,18 @@
 // #include <iostream>
 // #include <algorithm>
 
+Graph::~Graph()
+{
+    for (Node* node : _nodes)
+	{
+        delete node;
+	}
+
+    for (Rail* rail : _rails)
+	{
+        delete rail;
+	}
+}
 
 // Add node to graph (checks for duplicates)
 void Graph::addNode(Node* node)

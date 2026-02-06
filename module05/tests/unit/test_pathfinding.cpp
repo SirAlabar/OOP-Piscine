@@ -46,7 +46,7 @@ TEST_F(PathfindingTest, DirectConnection)
 	auto path = dijkstra.findPath(&graph, nodeA, nodeB);
 	
 	EXPECT_EQ(path.size(), 1);
-	EXPECT_EQ(path[0], &rail);
+	EXPECT_EQ(path[0].rail, &rail);
 }
 
 TEST_F(PathfindingTest, TwoHopPath)
@@ -61,8 +61,8 @@ TEST_F(PathfindingTest, TwoHopPath)
 	auto path = dijkstra.findPath(&graph, nodeA, nodeC);
 	
 	EXPECT_EQ(path.size(), 2);
-	EXPECT_EQ(path[0], &rail1);
-	EXPECT_EQ(path[1], &rail2);
+	EXPECT_EQ(path[0].rail, &rail1);
+	EXPECT_EQ(path[1].rail, &rail2);
 }
 
 TEST_F(PathfindingTest, MultipleRoutesPicksShortest)
@@ -83,8 +83,8 @@ TEST_F(PathfindingTest, MultipleRoutesPicksShortest)
 	
 	// Should pick via C (2 hops, less time)
 	EXPECT_EQ(path.size(), 2);
-	EXPECT_EQ(path[0], &railAC);
-	EXPECT_EQ(path[1], &railCB);
+	EXPECT_EQ(path[0].rail, &railAC);
+	EXPECT_EQ(path[1].rail, &railCB);
 }
 
 TEST_F(PathfindingTest, SpeedLimitAffectsCost)
@@ -169,8 +169,8 @@ TEST_F(PathfindingTest, ComplexNetwork)
 	
 	EXPECT_EQ(path.size(), 2);
 	// Should pick A->B->D (faster total time)
-	EXPECT_EQ(path[0], &railAB);
-	EXPECT_EQ(path[1], &railBD);
+	EXPECT_EQ(path[0].rail, &railAB);
+	EXPECT_EQ(path[1].rail, &railBD);
 }
 
 TEST_F(PathfindingTest, GetStrategyName)
@@ -213,7 +213,7 @@ TEST_F(PathfindingTest, PathFinderFindPath)
 	auto path = pf.findPath(&graph, nodeA, nodeB);
 	
 	EXPECT_EQ(path.size(), 1);
-	EXPECT_EQ(path[0], &rail);
+	EXPECT_EQ(path[0].rail, &rail);
 }
 
 TEST_F(PathfindingTest, PathFinderNoStrategy)

@@ -8,12 +8,21 @@
 class Rail;
 class ITrainState;
 class Time;
+class Node;
+
+// Path segment with explicit direction
+struct PathSegment
+{
+	Rail* rail;
+	Node* from;  // Source node
+	Node* to;    // Destination node
+};
 
 // Represents a train with physical properties and journey parameters
 class Train
 {
 public:
-	using Path = std::vector<Rail*>;
+	using Path = std::vector<PathSegment>;
 
 private:
 	// Identity

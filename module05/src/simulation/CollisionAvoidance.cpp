@@ -62,8 +62,6 @@ RiskData CollisionAvoidance::assessRisk(const Train* train, const std::vector<Tr
 	return data;
 }
 
-// ===== ROUTE-AWARE HELPER METHODS =====
-
 double CollisionAvoidance::calculateAbsoluteRoutePosition(const Train* train) const
 {
 	if (!train)
@@ -78,7 +76,7 @@ double CollisionAvoidance::calculateAbsoluteRoutePosition(const Train* train) co
 	double totalDistance = 0.0;
 	for (size_t i = 0; i < currentIndex && i < path.size(); ++i)
 	{
-		totalDistance += PhysicsSystem::kmToM(path[i]->getLength());
+		totalDistance += PhysicsSystem::kmToM(path[i].rail->getLength());
 	}
 	
 	// Add current position on current rail
@@ -92,13 +90,28 @@ bool CollisionAvoidance::findRailIndexInPath(const Train* t, const Rail* rail, s
     const auto& path = t->getPath();
     for (size_t i = startIndex; i < path.size(); ++i)
     {
-        if (path[i] == rail)
+        if (path[i].rail == rail)
         {
             outIndex = i;
             return true;
         }
     }
     return false;
+}
+
+// Check if two trains are traveling in the same direction on a given rail segment
+bool CollisionAvoidance::areTravelingSameDirection(const Train* train1, size_t idx1, const Train* train2, size_t idx2) const
+{
+    const auto& path1 = train1->getPath();
+    const auto& path2 = train2->getPath();
+
+    if (idx1 >= path1.size() || idx2 >= path2.size())
+    {
+        return false;
+    }
+
+    // Same direction if both have same from→to nodes
+    return (path1[idx1].from == path2[idx2].from && path1[idx1].to == path2[idx2].to);
 }
 
 Train* CollisionAvoidance::findLeaderOnRoute(const Train* train, const std::vector<Train*>& allTrains) const
@@ -124,7 +137,23 @@ Train* CollisionAvoidance::findLeaderOnRoute(const Train* train, const std::vect
             continue;
         }
 
-        // Ignore trains behind or on different routes
+        // Find if other train's current rail is in my future path
+        size_t leaderIndex = 0;
+        size_t myIndex = train->getCurrentRailIndex();
+
+        if (!findRailIndexInPath(train, other->getCurrentRail(), myIndex, leaderIndex))
+        {
+            continue;  // Other train not on my route
+        }
+
+        // Check if we're traveling in the same direction
+        // If opposite directions, this is NOT a leader/follower situation
+        if (!areTravelingSameDirection(train, leaderIndex, other, other->getCurrentRailIndex()))
+        {
+            continue;
+        }
+
+        // Calculate gap only if same direction
         double gap = calculateGap(train, other);
 
         if (gap < 0.0)
@@ -175,12 +204,12 @@ double CollisionAvoidance::calculateGap(const Train* train, const Train* leader)
     }
 
     // Distance from the train position to the end of its current rail
-    double gap = PhysicsSystem::kmToM(myPath[myIndex]->getLength()) - train->getPosition();
+    double gap = PhysicsSystem::kmToM(myPath[myIndex].rail->getLength()) - train->getPosition();
 
     // Add the full length of all intermediate rails between the two trains
     for (size_t i = myIndex + 1; i < leaderIndex; ++i)
     {
-        gap += PhysicsSystem::kmToM(myPath[i]->getLength());
+        gap += PhysicsSystem::kmToM(myPath[i].rail->getLength());
     }
 
     // Add the position of the leader on its own rail
@@ -259,6 +288,6 @@ double CollisionAvoidance::getNextSpeedLimit(const Train* train) const
 		return -1.0;
 	}
 	
-	Rail* nextRail = train->getPath()[nextIndex];
+	Rail* nextRail = train->getPath()[nextIndex].rail;
 	return PhysicsSystem::kmhToMs(nextRail->getSpeedLimit());
 }

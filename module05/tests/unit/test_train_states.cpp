@@ -30,7 +30,7 @@ protected:
 		                  "CityA", "CityB",
 		                  Time("00h00"), Time("00h05"));
 		
-		train->setPath({rail});
+		train->setPath({{rail, nodeA, nodeB}});
 		
 		collisionSystem = new CollisionAvoidance();
 		std::vector<Train*> trains;

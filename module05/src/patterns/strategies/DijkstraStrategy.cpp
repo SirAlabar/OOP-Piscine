@@ -2,6 +2,7 @@
 #include "core/Graph.hpp"
 #include "core/Node.hpp"
 #include "core/Rail.hpp"
+#include "core/Train.hpp"
 #include <map>
 #include <queue>
 #include <vector>
@@ -85,15 +86,25 @@ IPathfindingStrategy::Path DijkstraStrategy::findPath(const Graph* graph, Node* 
 		return {};
 	}
 	
-	// Reconstruct path
+	// Reconstruct path with direction information
 	Path path;
 	Node* current = end;
 	
 	while (current != start)
 	{
 		Rail* rail = previous[current];
-		path.push_back(rail);
-		current = rail->getOtherNode(current);
+		Node* previousNode = rail->getOtherNode(current);
+		
+		// Create PathSegment with explicit from->to direction
+		PathSegment segment;
+		segment.rail = rail;
+		segment.from = previousNode;
+		segment.to = current;
+		
+		path.push_back(segment);
+		
+		// Move to previous node
+		current = previousNode;
 	}
 	
 	// Reverse to get start->end order

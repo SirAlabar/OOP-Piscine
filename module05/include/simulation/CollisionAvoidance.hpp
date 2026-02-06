@@ -31,6 +31,7 @@ private:
 	double calculateAbsoluteRoutePosition(const Train* train) const;
 	// bool sharesRoute(const Train* train, const Train* other) const;
     bool findRailIndexInPath(const Train* t, const Rail* rail, size_t startIndex, size_t& outIndex) const;
+    bool areTravelingSameDirection(const Train* train1, size_t idx1, const Train* train2, size_t idx2) const;
 };
 
 #endif

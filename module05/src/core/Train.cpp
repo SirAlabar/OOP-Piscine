@@ -169,7 +169,7 @@ Rail* Train::getCurrentRail() const
 {
 	if (_currentRailIndex < _path.size())
     {
-		return _path[_currentRailIndex];
+		return _path[_currentRailIndex].rail;
     }
 	return nullptr;
 }

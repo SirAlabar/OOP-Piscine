@@ -31,7 +31,8 @@ static void printPath(const Train* train)
 
     for (size_t i = 0; i < path.size(); ++i)
     {
-        Rail* rail = path[i];
+        const PathSegment& segment = path[i];
+        Rail* rail = segment.rail;
 
         std::cout << "  Segment " << i
                   << ": "
@@ -167,7 +168,7 @@ int Application::run()
 
 			std::cout << "  " << train->getName() 
 			          << " (ID: " << train->getID() << "): " 
-			          << config.departureStation << " → " << config.arrivalStation 
+			          << config.departureStation << " â†’ " << config.arrivalStation 
 			          << " (" << path.size() << " segments)" << std::endl;
 		}
 
@@ -187,9 +188,9 @@ int Application::run()
 			
 			// Calculate estimated travel time
 			double estimatedTimeMinutes = 0.0;
-			for (Rail* rail : train->getPath())
+			for (const PathSegment& segment : train->getPath())
 			{
-				double segmentTimeHours = rail->getLength() / rail->getSpeedLimit();
+				double segmentTimeHours = segment.rail->getLength() / segment.rail->getSpeedLimit();
 				estimatedTimeMinutes += segmentTimeHours * 60.0;
 			}
 			
@@ -288,4 +289,3 @@ int Application::run()
 
 	return 0;
 }
-

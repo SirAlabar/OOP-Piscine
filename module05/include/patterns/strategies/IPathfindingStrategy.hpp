@@ -3,15 +3,15 @@
 
 #include <vector>
 #include <string>
+#include "core/Train.hpp"
 
 class Graph;
 class Node;
-class Rail;
 
 class IPathfindingStrategy
 {
 public:
-	using Path = std::vector<Rail*>;
+	using Path = std::vector<PathSegment>;
 	
 	virtual ~IPathfindingStrategy() = default;
 	

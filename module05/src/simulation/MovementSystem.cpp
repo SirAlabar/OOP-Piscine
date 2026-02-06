@@ -101,13 +101,26 @@ void MovementSystem::handleArrivalAtNode(Train* train, SimulationContext* ctx, N
         return;
     }
 
-    // If arriving at a city, train must stop
+    // If arriving at a city, train must stop UNLESS it's at the departure station
     if (arrivalNode && arrivalNode->getType() == NodeType::CITY)
     {
+        // First segment always starts from departure station
+        // Don't apply stop logic when leaving the departure station
+        if (train->getCurrentRailIndex() == 0)
+        {
+            // This is the departure station - advance without stopping
+            advanceToNextSegment(train);
+            return;
+        }
+
+        // This is an intermediate or final city station - apply stop duration
         train->setVelocity(0.0);
 
         double stopSeconds = train->getStopDuration().toMinutes() * 60.0;
         ctx->setStopDuration(train, stopSeconds);
+
+        // Advance to next segment so train waits at position 0 of next rail
+        advanceToNextSegment(train);
 
         // std::cout << "[MOVEMENT] Train " << train->getName()
         //         << " arrived at station " << arrivalNode->getName()

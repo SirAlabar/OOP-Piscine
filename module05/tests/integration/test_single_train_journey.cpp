@@ -27,7 +27,7 @@ protected:
 	{
 		Train::resetIDCounter();
 		
-		// Create simple network: A → B (50km, 250 km/h)
+		// Create simple network: A â†’ B (50km, 250 km/h)
 		nodeA = new Node("CityA");
 		nodeB = new Node("CityB");
 		
@@ -66,8 +66,8 @@ protected:
 			std::cout << "[";
 			for (int i = 0; i < barWidth; i++)
 			{
-				if (i == pos) std::cout << "🚆";
-				else std::cout << "·";
+				if (i == pos) std::cout << "ðŸš†";
+				else std::cout << "Â·";
 			}
 			std::cout << "]";
 		}
@@ -106,32 +106,33 @@ TEST_F(SingleTrainJourneyTest, CompleteJourneyWithEstimation)
 	
 	if (ENABLE_VISUALIZATION)
 	{
-		std::cout << "\n╔════════════════════════════════════════════════╗\n";
-		std::cout << "║     RAILWAY SIMULATION - JOURNEY PLANNER       ║\n";
-		std::cout << "╚════════════════════════════════════════════════╝\n\n";
+		std::cout << "\n===============================================\n";
+		std::cout << "     RAILWAY SIMULATION - JOURNEY PLANNER     \n";
+		std::cout << "===============================================\n\n";
 		std::cout << "Train: " << train->getName() << " (ID: " << train->getID() << ")\n";
 		std::cout << "Mass: " << train->getMass() << " tons\n";
 		std::cout << "Max Accel: " << train->getMaxAccelForce() << " kN | ";
 		std::cout << "Max Brake: " << train->getMaxBrakeForce() << " kN\n\n";
-		std::cout << "Route: " << nodeA->getName() << " → " << nodeB->getName() << "\n";
+		std::cout << "Route: " << nodeA->getName() << " â†’ " << nodeB->getName() << "\n";
 		std::cout << "Path segments: " << path.size() << "\n\n";
-		std::cout << "─────────────────────────────────────────────────\n";
+		std::cout << "\n===============================================\n";
 		std::cout << "ESTIMATED TRAVEL TIME CALCULATION:\n";
-		std::cout << "─────────────────────────────────────────────────\n";
+		std::cout << "===============================================\n\n";
 	}
 	
-	for (Rail* r : path)
+	for (const PathSegment& seg : path)
 	{
+		Rail* r = seg.rail;
 		double segmentTime = r->getLength() / r->getSpeedLimit();
 		estimatedTimeHours += segmentTime;
 		
 		if (ENABLE_VISUALIZATION)
 		{
 			std::cout << "  " << r->getNodeA()->getName() 
-			          << " → " << r->getNodeB()->getName()
+			          << " â†’ " << r->getNodeB()->getName()
 			          << " | " << r->getLength() << " km @ " 
 			          << r->getSpeedLimit() << " km/h"
-			          << " ⇒ " << (segmentTime * 60.0) << " min\n";
+			          << " â‡’ " << (segmentTime * 60.0) << " min\n";
 		}
 	}
 	
@@ -142,9 +143,9 @@ TEST_F(SingleTrainJourneyTest, CompleteJourneyWithEstimation)
 		std::cout << "\nEstimated travel time (ideal): " 
 		          << estimatedTimeMinutes << " minutes\n";
 		std::cout << "(Assumes instant acceleration to speed limit)\n\n";
-		std::cout << "─────────────────────────────────────────────────\n";
+		std::cout << "\n===============================================\n";
 		std::cout << "SIMULATION START\n";
-		std::cout << "─────────────────────────────────────────────────\n\n";
+		std::cout << "===============================================\n\n";
 	}
 	
 	// Set initial state
@@ -231,9 +232,9 @@ TEST_F(SingleTrainJourneyTest, CompleteJourneyWithEstimation)
 	
 	if (ENABLE_VISUALIZATION)
 	{
-		std::cout << "\n─────────────────────────────────────────────────\n";
-		std::cout << "JOURNEY COMPLETE ✓\n";
-		std::cout << "─────────────────────────────────────────────────\n";
+		std::cout << "===============================================\n";
+		std::cout << "JOURNEY COMPLETE âœ“\n";
+		std::cout << "===============================================\n";
 		std::cout << "Estimated time: " << estimatedTimeMinutes << " min\n";
 		std::cout << "Actual time:    " << actualTimeMinutes << " min\n";
 		std::cout << "Difference:     +" << (actualTimeMinutes - estimatedTimeMinutes) 
@@ -274,11 +275,11 @@ TEST(ComplexPathfindingTest, MultipleRoutesOptimalSelection)
 	graph.addNode(C);
 	graph.addNode(D);
 	
-	// Route 1: A → B → D (20 km total, 12 min)
+	// Route 1: A â†’ B â†’ D (20 km total, 12 min)
 	Rail* AB = new Rail(A, B, 10.0, 100.0);  // 6 min
 	Rail* BD = new Rail(B, D, 10.0, 100.0);  // 6 min
 	
-	// Route 2: A → C → D (35 km total, 12 min - same time!)
+	// Route 2: A â†’ C â†’ D (35 km total, 12 min - same time!)
 	Rail* AC = new Rail(A, C, 25.0, 250.0);  // 6 min
 	Rail* CD = new Rail(C, D, 10.0, 100.0);  // 6 min
 	
@@ -298,23 +299,24 @@ TEST(ComplexPathfindingTest, MultipleRoutesOptimalSelection)
 	
 	if (ENABLE_VISUALIZATION)
 	{
-		std::cout << "\n╔════════════════════════════════════════════════╗\n";
-		std::cout << "║   COMPLEX PATHFINDING TEST (2 ROUTES)          ║\n";
-		std::cout << "╚════════════════════════════════════════════════╝\n\n";
-		std::cout << "Route 1: A → B → D (10+10 km @ 100 km/h) = 12 min\n";
-		std::cout << "Route 2: A → C → D (25+10 km @ 250/100 km/h) = 12 min\n\n";
+		std::cout << "===============================================\n";
+		std::cout << "   COMPLEX PATHFINDING TEST (2 ROUTES)          \n";
+		std::cout << "===============================================\n\n";
+		std::cout << "Route 1: A â†’ B â†’ D (10+10 km @ 100 km/h) = 12 min\n";
+		std::cout << "Route 2: A â†’ C â†’ D (25+10 km @ 250/100 km/h) = 12 min\n\n";
 		std::cout << "Selected path:\n";
 	}
 	
-	for (Rail* r : path)
+	for (const PathSegment& seg : path)
 	{
+		Rail* r = seg.rail;
 		double segmentTime = r->getLength() / r->getSpeedLimit();
 		totalTimeHours += segmentTime;
 		
 		if (ENABLE_VISUALIZATION)
 		{
 			std::cout << "  " << r->getNodeA()->getName() 
-			          << " → " << r->getNodeB()->getName()
+			          << " â†’ " << r->getNodeB()->getName()
 			          << " (" << r->getLength() << " km @ " 
 			          << r->getSpeedLimit() << " km/h) = "
 			          << (segmentTime * 60.0) << " min\n";
@@ -380,22 +382,22 @@ TEST(MultiHopJourneyTest, ThreeStationJourney)
 	
 	if (ENABLE_VISUALIZATION)
 	{
-		std::cout << "\n╔════════════════════════════════════════════════╗\n";
-		std::cout << "║       MULTI-HOP JOURNEY TEST (A→B→C)           ║\n";
-		std::cout << "╚════════════════════════════════════════════════╝\n\n";
+		std::cout << "===============================================\n";
+		std::cout << "             MULTI-HOP JOURNEY TEST            \n";
+		std::cout << "===============================================\n\n";
 		std::cout << "Path:\n";
 	}
 	
 	for (size_t i = 0; i < path.size(); i++)
 	{
-		Rail* r = path[i];
+		Rail* r = path[i].rail;
 		double segmentTime = r->getLength() / r->getSpeedLimit();
 		estimatedTimeHours += segmentTime;
 		
 		if (ENABLE_VISUALIZATION)
 		{
 			std::cout << "  Segment " << (i+1) << ": " 
-			          << r->getNodeA()->getName() << " → " 
+			          << r->getNodeA()->getName() << " â†’ " 
 			          << r->getNodeB()->getName()
 			          << " (" << r->getLength() << " km @ " 
 			          << r->getSpeedLimit() << " km/h) = "
@@ -413,8 +415,8 @@ TEST(MultiHopJourneyTest, ThreeStationJourney)
 	
 	// Expected: 30/200 + 20/150 = 0.15 + 0.133 = 0.283 hours = 17 minutes
 	EXPECT_NEAR(estimatedTimeMinutes, 17.0, 1.0);
-	EXPECT_EQ(path[0], AB);
-	EXPECT_EQ(path[1], BC);
+	EXPECT_EQ(path[0].rail, AB);
+	EXPECT_EQ(path[1].rail, BC);
 	
 	// Cleanup
 	delete train;
@@ -430,9 +432,9 @@ TEST(NetworkTest, ComplexNetworkStructure)
 	
 	if (ENABLE_VISUALIZATION)
 	{
-		std::cout << "\n╔════════════════════════════════════════════════╗\n";
-		std::cout << "║       COMPLEX NETWORK STRUCTURE TEST           ║\n";
-		std::cout << "╚════════════════════════════════════════════════╝\n\n";
+		std::cout << "===============================================\n";
+		std::cout << "      COMPLEX NETWORK STRUCTURE TEST           \n";
+		std::cout << "===============================================\n\n";
 	}
 	
 	// Create 5 cities, 7 rail connections
@@ -478,15 +480,16 @@ TEST(NetworkTest, ComplexNetworkStructure)
 	if (ENABLE_VISUALIZATION)
 	{
 		std::cout << "Network: 5 cities, 7 rails\n";
-		std::cout << "Pathfinding A → E:\n";
+		std::cout << "Pathfinding A â†’ E:\n";
 		
 		double totalTime = 0.0;
-		for (Rail* r : pathAE)
+		for (const PathSegment& seg : pathAE)
 		{
+			Rail* r = seg.rail;
 			double segmentTime = r->getLength() / r->getSpeedLimit();
 			totalTime += segmentTime;
 			std::cout << "  " << r->getNodeA()->getName() 
-			          << " → " << r->getNodeB()->getName()
+			          << " â†’ " << r->getNodeB()->getName()
 			          << " (" << r->getLength() << " km)\n";
 		}
 		std::cout << "\nPath length: " << pathAE.size() << " segments\n";
@@ -533,31 +536,31 @@ TEST_F(SingleTrainJourneyTest, AllStateTransitions)
 	
 	if (ENABLE_VISUALIZATION)
 	{
-		std::cout << "\n╔════════════════════════════════════════════════╗\n";
-		std::cout << "║         STATE TRANSITION TEST                  ║\n";
-		std::cout << "╚════════════════════════════════════════════════╝\n\n";
+		std::cout << "===============================================\n";
+		std::cout << "         STATE TRANSITION TEST                 \n";
+		std::cout << "===============================================\n\n";
 	}
 	
 	// Test all state transitions
 	train->setState(&idleState);
 	EXPECT_EQ(train->getCurrentState()->getName(), "Idle");
-	if (ENABLE_VISUALIZATION) std::cout << "✓ Idle state\n";
+	if (ENABLE_VISUALIZATION) std::cout << "âœ“ Idle state\n";
 	
 	train->setState(&accelState);
 	EXPECT_EQ(train->getCurrentState()->getName(), "Accelerating");
-	if (ENABLE_VISUALIZATION) std::cout << "✓ Accelerating state\n";
+	if (ENABLE_VISUALIZATION) std::cout << "âœ“ Accelerating state\n";
 	
 	train->setState(&cruisingState);
 	EXPECT_EQ(train->getCurrentState()->getName(), "Cruising");
-	if (ENABLE_VISUALIZATION) std::cout << "✓ Cruising state\n";
+	if (ENABLE_VISUALIZATION) std::cout << "âœ“ Cruising state\n";
 	
 	train->setState(&brakingState);
 	EXPECT_EQ(train->getCurrentState()->getName(), "Braking");
-	if (ENABLE_VISUALIZATION) std::cout << "✓ Braking state\n";
+	if (ENABLE_VISUALIZATION) std::cout << "âœ“ Braking state\n";
 	
 	train->setState(&stoppedState);
 	EXPECT_EQ(train->getCurrentState()->getName(), "Stopped");
-	if (ENABLE_VISUALIZATION) std::cout << "✓ Stopped state\n\n";
+	if (ENABLE_VISUALIZATION) std::cout << "âœ“ Stopped state\n\n";
 	
 	delete train;
 }
@@ -584,9 +587,9 @@ TEST_F(SingleTrainJourneyTest, PhysicsAccuracyValidation)
 	
 	if (ENABLE_VISUALIZATION)
 	{
-		std::cout << "\n╔════════════════════════════════════════════════╗\n";
-		std::cout << "║       PHYSICS ACCURACY VALIDATION              ║\n";
-		std::cout << "╚════════════════════════════════════════════════╝\n\n";
+		std::cout << "===============================================\n";
+		std::cout << "       PHYSICS ACCURACY VALIDATION              \n";
+		std::cout << "===============================================\n\n";
 	}
 	
 	// Simulate 10 seconds of acceleration
@@ -601,9 +604,9 @@ TEST_F(SingleTrainJourneyTest, PhysicsAccuracyValidation)
 	if (ENABLE_VISUALIZATION)
 	{
 		std::cout << "After 10 seconds of acceleration:\n";
-		std::cout << "  Position: " << initialPos << " → " 
+		std::cout << "  Position: " << initialPos << " â†’ " 
 		          << train->getPosition() << " m\n";
-		std::cout << "  Velocity: " << initialVel << " → " 
+		std::cout << "  Velocity: " << initialVel << " â†’ " 
 		          << train->getVelocity() << " m/s\n";
 		std::cout << "  Distance traveled: " << train->getPosition() << " m\n\n";
 	}

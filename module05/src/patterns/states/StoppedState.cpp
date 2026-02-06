@@ -29,6 +29,15 @@ ITrainState* StoppedState::checkTransition(Train* train, SimulationContext* ctx)
     // Ensure the train is fully stopped
     train->setVelocity(0.0);
 
+    // Check if train has a stop duration (station stop)
+    double stopDuration = ctx->getStopDuration(train);
+    if (stopDuration > 0.0)
+    {
+        // Train must wait until stop duration expires
+        // Decrement will happen in SimulationManager
+        return nullptr;  // Stay in Stopped state
+    }
+
     // If there is no leader ahead, movement can resume
     if (!risk.hasLeader())
     {

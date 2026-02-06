@@ -86,11 +86,11 @@ void SimulationManager::start()
 			double estimatedMinutes = 0.0;
 			const auto& path = train->getPath();
 			
-			for (Rail* rail : path)
+			for (const PathSegment& segment : path)
 			{
-				if (rail)
+				if (segment.rail)
 				{
-					double segmentTimeHours = rail->getLength() / rail->getSpeedLimit();
+					double segmentTimeHours = segment.rail->getLength() / segment.rail->getSpeedLimit();
 					estimatedMinutes += segmentTimeHours * 60.0;
 				}
 			}
@@ -257,6 +257,18 @@ void SimulationManager::updateTrainStates(double dt)
 		}
 
         train->update(dt);
+
+        // Decrement stop duration if train is stopped at a station
+        if (train->getCurrentState() && 
+            train->getCurrentState()->getName() == "Stopped")
+        {
+            bool expired = _context->decrementStopDuration(train, dt);
+            if (expired)
+            {
+                _context->clearStopDuration(train);
+            }
+        }
+
         MovementSystem::resolveProgress(train, _context);
     }
 }
