@@ -3,6 +3,7 @@
 #include "core/Node.hpp"
 #include "core/Rail.hpp"
 #include <sstream>
+#include <memory>
 #include <stdexcept>
 
 RailNetworkParser::RailNetworkParser(const std::string& filepath)
@@ -89,8 +90,9 @@ void RailNetworkParser::parseLine(const std::string& line, Graph* graph)
 			type = NodeType::JUNCTION;
 		}
 
-		Node* node = new Node(nodeName, type);
-		graph->addNode(node);
+		std::unique_ptr<Node> node = std::make_unique<Node>(nodeName, type);
+		graph->addNode(node.get());
+		node.release();
 
 		std::cout << "[PARSE] Node added: " << nodeName
 				<< " | type=" << node->getTypeString()
@@ -152,7 +154,9 @@ void RailNetworkParser::parseLine(const std::string& line, Graph* graph)
         Node* a = graph->getNode(nodeA);
         Node* b = graph->getNode(nodeB);
 
-        graph->addRail(new Rail(a, b, length, speed));
+        auto rail = std::make_unique<Rail>(a, b, length, speed);
+		graph->addRail(rail.get());
+		rail.release();
         std::cout << "[PARSE] Rail added: "
           << nodeA << " <-> " << nodeB
           << " | length=" << length
