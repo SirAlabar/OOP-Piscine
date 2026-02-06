@@ -1,26 +1,61 @@
-# Complex railway network (from PDF example)
 Node CityA
 Node CityB
 Node CityC
-Node RailNodeA
-Node RailNodeB
-Node RailNodeC
-Node RailNodeD
-Node RailNodeE
-Node RailNodeF
-Node RailNodeG
+Node CityD
+Node CityE
+Node CityF
 
-Rail CityA RailNodeA 15.0 250.0
-Rail RailNodeA RailNodeB 20.0 250.0
-Rail RailNodeB RailNodeC 13.0 175.0
-Rail RailNodeC CityB 5.0 150.0
-Rail CityB RailNodeD 7.0 150.0
-Rail RailNodeD RailNodeE 12.0 200.0
-Rail RailNodeE CityC 6.0 150.0
-Rail CityA RailNodeF 6.0 150.0
-Rail RailNodeF RailNodeG 17.0 250.0
-Rail RailNodeG CityC 17.0 250.0
-Rail RailNodeA RailNodeD 23.02 250.0
-Rail RailNodeA RailNodeE 19.0 250.0
-Rail RailNodeA RailNodeG 6.7 150.0
-Rail RailNodeB RailNodeD 20.24 225.0
+Node RailNodeA1
+Node RailNodeA2
+Node RailNodeA3
+
+Node RailNodeB1
+Node RailNodeB2
+Node RailNodeB3
+
+Node RailNodeC1
+Node RailNodeC2
+Node RailNodeC3
+
+Node RailNodeD1
+Node RailNodeD2
+
+Node RailNodeE1
+Node RailNodeE2
+
+Node RailNodeF1
+Node RailNodeF2
+
+Rail CityA RailNodeA1 10.0 200.0
+Rail RailNodeA1 RailNodeA2 12.0 220.0
+Rail RailNodeA2 RailNodeA3 8.0 180.0
+Rail RailNodeA3 CityB 9.0 160.0
+
+Rail CityB RailNodeB1 7.0 150.0
+Rail RailNodeB1 RailNodeB2 15.0 200.0
+Rail RailNodeB2 RailNodeB3 10.0 180.0
+Rail RailNodeB3 CityC 12.0 200.0
+
+Rail CityC RailNodeC1 11.0 170.0
+Rail RailNodeC1 RailNodeC2 9.0 190.0
+Rail RailNodeC2 RailNodeC3 14.0 210.0
+Rail RailNodeC3 CityD 10.0 200.0
+
+Rail CityD RailNodeD1 8.0 160.0
+Rail RailNodeD1 RailNodeD2 13.0 220.0
+Rail RailNodeD2 CityE 11.0 230.0
+
+Rail CityE RailNodeE1 12.0 210.0
+Rail RailNodeE1 RailNodeE2 15.0 250.0
+Rail RailNodeE2 CityF 18.0 240.0
+
+Rail CityA RailNodeF1 25.0 250.0
+Rail RailNodeF1 CityC 30.0 240.0
+
+Rail CityB RailNodeF2 20.0 230.0
+Rail RailNodeF2 CityD 22.0 230.0
+
+Rail RailNodeA2 RailNodeB1 6.0 150.0
+Rail RailNodeB3 RailNodeC1 5.0 140.0
+Rail RailNodeC3 RailNodeD1 7.0 150.0
+Rail RailNodeD2 RailNodeE1 9.0 160.0
