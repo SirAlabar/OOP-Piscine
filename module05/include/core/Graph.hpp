@@ -28,7 +28,7 @@ public:
 	Graph() = default;
 	Graph(const Graph&) = default;
 	Graph& operator=(const Graph&) = default;
-	~Graph();
+	~Graph() = default;
 
 	// Node management
 	void addNode(Node* node);
