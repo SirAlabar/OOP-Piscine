@@ -310,7 +310,6 @@ Buffer Strategy (IMPORTANT):
   If output is exploding time:
   - Implement SIMPLE output first (no visualization)
   - Just text: time, status, distance
-  - Professor values WORKING SIM over pretty output
   - Add ASCII visualization later if time permits
 ```
 
@@ -343,8 +342,6 @@ Priority 11 - Observer Pattern (2-3 days):
   □ StationDelayEvent - add time to stop_duration
   □ TrackMaintenanceEvent - reduce rail speedLimit
   
-  ⚠️ Skip SignalFailureEvent if time tight
-     (Professor accepts 2 events minimum)
 
 □ EventFactory.cpp
   - createRandomEvent() → Event*
@@ -357,15 +354,6 @@ Priority 11 - Observer Pattern (2-3 days):
 □ SeededRNG.hpp/cpp (1 day)
   - Wrapper for <random>
   - Constructor takes seed
-
-Priority 12 - CLI (1 day):
-□ main.cpp
-  - Parse argc/argv
-  - --help flag → print usage
-  - Load network file
-  - Load train file
-  - Run simulation
-  - Error handling
 
 Priority 13 - Final Testing (1-2 days):
 □ Test Scenario 1: Simple journey
@@ -380,10 +368,6 @@ Priority 13 - Final Testing (1-2 days):
 ✅ Singleton (SimulationManager)
 ✅ UML diagrams match code
 
-⚠️ If Week 8 is tight:
-  - Event system can be BASIC (skeleton only)
-  - Focus on core sim + output correctness
-  - Professor values WORKING over COMPLETE
 ```
 
 **Milestone 5 (EVALUATION READY):** Mandatory 100% functional
@@ -443,7 +427,7 @@ Priority 13 - Final Testing (1-2 days):
 □ Run N times, output CSV
 □ --monte-carlo=N flag
 
-✅ Good for analysis, professor likes stats
+✅ Good for analysis, 
 ```
 
 ### Bonus 6: Replay System (HARD - 1 week)
@@ -487,51 +471,6 @@ Week 8:   Output + Events (minimal) + CLI + Testing
 
 Remaining time: Bonus by priority
 ```
-
----
-
-## 🚨 CRITICAL SUCCESS FACTORS
-
-**1. Test calculations manually FIRST**
-- Physics equations on paper
-- Verify code matches
-
-**2. Debug incrementally**
-- Don't write 1000 lines then compile
-- Test each class immediately
-
-**3. Use simple test cases**
-- 2 nodes, 1 rail, 1 train
-- Graduate to complexity
-
-**4. Memory management**
-- Who owns what?
-- Use valgrind early
-
-**5. Time buffers exist for a reason**
-- Things ALWAYS take longer
-- Don't panic if behind 1-2 days
-
----
-
-## ⚠️ WHEN TO SIMPLIFY
-
-**If Week 5 explodes:**
-- Use simplified physics (constant acceleration)
-- Add real physics later
-
-**If Week 6 explodes:**
-- Simple rail blocking (binary occupied/free)
-- No partial occupancy yet
-
-**If Week 7 explodes:**
-- Skip ASCII visualization
-- Just text output
-
-**If Week 8 explodes:**
-- Skip events entirely
-- Just state "event system designed but not implemented"
-- Professor values working core over complete features
 
 ---
 
