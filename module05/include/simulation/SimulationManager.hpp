@@ -11,6 +11,9 @@ class CollisionAvoidance;
 class SimulationContext;
 class OutputWriter;
 class TrafficController;
+class EventManager;
+class EventFactory;
+class Event;
 
 class SimulationManager
 {
@@ -25,10 +28,12 @@ private:
 	CollisionAvoidance* _collisionSystem;
 	TrafficController* _trafficController;
 	SimulationContext* _context;
+	EventFactory* _eventFactory;
 	
 	double _currentTime;
 	double _timestep;
 	bool _running;
+	unsigned int _eventSeed;  // For deterministic event generation
 	
 	// Output management
 	std::map<Train*, OutputWriter*> _outputWriters;
@@ -40,6 +45,9 @@ private:
 	void handleStateTransitions();
 	void writeSnapshots();
 	void cleanupOutputWriters();
+	void updateEvents();  // Update event manager and generate new events
+	void registerObservers();  // Register trains/rails/nodes as observers
+	void logEventForAffectedTrains(Event* event, const std::string& action);  // Log events to train outputs
 
 public:
 	static SimulationManager& getInstance()
@@ -58,6 +66,7 @@ public:
 	void setNetwork(Graph* network);
 	void addTrain(Train* train);
 	void setTimestep(double timestep);
+	void setEventSeed(unsigned int seed);  // Set seed for deterministic events
 	
 	void start();
 	void stop();

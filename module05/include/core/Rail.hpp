@@ -2,12 +2,14 @@
 #define RAIL_HPP
 
 #include <vector>
+#include "patterns/observers/IObserver.hpp"
 
 class Node;
 class Train;
+class Event;
 
 // Represents a bidirectional rail segment connecting two nodes
-class Rail
+class Rail : public IObserver
 {
 private:
 	Node*  _nodeA;
@@ -29,6 +31,7 @@ public:
 	Node*  getNodeB() const;
 	double getLength() const;
 	double getSpeedLimit() const;
+	void   setSpeedLimit(double speedLimit);  // For events (maintenance, weather)
 	
 	// Multi-train rail occupancy management
 	void addTrain(Train* train);
@@ -41,6 +44,9 @@ public:
 
 	// Get the other node (if current is nodeA, return nodeB and vice versa)
 	Node* getOtherNode(Node* current) const;
+
+	// IObserver implementation
+	void onNotify(Event* event) override;
 };
 
 #endif

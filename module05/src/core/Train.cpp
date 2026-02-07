@@ -1,7 +1,8 @@
 #include "core/Train.hpp"
 #include "core/Rail.hpp"
 #include "utils/Time.hpp"
-#include "patterns/states/ITrainState.hpp" 
+#include "patterns/states/ITrainState.hpp"
+#include "patterns/events/Event.hpp"
 #include <iostream>
 
 // Initialize static ID counter
@@ -271,4 +272,44 @@ void Train::update(double dt)
 	{
 		_currentState->update(this, dt);
 	}
+}
+
+// IObserver implementation - handle event notifications
+void Train::onNotify(Event* event)
+{
+	if (!event)
+	{
+		return;
+	}
+
+	// Trains react to events that affect their current location
+	// Specific event handling is done in state classes or physics system
+	// This method allows trains to be aware of events
+	
+	// Station delays are handled when train stops at station
+	// Track maintenance affects rail speed limit (already applied by event)
+	// Signal failures force stops at nodes (handled by state machine)
+	// Weather affects friction and speed (can be checked via rail)
+}
+
+// Get current node (start of current rail)
+Node* Train::getCurrentNode() const
+{
+	if (_path.empty() || _currentRailIndex >= _path.size())
+	{
+		return nullptr;
+	}
+
+	return _path[_currentRailIndex].from;
+}
+
+// Get next node (end of current rail)
+Node* Train::getNextNode() const
+{
+	if (_path.empty() || _currentRailIndex >= _path.size())
+	{
+		return nullptr;
+	}
+
+	return _path[_currentRailIndex].to;
 }

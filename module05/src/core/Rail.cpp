@@ -1,6 +1,7 @@
 #include "core/Node.hpp"
 #include "core/Rail.hpp"
 #include "core/Train.hpp"
+#include "patterns/events/Event.hpp"
 
 // Default constructor
 Rail::Rail()
@@ -39,6 +40,11 @@ double Rail::getLength() const
 double Rail::getSpeedLimit() const
 {
 	return _speedLimit;
+}
+
+void Rail::setSpeedLimit(double speedLimit)
+{
+	_speedLimit = speedLimit;
 }
 
 // Multi-train rail occupancy management
@@ -154,4 +160,17 @@ Node* Rail::getOtherNode(Node* current) const
 		return _nodeA;
 	}
 	return nullptr;
+}
+
+// IObserver implementation - handle event notifications
+void Rail::onNotify(Event* event)
+{
+	if (!event)
+	{
+		return;
+	}
+
+	// Rails react to maintenance and weather events
+	// Speed limit modifications are handled directly by events
+	// This method allows rails to be aware of events affecting them
 }

@@ -1,4 +1,5 @@
 #include "core/Node.hpp"
+#include "patterns/events/Event.hpp"
 
 // Default constructor
 Node::Node() : _name(""), _type(NodeType::CITY)
@@ -40,4 +41,17 @@ std::string Node::getTypeString() const
 		default:
 			return "Unknown";
 	}
+}
+
+// IObserver implementation - handle event notifications
+void Node::onNotify(Event* event)
+{
+	if (!event)
+	{
+		return;
+	}
+
+	// Nodes react to station delays and signal failures
+	// Event effects are handled by trains when they reach the node
+	// This method allows nodes to be aware of events affecting them
 }

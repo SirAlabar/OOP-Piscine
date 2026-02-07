@@ -26,6 +26,10 @@ public:
 
 	// Write snapshot at current simulation time
 	void writeSnapshot(double currentTimeSeconds);
+	
+	// Write event notification
+	void writeEventNotification(double currentTimeSeconds, const std::string& eventType, 
+	                            const std::string& eventDetails, const std::string& action);
 
 	// Close file
 	void close();

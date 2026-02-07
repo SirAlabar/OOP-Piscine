@@ -3,6 +3,9 @@
 #include "core/Train.hpp"
 #include "core/Rail.hpp"
 #include "core/Node.hpp"
+#include "patterns/events/Event.hpp"
+#include "patterns/observers/EventManager.hpp"
+#include "patterns/events/StationDelayEvent.hpp"
 #include <iostream>
 
 void MovementSystem::resolveProgress(Train* train, SimulationContext* ctx)
@@ -117,6 +120,31 @@ void MovementSystem::handleArrivalAtNode(Train* train, SimulationContext* ctx, N
         train->setVelocity(0.0);
 
         double stopSeconds = train->getStopDuration().toMinutes() * 60.0;
+        
+        // Check for active Station Delay events at this station
+        EventManager& eventManager = EventManager::getInstance();
+        const auto& activeEvents = eventManager.getActiveEvents();
+        
+        for (Event* event : activeEvents)
+        {
+            if (event && event->getType() == EventType::STATION_DELAY)
+            {
+                StationDelayEvent* stationEvent = dynamic_cast<StationDelayEvent*>(event);
+                if (stationEvent && stationEvent->getStation() == arrivalNode)
+                {
+                    // Add additional delay time
+                    double additionalSeconds = stationEvent->getAdditionalDelay().toMinutes() * 60.0;
+                    stopSeconds += additionalSeconds;
+                    
+                    // std::cout << "[MOVEMENT] Train " << train->getName()
+                    //          << " affected by station delay at " << arrivalNode->getName()
+                    //          << " (+)" << additionalSeconds << "s extra)"
+                    //          << std::endl;
+                    break;  // Only apply one station delay event
+                }
+            }
+        }
+        
         ctx->setStopDuration(train, stopSeconds);
 
         // Advance to next segment so train waits at position 0 of next rail

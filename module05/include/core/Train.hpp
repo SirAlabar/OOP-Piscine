@@ -4,11 +4,13 @@
 #include <string>
 #include <vector>
 #include "utils/Time.hpp"
+#include "patterns/observers/IObserver.hpp"
 
 class Rail;
 class ITrainState;
 class Time;
 class Node;
+class Event;
 
 // Path segment with explicit direction
 struct PathSegment
@@ -19,7 +21,7 @@ struct PathSegment
 };
 
 // Represents a train with physical properties and journey parameters
-class Train
+class Train : public IObserver
 {
 public:
 	using Path = std::vector<PathSegment>;
@@ -110,6 +112,13 @@ public:
 
     // Update (delegates to current state)
     void update(double dt);
+
+	// IObserver implementation
+	void onNotify(Event* event) override;
+
+	// Helper for event checking
+	Node* getCurrentNode() const;
+	Node* getNextNode() const;
 };
 
 #endif

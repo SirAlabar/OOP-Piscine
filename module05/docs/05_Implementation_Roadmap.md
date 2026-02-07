@@ -317,7 +317,7 @@ Buffer Strategy (IMPORTANT):
 
 ---
 
-## 📍 PHASE 5: Events + CLI (Week 8 finish)
+## 📍 PHASE 5: Events (Week 8 finish)
 **Goal:** Mandatory complete
 
 ### Week 8 (remaining time): Events + Polish

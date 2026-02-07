@@ -126,6 +126,17 @@ void OutputWriter::writeSnapshot(double currentTimeSeconds)
 	      << visualization << std::endl;
 }
 
+void OutputWriter::writeEventNotification(double currentTimeSeconds, const std::string& eventType,
+                                         const std::string& eventDetails, const std::string& action)
+{
+	std::string timeStr = formatTime(currentTimeSeconds);
+	
+	_file << std::endl;
+	_file << "*** EVENT " << action << " ***" << std::endl;
+	_file << "[" << timeStr << "] - " << eventType << ": " << eventDetails << std::endl;
+	_file << std::endl;
+}
+
 void OutputWriter::close()
 {
 	if (_file.is_open())

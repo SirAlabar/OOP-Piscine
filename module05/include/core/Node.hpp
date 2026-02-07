@@ -2,6 +2,9 @@
 #define NODE_HPP
 
 #include <string>
+#include "patterns/observers/IObserver.hpp"
+
+class Event;
 
 // CITY = station where trains stop, JUNCTION = rail connection point
 enum class NodeType
@@ -11,7 +14,7 @@ enum class NodeType
 };
 
 // Represents a point in the railway network graph
-class Node
+class Node : public IObserver
 {
 private:
 	std::string _name;
@@ -28,6 +31,9 @@ public:
 	NodeType           getType() const;
 	bool               isValid() const;
 	std::string        getTypeString() const;
+
+	// IObserver implementation
+	void onNotify(Event* event) override;
 };
 
 #endif
