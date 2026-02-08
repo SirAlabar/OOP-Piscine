@@ -1,5 +1,5 @@
-#ifndef OUTPUTWRITER_HPP
-#define OUTPUTWRITER_HPP
+#ifndef FILEOUTPUTWRITER_HPP
+#define FILEOUTPUTWRITER_HPP
 
 #include "core/Train.hpp"
 #include "core/Rail.hpp"
@@ -9,11 +9,11 @@
 #include <vector>
 
 // Generates output files for train journeys
-class OutputWriter
+class FileOutputWriter
 {
 public:
-	OutputWriter(Train* train);
-	~OutputWriter();
+	FileOutputWriter(Train* train);
+	~FileOutputWriter();
 
 	// Open output file
 	void open();

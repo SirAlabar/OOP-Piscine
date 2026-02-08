@@ -9,11 +9,10 @@
 #include "core/Rail.hpp"
 #include "core/Node.hpp"
 #include "patterns/states/AcceleratingState.hpp"
-#include "io/OutputWriter.hpp"
+#include "io/FileOutputWriter.hpp"
 #include "patterns/observers/EventManager.hpp"
 #include "patterns/factories/EventFactory.hpp"
 #include "patterns/events/Event.hpp"
-#include <iostream>
 
 // Constructor
 SimulationManager::SimulationManager()
@@ -25,7 +24,7 @@ SimulationManager::SimulationManager()
 	  _currentTime(0.0),
 	  _timestep(1.0),
 	  _running(false),
-	  _eventSeed(44),
+	  _eventSeed(0),  // Default 0 - must be set via setEventSeed() before use
 	  _lastSnapshotMinute(-1)
 {
 }
@@ -99,6 +98,16 @@ void SimulationManager::setEventSeed(unsigned int seed)
 	}
 }
 
+void SimulationManager::registerOutputWriter(Train* train, FileOutputWriter* writer)
+{
+	if (!train || !writer)
+	{
+		return;
+	}
+	
+	_outputWriters[train] = writer;
+}
+
 // Simulation control
 void SimulationManager::start()
 {
@@ -112,48 +121,6 @@ void SimulationManager::start()
 	
 	// Register all entities as observers for events
 	registerObservers();
-
-	// Create output writers and calculate estimated times
-	for (Train* train : _trains)
-	{
-		if (!train)
-		{
-			continue;
-		}
-
-		try
-		{
-			OutputWriter* writer = new OutputWriter(train);
-			writer->open();
-
-			// Calculate estimated travel time
-			double estimatedMinutes = 0.0;
-			const auto& path = train->getPath();
-			
-			for (const PathSegment& segment : path)
-			{
-				if (segment.rail)
-				{
-					double segmentTimeHours = segment.rail->getLength() / segment.rail->getSpeedLimit();
-					estimatedMinutes += segmentTimeHours * 60.0;
-				}
-			}
-
-			writer->writeHeader(estimatedMinutes);
-			writer->writePathInfo();
-			_outputWriters[train] = writer;
-
-			std::cout << "  Created output: " << train->getName() << "_" 
-			          << train->getDepartureTime().toString() << ".result" 
-			          << " (estimated: " << static_cast<int>(estimatedMinutes) << " min)" 
-			          << std::endl;
-		}
-		catch (const std::exception& e)
-		{
-			std::cerr << "Failed to create output for train " << train->getName() 
-			          << ": " << e.what() << std::endl;
-		}
-	}
 
 	checkDepartures();
 	_collisionSystem->refreshRailOccupancy(_trains, _network);
@@ -169,7 +136,7 @@ void SimulationManager::stop()
 {
 	_running = false;
 
-	// Close all output files (final snapshots already written when trains finished)
+	// Clear output writer references (Application owns and closes them)
 	cleanupOutputWriters();
 }
 
@@ -196,6 +163,8 @@ void SimulationManager::step()
 
 	// Write snapshots (handles state changes + periodic writes internally)
 	writeSnapshots();
+	
+	// Display periodic status dashboard
 }
 
 void SimulationManager::run(double maxTime)
@@ -402,7 +371,7 @@ void SimulationManager::writeSnapshots()
 	for (auto& pair : _outputWriters)
 	{
 		Train* train = pair.first;
-		OutputWriter* writer = pair.second;
+		FileOutputWriter* writer = pair.second;
 
 		if (train && writer)
 		{
@@ -443,14 +412,7 @@ void SimulationManager::writeSnapshots()
 
 void SimulationManager::cleanupOutputWriters()
 {
-	for (auto& pair : _outputWriters)
-	{
-		if (pair.second)
-		{
-			pair.second->close();
-			delete pair.second;
-		}
-	}
+	// Writers are owned by Application, we only clear our references
 	_outputWriters.clear();
 }
 
@@ -510,7 +472,7 @@ void SimulationManager::updateEvents()
 	// Get current active events after update
 	std::vector<Event*> currentActive = eventManager.getActiveEvents();
 	
-	// Find newly activated events (in current but not in previous)
+	// Find newly activated events
 	for (Event* event : currentActive)
 	{
 		bool isNew = true;

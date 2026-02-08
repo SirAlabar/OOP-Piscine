@@ -9,7 +9,7 @@ class Train;
 class Graph;
 class CollisionAvoidance;
 class SimulationContext;
-class OutputWriter;
+class FileOutputWriter;
 class TrafficController;
 class EventManager;
 class EventFactory;
@@ -36,7 +36,7 @@ private:
 	unsigned int _eventSeed;  // For deterministic event generation
 	
 	// Output management
-	std::map<Train*, OutputWriter*> _outputWriters;
+	std::map<Train*, FileOutputWriter*> _outputWriters;
 	std::map<Train*, std::string> _previousStates;  // Track previous state for each train
 	int _lastSnapshotMinute;
 	
@@ -67,6 +67,7 @@ public:
 	void addTrain(Train* train);
 	void setTimestep(double timestep);
 	void setEventSeed(unsigned int seed);  // Set seed for deterministic events
+	void registerOutputWriter(Train* train, FileOutputWriter* writer);  // Register writer from Application
 	
 	void start();
 	void stop();

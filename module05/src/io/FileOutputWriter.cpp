@@ -1,18 +1,33 @@
-#include "io/OutputWriter.hpp"
+#include "io/FileOutputWriter.hpp"
 #include "core/Node.hpp"
 #include "simulation/PhysicsSystem.hpp"
 #include "patterns/states/ITrainState.hpp"
 #include <iomanip>
 #include <sstream>
 #include <cmath>
+#include <sys/stat.h>
+#include <sys/types.h>
 
-OutputWriter::OutputWriter(Train* train) : _train(train), _totalPathDistance(0.0), _finalSnapshotWritten(false)
+static void ensureOutputDirectoryExists()
 {
+	const char* outputDir = "output";
+	
+	// Create directory if it doesn't exist (mode 0755 = rwxr-xr-x)
+	#ifdef _WIN32
+		_mkdir(outputDir);
+	#else
+		mkdir(outputDir, 0755);
+	#endif
+}
+
+FileOutputWriter::FileOutputWriter(Train* train) : _train(train), _totalPathDistance(0.0), _finalSnapshotWritten(false)
+{
+	ensureOutputDirectoryExists();
 	_filename = generateFilename();
 	_totalPathDistance = calculateTotalPathDistance();
 }
 
-OutputWriter::~OutputWriter()
+FileOutputWriter::~FileOutputWriter()
 {
 	if (_file.is_open())
 	{
@@ -20,13 +35,13 @@ OutputWriter::~OutputWriter()
 	}
 }
 
-std::string OutputWriter::generateFilename() const
+std::string FileOutputWriter::generateFilename() const
 {
-	return _train->getName() + "_" + 
+	return "output/" + _train->getName() + "_" + 
 	       _train->getDepartureTime().toString() + ".result";
 }
 
-void OutputWriter::open()
+void FileOutputWriter::open()
 {
 	_file.open(_filename);
 	if (!_file.is_open())
@@ -35,7 +50,7 @@ void OutputWriter::open()
 	}
 }
 
-void OutputWriter::writeHeader(double estimatedTimeMinutes)
+void FileOutputWriter::writeHeader(double estimatedTimeMinutes)
 {
 	int hours = static_cast<int>(estimatedTimeMinutes) / 60;
 	int minutes = static_cast<int>(estimatedTimeMinutes) % 60;
@@ -47,7 +62,7 @@ void OutputWriter::writeHeader(double estimatedTimeMinutes)
 	_file << std::endl;
 }
 
-void OutputWriter::writePathInfo()
+void FileOutputWriter::writePathInfo()
 {
 	const auto& path = _train->getPath();
 	
@@ -73,7 +88,7 @@ void OutputWriter::writePathInfo()
 	_file << std::endl;
 }
 
-void OutputWriter::writeSnapshot(double currentTimeSeconds)
+void FileOutputWriter::writeSnapshot(double currentTimeSeconds)
 {
 	Rail* currentRail = _train->getCurrentRail();
 	
@@ -139,7 +154,7 @@ void OutputWriter::writeSnapshot(double currentTimeSeconds)
 	      << visualization << std::endl;
 }
 
-void OutputWriter::writeEventNotification(double currentTimeSeconds, const std::string& eventType,
+void FileOutputWriter::writeEventNotification(double currentTimeSeconds, const std::string& eventType,
                                          const std::string& eventDetails, const std::string& action)
 {
 	std::string timeStr = formatTime(currentTimeSeconds);
@@ -150,7 +165,7 @@ void OutputWriter::writeEventNotification(double currentTimeSeconds, const std::
 	_file << std::endl;
 }
 
-void OutputWriter::close()
+void FileOutputWriter::close()
 {
 	if (_file.is_open())
 	{
@@ -158,7 +173,7 @@ void OutputWriter::close()
 	}
 }
 
-std::string OutputWriter::getStatusString() const
+std::string FileOutputWriter::getStatusString() const
 {
 	std::string stateName = _train->getCurrentState()->getName();
 
@@ -194,7 +209,7 @@ std::string OutputWriter::getStatusString() const
 	return "Unknown";
 }
 
-double OutputWriter::calculateTotalPathDistance() const
+double FileOutputWriter::calculateTotalPathDistance() const
 {
 	const auto& path = _train->getPath();
 	double totalKm = 0.0;
@@ -210,7 +225,7 @@ double OutputWriter::calculateTotalPathDistance() const
 	return totalKm;
 }
 
-double OutputWriter::calculateRemainingDistance() const
+double FileOutputWriter::calculateRemainingDistance() const
 {
     Rail* currentRail = _train->getCurrentRail();
     if (!currentRail)
@@ -239,7 +254,7 @@ double OutputWriter::calculateRemainingDistance() const
 }
 
 
-std::string OutputWriter::generateRailVisualization() const
+std::string FileOutputWriter::generateRailVisualization() const
 {
 	Rail* currentRail = _train->getCurrentRail();
 	if (!currentRail)
@@ -311,7 +326,7 @@ std::string OutputWriter::generateRailVisualization() const
 	return vizStr;
 }
 
-std::string OutputWriter::formatTime(double seconds) const
+std::string FileOutputWriter::formatTime(double seconds) const
 {
 	int totalMinutes = static_cast<int>(seconds) / 60;
 	int hours = totalMinutes / 60;
