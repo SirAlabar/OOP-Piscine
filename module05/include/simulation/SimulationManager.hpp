@@ -78,7 +78,6 @@ public:
 	const TrainList& getTrains() const;
 	const Graph* getNetwork() const;
 	bool isRunning() const;
-	void checkFinishedTrains();
 
 	SimulationContext* getContext() const { return _context; }
 

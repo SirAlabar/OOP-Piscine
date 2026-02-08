@@ -25,7 +25,6 @@ void MovementSystem::checkSignalFailures(Train* train, SimulationContext* ctx)
     {
         if (event && event->getType() == EventType::SIGNAL_FAILURE)
         {
-            // Use polymorphic applicability check
             // SignalFailureEvent checks if train is on rail approaching the node
             if (event->isApplicableToTrain(train))
             {
@@ -35,9 +34,6 @@ void MovementSystem::checkSignalFailures(Train* train, SimulationContext* ctx)
                     // Force emergency stop and set wait duration
                     double stopSeconds = signalEvent->getStopDuration().toMinutes() * 60.0;
                     ctx->setStopDuration(train, stopSeconds);
-                    
-                    // Force train to emergency state to initiate stop
-                    // The state machine will handle the transition to stopped
                     return;
                 }
             }
@@ -70,12 +66,6 @@ void MovementSystem::resolveProgress(Train* train, SimulationContext* ctx)
         return;
     }
 
-    // std::cout << "[MOVEMENT] Train " << train->getName()
-    //     << " reached end of rail "
-    //     << currentRail->getNodeA()->getName() << " -> "
-    //     << currentRail->getNodeB()->getName()
-    //     << std::endl;
-
     // Train reached or passed the end of the current rail
     Node* arrivalNode = ctx->getCurrentArrivalNode(train);
 
@@ -100,22 +90,8 @@ void MovementSystem::advanceToNextSegment(Train* train)
         return;
     }
 
-    Rail* oldRail = train->getCurrentRail();
-
     train->advanceToNextRail();
-
-    Rail* newRail = train->getCurrentRail();
-
     train->setPosition(0.0);
-
-    if (oldRail && newRail)
-    {
-        // std::cout << "[MOVEMENT] Train " << train->getName()
-        //           << " advancing to next rail "
-        //           << newRail->getNodeA()->getName() << " -> "
-        //           << newRail->getNodeB()->getName()
-        //           << std::endl;
-    }
 }
 
 
@@ -129,24 +105,17 @@ void MovementSystem::handleArrivalAtNode(Train* train, SimulationContext* ctx, N
     // If no more rails, journey is complete
     if (isJourneyComplete(train))
     {
-        std::cout << "[MOVEMENT] " << train->getName()
-                << " COMPLETED JOURNEY at "
-                << arrivalNode->getName()
-                << std::endl;
 
         train->setVelocity(0.0);
         train->setState(ctx->states().stopped());
-        train->advanceToNextRail();
+        train->advanceToNextRail();  // Sets currentRail to nullptr
         train->markFinished();
-
         return;
     }
 
     // If arriving at a city, train must stop UNLESS it's at the departure station
     if (arrivalNode && arrivalNode->getType() == NodeType::CITY)
     {
-        // First segment always starts from departure station
-        // Don't apply stop logic when leaving the departure station
         if (train->getCurrentRailIndex() == 0)
         {
             // This is the departure station - advance without stopping
@@ -175,7 +144,7 @@ void MovementSystem::handleArrivalAtNode(Train* train, SimulationContext* ctx, N
                         // Add additional delay time
                         double additionalSeconds = stationEvent->getAdditionalDelay().toMinutes() * 60.0;
                         stopSeconds += additionalSeconds;
-                        break;  // Only apply one station delay event
+                        break;
                     }
                 }
             }
@@ -185,11 +154,6 @@ void MovementSystem::handleArrivalAtNode(Train* train, SimulationContext* ctx, N
 
         // Advance to next segment so train waits at position 0 of next rail
         advanceToNextSegment(train);
-
-        // std::cout << "[MOVEMENT] Train " << train->getName()
-        //         << " arrived at station " << arrivalNode->getName()
-        //         << " - stopping for " << stopSeconds << " seconds"
-        //         << std::endl;
 
         return;
     }

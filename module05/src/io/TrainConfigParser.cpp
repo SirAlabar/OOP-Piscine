@@ -118,17 +118,5 @@ TrainConfig TrainConfigParser::parseLine(const std::string& line)
         );
     }
 
-    std::cout << "[PARSE] Train: " << config.name
-          << " | mass=" << config.mass
-          << " | friction=" << config.frictionCoef
-          << " | accel=" << config.maxAccelForce
-          << " | brake=" << config.maxBrakeForce
-          << " | from=" << config.departureStation
-          << " | to=" << config.arrivalStation
-          << " | depart=" << tokens[7]
-          << " | stop=" << tokens[8]
-          << std::endl;
-
-
     return config;
 }

@@ -187,7 +187,7 @@ void SimulationManager::step()
 	handleStateTransitions();
 	_context->refreshAllRiskData();
 	updateTrainStates(_timestep);
-	checkFinishedTrains();
+	// Note: Finished trains are marked by MovementSystem when they reach destination
 	
 	// Update events (generate new events + update active events)
 	updateEvents();
@@ -363,25 +363,6 @@ void SimulationManager::checkDepartures()
 	}
 }
 
-void SimulationManager::checkFinishedTrains()
-{
-    for (Train* train : _trains)
-    {
-        if (!train || train->isFinished())
-		{
-            continue;
-		}
-
-        if (train->getCurrentRail() == nullptr)
-        {
-            std::cout << "[MOVEMENT] "
-                      << train->getName()
-                      << " COMPLETED JOURNEY\n";
-
-            train->markFinished();
-        }
-    }
-}
 
 
 void SimulationManager::handleStateTransitions()

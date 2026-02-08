@@ -206,13 +206,13 @@ void Train::setState(ITrainState* state)
         return;
 	}
 
-	    std::cout << "[STATE] Train " << _name
-              << " changing state from "
-              << (_currentState ? _currentState->getName() : "NULL")
-              << " to "
-              << (state ? state->getName() : "NULL")
-              << " | finished=" << (_finished ? "YES" : "NO")
-              << std::endl;
+	    // std::cout << "[STATE] Train " << _name
+        //       << " changing state from "
+        //       << (_currentState ? _currentState->getName() : "NULL")
+        //       << " to "
+        //       << (state ? state->getName() : "NULL")
+        //       << " | finished=" << (_finished ? "YES" : "NO")
+        //       << std::endl;
 
 	_currentState = state;
 }
@@ -251,16 +251,8 @@ void Train::markFinished()
 {
     if (_finished)
     {
-        std::cout << "[FINISHED] Train " << _name 
-                  << " already finished, markFinished() called again"
-                  << std::endl;
         return;
     }
-
-    std::cout << "[FINISHED] Train " << _name 
-              << " is now FINISHED"
-              << std::endl;
-
     _finished = true;
 }
 

@@ -92,10 +92,6 @@ void RailNetworkParser::parseLine(const std::string& line, Graph* graph)
 		Node* node = new Node(nodeName, type);
 		graph->addNode(node);
 
-		std::cout << "[PARSE] Node added: " << nodeName
-				<< " | type=" << node->getTypeString()
-				<< std::endl;
-
 		return;
 	}
 
@@ -153,10 +149,6 @@ void RailNetworkParser::parseLine(const std::string& line, Graph* graph)
         Node* b = graph->getNode(nodeB);
 
         graph->addRail(new Rail(a, b, length, speed));
-        std::cout << "[PARSE] Rail added: "
-          << nodeA << " <-> " << nodeB
-          << " | length=" << length
-          << " | speed=" << speed << std::endl;
         return;
     }
 
