@@ -6,6 +6,7 @@
 #include "patterns/factories/TrainFactory.hpp"
 #include "patterns/strategies/IPathfindingStrategy.hpp"
 #include "patterns/strategies/DijkstraStrategy.hpp"
+#include "patterns/strategies/AStarStrategy.hpp"
 #include "patterns/states/IdleState.hpp"
 #include "simulation/SimulationManager.hpp"
 #include "core/Train.hpp"
@@ -64,6 +65,15 @@ int Application::run()
 	{
 		std::cerr << "Error: Invalid number of arguments\n" << std::endl;
 		_cli.printUsage("railway_sim");
+		return 1;
+	}
+	
+	// Validate flag values
+	std::string flagError;
+	if (!_cli.validateFlags(flagError))
+	{
+		std::cerr << "Error: " << flagError << std::endl;
+		std::cerr << "Use --help for valid options" << std::endl;
 		return 1;
 	}
 
@@ -148,17 +158,18 @@ int Application::run()
 		// Select pathfinding strategy based on CLI flag
 		IPathfindingStrategy* strategy = nullptr;
 		DijkstraStrategy dijkstra;
+		AStarStrategy astar;
 		
 		std::string pathfindingAlgo = _cli.getPathfinding();
 		if (pathfindingAlgo == "astar")
 		{
-			// TODO: Implement A* strategy
-			std::cerr << "Warning: A* not yet implemented, falling back to Dijkstra" << std::endl;
-			strategy = &dijkstra;
+			strategy = &astar;
+			std::cout << "  Using A* pathfinding" << std::endl;
 		}
 		else
 		{
 			strategy = &dijkstra;
+			std::cout << "  Using Dijkstra pathfinding" << std::endl;
 		}
 		
 		static IdleState idleState;

@@ -1,6 +1,7 @@
 #include "io/CLI.hpp"
 #include <iostream>
 #include <sstream>
+#include <vector>
 
 CLI::CLI(int argc, char* argv[]) : _argc(argc), _argv(argv)
 {
@@ -173,10 +174,15 @@ bool CLI::hasSeed() const
 
 unsigned int CLI::getSeed() const
 {
-    std::stringstream ss(_flags.at("seed"));
-    unsigned int seed;
-    ss >> seed;
-    return seed;
+	if (!hasSeed())
+	{
+		return 42;  // Default seed
+	}
+	
+	std::stringstream ss(_flags.at("seed"));
+	unsigned int seed;
+	ss >> seed;
+	return seed;
 }
 
 std::string CLI::getPathfinding() const
@@ -214,4 +220,88 @@ unsigned int CLI::getMonteCarloRuns() const
 	unsigned int runs;
 	ss >> runs;
 	return runs;
+}
+
+bool CLI::validateFlags(std::string& errorMsg) const
+{
+	// Check for unknown flags
+	const std::vector<std::string> validFlags = {
+		"seed", "pathfinding", "render", "hot-reload", "monte-carlo"
+	};
+	
+	for (const auto& pair : _flags)
+	{
+		const std::string& flag = pair.first;
+		bool found = false;
+		
+		for (const auto& validFlag : validFlags)
+		{
+			if (flag == validFlag)
+			{
+				found = true;
+				break;
+			}
+		}
+		
+		if (!found)
+		{
+			errorMsg = "Unknown flag: --" + flag;
+			return false;
+		}
+	}
+	
+	// Validate pathfinding value
+	if (_flags.find("pathfinding") != _flags.end())
+	{
+		std::string algo = _flags.at("pathfinding");
+		if (algo != "dijkstra" && algo != "astar")
+		{
+			errorMsg = "Invalid pathfinding algorithm: '" + algo + "' (must be 'dijkstra' or 'astar')";
+			return false;
+		}
+	}
+	
+	// Validate seed is numeric
+	if (_flags.find("seed") != _flags.end())
+	{
+		std::string seedStr = _flags.at("seed");
+		
+		// Check for negative sign
+		if (!seedStr.empty() && seedStr[0] == '-')
+		{
+			errorMsg = "Invalid seed value: '" + seedStr + "' (must be a positive integer)";
+			return false;
+		}
+		
+		std::stringstream ss(seedStr);
+		unsigned int seed;
+		if (!(ss >> seed) || !ss.eof())
+		{
+			errorMsg = "Invalid seed value: '" + seedStr + "' (must be a positive integer)";
+			return false;
+		}
+	}
+	
+	// Validate monte-carlo is numeric and positive
+	if (_flags.find("monte-carlo") != _flags.end())
+	{
+		std::string mcStr = _flags.at("monte-carlo");
+		
+		// Check for negative sign
+		if (!mcStr.empty() && mcStr[0] == '-')
+		{
+			errorMsg = "Invalid monte-carlo value: '" + mcStr + "' (must be a positive integer)";
+			return false;
+		}
+		
+		std::stringstream ss(mcStr);
+		unsigned int runs;
+		if (!(ss >> runs) || !ss.eof() || runs == 0)
+		{
+			errorMsg = "Invalid monte-carlo value: '" + mcStr + "' (must be a positive integer)";
+			return false;
+		}
+	}
+	
+	return true;
 }

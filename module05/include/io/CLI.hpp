@@ -32,6 +32,9 @@ public:
 
 	void printUsage(const std::string& programName) const;
 	void printHelp() const;
+	
+	// Validate all parsed flags
+	bool validateFlags(std::string& errorMsg) const;
 
 private:
 	int _argc;
