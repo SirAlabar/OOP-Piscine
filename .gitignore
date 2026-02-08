@@ -20,12 +20,20 @@ mediator
 observer
 school
 railway_sim
+railway_simulation
 
-# Module 02 - Keep only README, remove temp files
-module02/ex00/*.tmp
+# CMake files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
 
 # Module 05 outputs
 module05/outputs/*.result
+
+# Output files
+output/
+*.result
 
 # OS files
 .DS_Store
