@@ -77,7 +77,7 @@ void OutputWriter::writeSnapshot(double currentTimeSeconds)
 {
 	Rail* currentRail = _train->getCurrentRail();
 	
-	// Handle finished train - write final snapshot at destination (ONCE ONLY)
+	// Handle finished train - write final snapshot at destination
 	if (!currentRail)
 	{
 		// Skip if we already wrote the final snapshot
@@ -86,19 +86,27 @@ void OutputWriter::writeSnapshot(double currentTimeSeconds)
 			return;
 		}
 		
+		std::string arrivalStation = _train->getArrivalStation();	
 		std::string timeStr = formatTime(currentTimeSeconds);
-		std::string arrivalStation = _train->getArrivalStation();
 		
-		// Format final snapshot: train at destination with 0.00km remaining
+		// Get state from train
+		std::string realState = getStatusString();
+		
+		// Get velocity and convert from m/s to km/h
+		double velocityMs = _train->getVelocity();
+		double velocityKmh = PhysicsSystem::msToKmh(velocityMs);
+		
+		// Format final snapshot with values
 		std::ostringstream nodeStr, statusStr;
 		nodeStr << std::setw(10) << std::left << arrivalStation;
-		statusStr << std::setw(9) << std::left << "Stopped";
+		statusStr << std::setw(9) << std::left << realState;
 		
 		_file << "[" << timeStr << "] - "
 		      << "[" << nodeStr.str() << "]"
 		      << "[" << std::setw(10) << std::left << "          " << "] - "
 		      << "[" << std::fixed << std::setprecision(2) << 0.00 << "km] - "
 		      << "[" << statusStr.str() << "] - "
+		      << "[" << std::setw(6) << std::right << std::fixed << std::setprecision(0) << velocityKmh << "km/h] - "
 		      << "[ ]" << std::endl;
 		
 		_finalSnapshotWritten = true;
@@ -118,11 +126,16 @@ void OutputWriter::writeSnapshot(double currentTimeSeconds)
 	nodeBStr << std::setw(10) << std::left << nodeB->getName();
 	statusStr << std::setw(9) << std::left << status;
 
+	// Get current velocity and convert from m/s to km/h
+	double velocityMs = _train->getVelocity();
+	double velocityKmh = PhysicsSystem::msToKmh(velocityMs);
+
 	_file << "[" << timeStr << "] - "
 	      << "[" << nodeAStr.str() << "]"
 	      << "[" << nodeBStr.str() << "] - "
 	      << "[" << std::fixed << std::setprecision(2) << remainingDist << "km] - "
 	      << "[" << statusStr.str() << "] - "
+	      << "[" << std::setw(6) << std::right << std::fixed << std::setprecision(0) << velocityKmh << "km/h] - "
 	      << visualization << std::endl;
 }
 

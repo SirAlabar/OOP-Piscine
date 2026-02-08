@@ -6,7 +6,44 @@
 #include "patterns/events/Event.hpp"
 #include "patterns/observers/EventManager.hpp"
 #include "patterns/events/StationDelayEvent.hpp"
+#include "patterns/events/SignalFailureEvent.hpp"
+#include "patterns/states/StateRegistry.hpp"
 #include <iostream>
+
+void MovementSystem::checkSignalFailures(Train* train, SimulationContext* ctx)
+{
+    if (!train || !ctx)
+    {
+        return;
+    }
+    
+    // Check for active signal failures
+    EventManager& eventManager = EventManager::getInstance();
+    const auto& activeEvents = eventManager.getActiveEvents();
+    
+    for (Event* event : activeEvents)
+    {
+        if (event && event->getType() == EventType::SIGNAL_FAILURE)
+        {
+            // Use polymorphic applicability check
+            // SignalFailureEvent checks if train is on rail approaching the node
+            if (event->isApplicableToTrain(train))
+            {
+                SignalFailureEvent* signalEvent = dynamic_cast<SignalFailureEvent*>(event);
+                if (signalEvent)
+                {
+                    // Force emergency stop and set wait duration
+                    double stopSeconds = signalEvent->getStopDuration().toMinutes() * 60.0;
+                    ctx->setStopDuration(train, stopSeconds);
+                    
+                    // Force train to emergency state to initiate stop
+                    // The state machine will handle the transition to stopped
+                    return;
+                }
+            }
+        }
+    }
+}
 
 void MovementSystem::resolveProgress(Train* train, SimulationContext* ctx)
 {
@@ -98,6 +135,7 @@ void MovementSystem::handleArrivalAtNode(Train* train, SimulationContext* ctx, N
                 << std::endl;
 
         train->setVelocity(0.0);
+        train->setState(ctx->states().stopped());
         train->advanceToNextRail();
         train->markFinished();
 
@@ -129,18 +167,16 @@ void MovementSystem::handleArrivalAtNode(Train* train, SimulationContext* ctx, N
         {
             if (event && event->getType() == EventType::STATION_DELAY)
             {
-                StationDelayEvent* stationEvent = dynamic_cast<StationDelayEvent*>(event);
-                if (stationEvent && stationEvent->getStation() == arrivalNode)
+                if (event->isApplicableToTrain(train))
                 {
-                    // Add additional delay time
-                    double additionalSeconds = stationEvent->getAdditionalDelay().toMinutes() * 60.0;
-                    stopSeconds += additionalSeconds;
-                    
-                    // std::cout << "[MOVEMENT] Train " << train->getName()
-                    //          << " affected by station delay at " << arrivalNode->getName()
-                    //          << " (+)" << additionalSeconds << "s extra)"
-                    //          << std::endl;
-                    break;  // Only apply one station delay event
+                    StationDelayEvent* stationEvent = dynamic_cast<StationDelayEvent*>(event);
+                    if (stationEvent)
+                    {
+                        // Add additional delay time
+                        double additionalSeconds = stationEvent->getAdditionalDelay().toMinutes() * 60.0;
+                        stopSeconds += additionalSeconds;
+                        break;  // Only apply one station delay event
+                    }
                 }
             }
         }

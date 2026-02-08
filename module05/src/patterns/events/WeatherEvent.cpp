@@ -1,6 +1,7 @@
 #include "patterns/events/WeatherEvent.hpp"
 #include "core/Rail.hpp"
 #include "core/Node.hpp"
+#include "core/Train.hpp"
 
 WeatherEvent::WeatherEvent(const std::string& weatherType, Node* centerNode,
                            const Time& startTime, const Time& duration,
@@ -69,6 +70,24 @@ bool WeatherEvent::affectsTrain(Train* train) const
 {
 	(void)train;  // Unused - affects trains via rail speed limits and friction
 	return true;
+}
+
+bool WeatherEvent::isApplicableToTrain(Train* train) const
+{
+	if (!train)
+	{
+		return false;
+	}
+	
+	// Weather affects trains that are currently on affected rails
+	Rail* currentRail = train->getCurrentRail();
+	if (!currentRail)
+	{
+		return false;
+	}
+	
+	// Check if current rail is in affected rails list
+	return affectsRail(currentRail);
 }
 
 std::string WeatherEvent::getDescription() const

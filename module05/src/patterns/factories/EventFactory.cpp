@@ -10,10 +10,10 @@
 #include <vector>
 
 // Event configuration constants
-const EventConfig EventFactory::CONFIG_STATION_DELAY = {0.05, 15, 45};      // 10%/hour, 15-45 min
+const EventConfig EventFactory::CONFIG_STATION_DELAY = {0.10, 15, 45};      // 10%/hour, 15-45 min
 const EventConfig EventFactory::CONFIG_TRACK_MAINTENANCE = {0.05, 60, 180}; // 5%/hour, 60-180 min
 const EventConfig EventFactory::CONFIG_SIGNAL_FAILURE = {0.02, 5, 20};      // 2%/hour, 5-20 min
-const EventConfig EventFactory::CONFIG_WEATHER = {0.71, 120, 300};          // 1%/hour, 120-300 min
+const EventConfig EventFactory::CONFIG_WEATHER = {0.01, 120, 300};          // 1%/hour, 120-300 min
 
 EventFactory::EventFactory(unsigned int seed, Graph* network, EventManager* eventManager)
 	: _rng(seed), _network(network), _eventManager(eventManager)
@@ -77,7 +77,7 @@ Event* EventFactory::createStationDelay(const Time& currentTime)
 		return nullptr;
 	}
 
-	// Filter to get only CITY nodes (stations), not junctions
+	// Filter to get only CITY nodes (stations)
 	std::vector<Node*> cityNodes;
 	for (Node* node : nodes)
 	{
@@ -211,8 +211,6 @@ Event* EventFactory::createWeather(const Time& currentTime)
 	                                       speedReduction, frictionIncrease);
 
 	// Calculate affected rails (within radius)
-	// Note: Simplified - assumes rails within radius of center node
-	// TODO: Proper geometric calculation for production
 	std::vector<Rail*> affectedRails;
 	const auto& rails = _network->getRails();
 	for (Rail* rail : rails)

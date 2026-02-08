@@ -25,7 +25,7 @@ SimulationManager::SimulationManager()
 	  _currentTime(0.0),
 	  _timestep(1.0),
 	  _running(false),
-	  _eventSeed(42),
+	  _eventSeed(44),
 	  _lastSnapshotMinute(-1)
 {
 }
@@ -257,7 +257,7 @@ void SimulationManager::reset()
 {
 	cleanupOutputWriters();
 	_trains.clear();
-	_previousStates.clear();  // Clear state tracking
+	_previousStates.clear();
 	_currentTime = 0.0;
 	_running = false;
 	_lastSnapshotMinute = -1;
@@ -309,6 +309,9 @@ void SimulationManager::updateTrainStates(double dt)
             }
         }
 
+        // Check for signal failures that force trains to stop
+        MovementSystem::checkSignalFailures(train, _context);
+
         MovementSystem::resolveProgress(train, _context);
     }
 }
@@ -341,7 +344,7 @@ void SimulationManager::checkDepartures()
 					continue;
 				}
 
-				// Request access through TrafficController (Mediator pattern)
+				// Request access through TrafficController
 				if (_trafficController)
 				{
 					TrafficController::AccessDecision decision = 
@@ -565,7 +568,7 @@ void SimulationManager::logEventForAffectedTrains(Event* event, const std::strin
 		return;
 	}
 	
-	// Get event description polymorphically (SOLID: OCP + DIP)
+	// Get event description
 	std::string eventDescription = event->getDescription();
 	EventType type = event->getType();
 	
@@ -607,19 +610,8 @@ void SimulationManager::logEventForAffectedTrains(Event* event, const std::strin
 			continue;
 		}
 		
-		// Check if event affects this train (polymorphic check)
-		bool trainAffected = false;
-		
-		// Check based on train's current/next location
-		Node* currentNode = train->getCurrentNode();
-		Node* nextNode = train->getNextNode();
-		Rail* currentRail = train->getCurrentRail();
-		
-		if (event->affectsNode(currentNode) || event->affectsNode(nextNode) ||
-		    (currentRail && event->affectsRail(currentRail)))
-		{
-			trainAffected = true;
-		}
+		// Each event type decides if it applies to this train at this moment
+		bool trainAffected = event->isApplicableToTrain(train);
 		
 		// Log event if train is affected
 		if (trainAffected)

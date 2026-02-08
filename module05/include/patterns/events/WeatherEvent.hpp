@@ -29,6 +29,7 @@ public:
 	bool affectsNode(Node* node) const override;
 	bool affectsRail(Rail* rail) const override;
 	bool affectsTrain(Train* train) const override;
+	bool isApplicableToTrain(Train* train) const override;
 	
 	std::string getDescription() const override;
 

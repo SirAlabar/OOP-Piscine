@@ -1,6 +1,7 @@
 #include "patterns/events/TrackMaintenanceEvent.hpp"
 #include "core/Rail.hpp"
 #include "core/Node.hpp"
+#include "core/Train.hpp"
 
 TrackMaintenanceEvent::TrackMaintenanceEvent(Rail* rail, const Time& startTime,
                                              const Time& duration, double speedReductionFactor)
@@ -55,6 +56,18 @@ bool TrackMaintenanceEvent::affectsTrain(Train* train) const
 {
 	(void)train;  // Unused - affects trains indirectly via rail speed limit
 	return true;
+}
+
+bool TrackMaintenanceEvent::isApplicableToTrain(Train* train) const
+{
+	if (!train || !_rail)
+	{
+		return false;
+	}
+	
+	// Track maintenance affects trains currently on the affected rail
+	Rail* currentRail = train->getCurrentRail();
+	return currentRail == _rail;
 }
 
 std::string TrackMaintenanceEvent::getDescription() const

@@ -63,13 +63,16 @@ public:
 	bool isActive() const;
 	const VisualData& getVisualData() const;
 	
-	// Event description for logging (polymorphic)
+	// Event description for logging
 	virtual std::string getDescription() const = 0;
 
 	// Type checking helpers
 	virtual bool affectsNode(Node* node) const = 0;
 	virtual bool affectsRail(Rail* rail) const = 0;
 	virtual bool affectsTrain(Train* train) const = 0;
+	
+	// Check if event is applicable to train at current position/state
+	virtual bool isApplicableToTrain(Train* train) const = 0;
 };
 
 #endif

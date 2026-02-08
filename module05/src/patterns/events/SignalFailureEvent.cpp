@@ -1,5 +1,6 @@
 #include "patterns/events/SignalFailureEvent.hpp"
 #include "core/Node.hpp"
+#include "core/Train.hpp"
 
 SignalFailureEvent::SignalFailureEvent(Node* node, const Time& startTime,
                                        const Time& duration, const Time& stopDuration)
@@ -38,6 +39,30 @@ bool SignalFailureEvent::affectsRail(Rail* rail) const
 bool SignalFailureEvent::affectsTrain(Train* train) const
 {
 	(void)train;  // Unused - affects all trains at this node
+	return true;
+}
+
+bool SignalFailureEvent::isApplicableToTrain(Train* train) const
+{
+	if (!train || !_node)
+	{
+		return false;
+	}
+	
+	// All trains approaching this node get notified
+	
+	// Check if this node is in the train's path (either current or next)
+	Node* currentNode = train->getCurrentNode();
+	Node* nextNode = train->getNextNode();
+	
+	// Train is either at the node or will arrive at it
+	bool nodeInPath = (currentNode == _node || nextNode == _node);
+	if (!nodeInPath)
+	{
+		return false;
+	}
+	
+	// Apply signal failure - train approaching/at this node
 	return true;
 }
 

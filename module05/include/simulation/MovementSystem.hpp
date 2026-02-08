@@ -11,6 +11,9 @@ class MovementSystem
 public:
     // Main entry point: resolves train progression after physics update
     static void resolveProgress(Train* train, SimulationContext* ctx);
+    
+    // Checks for signal failures and forces trains to stop if needed
+    static void checkSignalFailures(Train* train, SimulationContext* ctx);
 
 private:
     // Checks if train has reached or passed end of current rail
