@@ -1,8 +1,10 @@
 #include "io/CLI.hpp"
 #include <iostream>
+#include <sstream>
 
 CLI::CLI(int argc, char* argv[]) : _argc(argc), _argv(argv)
 {
+	parseFlags();
 }
 
 bool CLI::shouldShowHelp() const
@@ -12,7 +14,9 @@ bool CLI::shouldShowHelp() const
 
 bool CLI::hasValidArguments() const
 {
-	return _argc == 3;
+	// Need at least 3 args: program_name network_file train_file
+	// Additional args are optional flags
+	return _argc >= 3;
 }
 
 std::string CLI::getNetworkFile() const
@@ -101,5 +105,113 @@ void CLI::printHelp() const
 	std::cout << "  - Time format must be HHhMM (hours: 00-23, minutes: 00-59)\n";
 	std::cout << "  - A valid path must exist between departure and arrival stations\n\n";
 	
+	std::cout << "----------------------------------------\n";
+	std::cout << "OPTIONAL FLAGS:\n";
+	std::cout << "----------------------------------------\n";
+	std::cout << "  --seed=N              Set random seed for deterministic events\n";
+	std::cout << "  --pathfinding=astar   Use A* pathfinding (default: dijkstra)\n";
+	std::cout << "  --render              Enable SFML visualization\n";
+	std::cout << "  --hot-reload          Watch input files for changes\n";
+	std::cout << "  --monte-carlo=N       Run N simulations and output statistics\n\n";
+	
+	std::cout << "Example:\n";
+	std::cout << "  ./railway_sim network.txt trains.txt --seed=42 --pathfinding=astar\n\n";
+	
 	std::cout << "========================================\n\n";
+}
+
+void CLI::parseFlags()
+{
+	// Parse optional flags starting from index 3 (after network_file and train_file)
+	for (int i = 3; i < _argc; ++i)
+	{
+		std::string arg = _argv[i];
+		std::string key, value;
+		
+		if (parseFlag(arg, key, value))
+		{
+			_flags[key] = value;
+		}
+		else
+		{
+			std::cerr << "Warning: Invalid flag format: " << arg << std::endl;
+		}
+	}
+}
+
+bool CLI::parseFlag(const std::string& arg, std::string& key, std::string& value)
+{
+	// Check if starts with --
+	if (arg.size() < 3 || arg[0] != '-' || arg[1] != '-')
+	{
+		return false;
+	}
+	
+	// Find = separator
+	size_t pos = arg.find('=');
+	
+	if (pos != std::string::npos)
+	{
+		// Format: --key=value
+		key = arg.substr(2, pos - 2);
+		value = arg.substr(pos + 1);
+	}
+	else
+	{
+		// Format: --key (boolean flag)
+		key = arg.substr(2);
+		value = "true";
+	}
+	
+	return !key.empty();
+}
+
+bool CLI::hasSeed() const
+{
+	return _flags.find("seed") != _flags.end();
+}
+
+unsigned int CLI::getSeed() const
+{
+    std::stringstream ss(_flags.at("seed"));
+    unsigned int seed;
+    ss >> seed;
+    return seed;
+}
+
+std::string CLI::getPathfinding() const
+{
+	if (_flags.find("pathfinding") != _flags.end())
+	{
+		return _flags.at("pathfinding");
+	}
+	return "dijkstra";  // Default
+}
+
+bool CLI::hasRender() const
+{
+	return _flags.find("render") != _flags.end();
+}
+
+bool CLI::hasHotReload() const
+{
+	return _flags.find("hot-reload") != _flags.end();
+}
+
+bool CLI::hasMonteCarloRuns() const
+{
+	return _flags.find("monte-carlo") != _flags.end();
+}
+
+unsigned int CLI::getMonteCarloRuns() const
+{
+	if (!hasMonteCarloRuns())
+	{
+		return 0;
+	}
+	
+	std::stringstream ss(_flags.at("monte-carlo"));
+	unsigned int runs;
+	ss >> runs;
+	return runs;
 }

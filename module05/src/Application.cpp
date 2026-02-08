@@ -4,6 +4,7 @@
 #include "io/TrainConfigParser.hpp"
 #include "io/OutputWriter.hpp"
 #include "patterns/factories/TrainFactory.hpp"
+#include "patterns/strategies/IPathfindingStrategy.hpp"
 #include "patterns/strategies/DijkstraStrategy.hpp"
 #include "patterns/states/IdleState.hpp"
 #include "simulation/SimulationManager.hpp"
@@ -12,6 +13,7 @@
 #include "core/Node.hpp"
 #include "core/Rail.hpp"
 #include <iostream>
+#include <ctime>
 
 Application::Application(int argc, char* argv[]) : _cli(argc, argv)
 {
@@ -82,6 +84,22 @@ int Application::run()
 	std::cout << "Railway Simulation Starting..." << std::endl;
 	std::cout << "Network file: " << networkFile << std::endl;
 	std::cout << "Train file:   " << trainFile << std::endl;
+	
+	// Log optional flags
+	std::cout << "Pathfinding:  " << _cli.getPathfinding() << std::endl;
+	if (_cli.hasRender())
+	{
+		std::cout << "Rendering:    enabled (SFML)" << std::endl;
+	}
+	if (_cli.hasHotReload())
+	{
+		std::cout << "Hot-reload:   enabled" << std::endl;
+	}
+	if (_cli.hasMonteCarloRuns())
+	{
+		std::cout << "Monte Carlo:  " << _cli.getMonteCarloRuns() << " runs" << std::endl;
+	}
+	
 	std::cout << std::endl;
 
 	Graph* graph = nullptr;
@@ -126,7 +144,23 @@ int Application::run()
 
 		// Create trains and find paths
 		std::cout << "Creating trains and finding paths..." << std::endl;
+		
+		// Select pathfinding strategy based on CLI flag
+		IPathfindingStrategy* strategy = nullptr;
 		DijkstraStrategy dijkstra;
+		
+		std::string pathfindingAlgo = _cli.getPathfinding();
+		if (pathfindingAlgo == "astar")
+		{
+			// TODO: Implement A* strategy
+			std::cerr << "Warning: A* not yet implemented, falling back to Dijkstra" << std::endl;
+			strategy = &dijkstra;
+		}
+		else
+		{
+			strategy = &dijkstra;
+		}
+		
 		static IdleState idleState;
 
 		for (const auto& config : trainConfigs)
@@ -150,7 +184,7 @@ int Application::run()
 				continue;
 			}
 
-			auto path = dijkstra.findPath(graph, startNode, endNode);
+			auto path = strategy->findPath(graph, startNode, endNode);
 
 			if (path.empty())
 			{
@@ -168,7 +202,7 @@ int Application::run()
 
 			std::cout << "  " << train->getName() 
 			          << " (ID: " << train->getID() << "): " 
-			          << config.departureStation << " â†’ " << config.arrivalStation 
+			          << config.departureStation << " Ã¢â€ â€™ " << config.arrivalStation 
 			          << " (" << path.size() << " segments)" << std::endl;
 		}
 
@@ -210,6 +244,24 @@ int Application::run()
 		SimulationManager& sim = SimulationManager::getInstance();
 		sim.reset();
 		sim.setNetwork(graph);
+		
+		// Set seed for event generation
+		unsigned int seed;
+		if (_cli.hasSeed())
+		{
+			// Deterministic mode: use specified seed
+			seed = _cli.getSeed();
+			sim.setEventSeed(seed);
+			std::cout << "  Event seed: " << seed << " (deterministic mode)" << std::endl;
+		}
+		else
+		{
+			// Random mode: use time-based seed and log it for reproducibility
+			seed = static_cast<unsigned int>(std::time(nullptr));
+			sim.setEventSeed(seed);
+			std::cout << "  Event seed: " << seed << " (random mode - use --seed=" 
+			          << seed << " to reproduce)" << std::endl;
+		}
 
 		for (Train* train : trains)
 		{

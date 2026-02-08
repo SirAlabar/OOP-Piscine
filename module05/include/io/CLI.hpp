@@ -2,6 +2,7 @@
 #define CLI_HPP
 
 #include <string>
+#include <map>
 
 // Handles command-line argument parsing and help messages
 class CLI
@@ -18,12 +19,27 @@ public:
 	std::string getNetworkFile() const;
 	std::string getTrainFile() const;
 
+	// Optional flags
+	bool hasSeed() const;
+	unsigned int getSeed() const;
+	
+	std::string getPathfinding() const;  // Returns "dijkstra" or "astar"
+	bool hasRender() const;
+	bool hasHotReload() const;
+	
+	bool hasMonteCarloRuns() const;
+	unsigned int getMonteCarloRuns() const;
+
 	void printUsage(const std::string& programName) const;
 	void printHelp() const;
 
 private:
 	int _argc;
 	char** _argv;
+	std::map<std::string, std::string> _flags;
+	
+	void parseFlags();
+	bool parseFlag(const std::string& arg, std::string& key, std::string& value);
 };
 
 #endif
