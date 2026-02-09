@@ -2,27 +2,14 @@
 #include "core/Node.hpp"
 #include "simulation/PhysicsSystem.hpp"
 #include "patterns/states/ITrainState.hpp"
+#include "utils/FileSystemUtils.hpp"
 #include <iomanip>
 #include <sstream>
 #include <cmath>
-#include <sys/stat.h>
-#include <sys/types.h>
-
-static void ensureOutputDirectoryExists()
-{
-	const char* outputDir = "output";
-	
-	// Create directory if it doesn't exist (mode 0755 = rwxr-xr-x)
-	#ifdef _WIN32
-		_mkdir(outputDir);
-	#else
-		mkdir(outputDir, 0755);
-	#endif
-}
 
 FileOutputWriter::FileOutputWriter(Train* train) : _train(train), _totalPathDistance(0.0), _finalSnapshotWritten(false)
 {
-	ensureOutputDirectoryExists();
+	FileSystemUtils::ensureOutputDirectoryExists();
 	_filename = generateFilename();
 	_totalPathDistance = calculateTotalPathDistance();
 }

@@ -15,6 +15,7 @@ class TrafficController;
 class EventManager;
 class EventFactory;
 class Event;
+class StatsCollector;
 
 class SimulationManager
 {
@@ -30,12 +31,14 @@ private:
 	TrafficController* _trafficController;
 	SimulationContext* _context;
 	EventFactory* _eventFactory;
+	StatsCollector* _statsCollector;  // Optional: for Monte Carlo mode only
 	
 	double _currentTime;
 	double _timestep;
 	bool _running;
 	bool _roundTripEnabled;  // Enable train reversal at destination
 	unsigned int _eventSeed;  // For deterministic event generation
+	double _lastEventGenerationTime;  // Track when we last generated events (once per minute)
 	
 	// Output management
 	IOutputWriter* _simulationWriter;  // Console/UI output (Dependency Inversion)
@@ -74,6 +77,7 @@ public:
 	void setRoundTripMode(bool enabled);  // Enable train reversal at destination
 	void setSimulationWriter(IOutputWriter* writer);  // Set console/UI writer (Dependency Inversion)
 	void registerOutputWriter(Train* train, FileOutputWriter* writer);  // Register writer from Application
+	void setStatsCollector(StatsCollector* stats);  // Set stats collector for Monte Carlo mode
 	
 	void start();
 	void stop();

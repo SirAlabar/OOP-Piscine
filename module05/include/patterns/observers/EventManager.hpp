@@ -17,6 +17,7 @@ private:
 	std::vector<IObserver*> _observers;
 	std::vector<Event*>     _activeEvents;
 	std::vector<Event*>     _scheduledEvents;  // Events waiting to start
+	int                     _totalEventsGenerated;  // Lifetime count for stats
 
 	// Private constructor for Singleton
 	EventManager();
@@ -51,6 +52,9 @@ public:
 	// Check if specific location has active event
 	bool hasActiveEventAt(Node* node) const;
 	bool hasActiveEventAt(Rail* rail) const;
+
+	// Get total events generated (for statistics)
+	int getTotalEventsGenerated() const;
 
 	// Clear all events (for testing/reset)
 	void clear();

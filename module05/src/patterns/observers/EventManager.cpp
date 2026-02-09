@@ -7,7 +7,7 @@
 // Initialize static instance
 EventManager* EventManager::_instance = nullptr;
 
-EventManager::EventManager()
+EventManager::EventManager() : _totalEventsGenerated(0)
 {
 }
 
@@ -92,6 +92,7 @@ void EventManager::scheduleEvent(Event* event)
 	}
 
 	_scheduledEvents.push_back(event);
+	_totalEventsGenerated++;  // Track for statistics
 }
 
 void EventManager::update(const Time& currentTime)
@@ -224,4 +225,12 @@ void EventManager::clear()
 
 	// Clear observers
 	_observers.clear();
+	
+	// Reset statistics counter
+	_totalEventsGenerated = 0;
+}
+
+int EventManager::getTotalEventsGenerated() const
+{
+	return _totalEventsGenerated;
 }

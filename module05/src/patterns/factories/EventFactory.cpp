@@ -9,23 +9,23 @@
 #include "core/Rail.hpp"
 #include <vector>
 
-// Event configuration constants
-const EventConfig EventFactory::CONFIG_STATION_DELAY = {0.10, 15, 45};      // 10%/hour, 15-45 min
-const EventConfig EventFactory::CONFIG_TRACK_MAINTENANCE = {0.05, 60, 180}; // 5%/hour, 60-180 min
-const EventConfig EventFactory::CONFIG_SIGNAL_FAILURE = {0.02, 5, 20};      // 2%/hour, 5-20 min
-const EventConfig EventFactory::CONFIG_WEATHER = {0.01, 120, 300};          // 1%/hour, 120-300 min
+const EventConfig EventFactory::CONFIG_STATION_DELAY = {0.03, 15, 45};       // 3% per minute (~1.8/hour)
+const EventConfig EventFactory::CONFIG_TRACK_MAINTENANCE = {0.015, 60, 180}; // 1.5% per minute (~0.9/hour)
+const EventConfig EventFactory::CONFIG_SIGNAL_FAILURE = {0.01, 5, 20};       // 1% per minute (~0.6/hour)
+const EventConfig EventFactory::CONFIG_WEATHER = {0.005, 120, 300};          // 0.5% per minute (~0.3/hour)
 
 EventFactory::EventFactory(unsigned int seed, Graph* network, EventManager* eventManager)
 	: _rng(seed), _network(network), _eventManager(eventManager)
 {
 }
 
-std::vector<Event*> EventFactory::tryGenerateEvents(const Time& currentTime)
+std::vector<Event*> EventFactory::tryGenerateEvents(const Time& currentTime, double timestepSeconds)
 {
+	(void)timestepSeconds;  // Probabilities are per-minute; this is only called once per minute
 	std::vector<Event*> newEvents;
 
-	// Try each event type based on probability
-	if (_rng.getBool(CONFIG_STATION_DELAY.probabilityPerHour))
+	// Try each event type based on per-minute probability
+	if (_rng.getBool(CONFIG_STATION_DELAY.probabilityPerTimestep))
 	{
 		Event* event = createStationDelay(currentTime);
 		if (event)
@@ -34,7 +34,7 @@ std::vector<Event*> EventFactory::tryGenerateEvents(const Time& currentTime)
 		}
 	}
 
-	if (_rng.getBool(CONFIG_TRACK_MAINTENANCE.probabilityPerHour))
+	if (_rng.getBool(CONFIG_TRACK_MAINTENANCE.probabilityPerTimestep))
 	{
 		Event* event = createTrackMaintenance(currentTime);
 		if (event)
@@ -43,7 +43,7 @@ std::vector<Event*> EventFactory::tryGenerateEvents(const Time& currentTime)
 		}
 	}
 
-	if (_rng.getBool(CONFIG_SIGNAL_FAILURE.probabilityPerHour))
+	if (_rng.getBool(CONFIG_SIGNAL_FAILURE.probabilityPerTimestep))
 	{
 		Event* event = createSignalFailure(currentTime);
 		if (event)
@@ -52,7 +52,7 @@ std::vector<Event*> EventFactory::tryGenerateEvents(const Time& currentTime)
 		}
 	}
 
-	if (_rng.getBool(CONFIG_WEATHER.probabilityPerHour))
+	if (_rng.getBool(CONFIG_WEATHER.probabilityPerTimestep))
 	{
 		Event* event = createWeather(currentTime);
 		if (event)

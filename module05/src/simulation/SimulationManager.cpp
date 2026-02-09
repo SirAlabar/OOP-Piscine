@@ -15,6 +15,7 @@
 #include "patterns/observers/EventManager.hpp"
 #include "patterns/factories/EventFactory.hpp"
 #include "patterns/events/Event.hpp"
+#include "analysis/StatsCollector.hpp"
 
 // Constructor
 SimulationManager::SimulationManager()
@@ -23,11 +24,13 @@ SimulationManager::SimulationManager()
 	  _trafficController(nullptr),
 	  _context(nullptr),
 	  _eventFactory(nullptr),
+	  _statsCollector(nullptr),
 	  _currentTime(0.0),
 	  _timestep(1.0),
 	  _running(false),
 	  _roundTripEnabled(false),
 	  _eventSeed(0),
+	  _lastEventGenerationTime(-60.0),  // Start at -60 so first check happens immediately
 	  _simulationWriter(nullptr),
 	  _lastSnapshotMinute(-1),
 	  _lastDashboardMinute(-1)
@@ -121,6 +124,11 @@ void SimulationManager::registerOutputWriter(Train* train, FileOutputWriter* wri
 	}
 	
 	_outputWriters[train] = writer;
+}
+
+void SimulationManager::setStatsCollector(StatsCollector* stats)
+{
+	_statsCollector = stats;
 }
 
 // Simulation control
@@ -287,6 +295,10 @@ void SimulationManager::reset()
 	_running = false;
 	_lastSnapshotMinute = -1;
 	_lastDashboardMinute = -1;
+	_lastEventGenerationTime = -60.0;  // Reset so first check happens immediately
+	_statsCollector = nullptr;  // Clear stats collector pointer
+	
+	EventManager::getInstance().clear();
 
 	if (_context)
 	{
@@ -299,12 +311,15 @@ void SimulationManager::reset()
 		delete _trafficController;
 		_trafficController = nullptr;
 	}
-
-	if (_network)
+	
+	if (_eventFactory)
 	{
-		_trafficController = new TrafficController(_network, _collisionSystem, &_trains);
-		_context = new SimulationContext(_network, _collisionSystem, &_trains, _trafficController);
+		delete _eventFactory;
+		_eventFactory = nullptr;
 	}
+	
+	// Clear network pointer - new network will be set via setNetwork()
+	_network = nullptr;
 }
 
 // Helper methods
@@ -374,7 +389,6 @@ void SimulationManager::updateTrainStates(double dt)
     }
 }
 
-
 void SimulationManager::checkDepartures()
 {
 	Time currentTimeFormatted = getCurrentTimeFormatted();
@@ -420,8 +434,6 @@ void SimulationManager::checkDepartures()
 		}
 	}
 }
-
-
 
 void SimulationManager::handleStateTransitions()
 {
@@ -624,16 +636,22 @@ void SimulationManager::updateEvents()
 		}
 	}
 	
-	// Try to generate new events (probability-based)
-	std::vector<Event*> newEvents = _eventFactory->tryGenerateEvents(currentTimeFormatted);
-	
-	// Schedule new events
-	for (Event* event : newEvents)
+	// Try to generate new events
+	double timeSinceLastGeneration = _currentTime - _lastEventGenerationTime;
+	if (timeSinceLastGeneration >= 60.0)
 	{
-		if (event)
+		std::vector<Event*> newEvents = _eventFactory->tryGenerateEvents(currentTimeFormatted, 60.0);
+		
+		// Schedule new events
+		for (Event* event : newEvents)
 		{
-			eventManager.scheduleEvent(event);
+			if (event)
+			{
+				eventManager.scheduleEvent(event);
+			}
 		}
+		
+		_lastEventGenerationTime = _currentTime;
 	}
 }
 
@@ -692,6 +710,12 @@ void SimulationManager::logEventForAffectedTrains(Event* event, const std::strin
 		// Log event if train is affected
 		if (trainAffected)
 		{
+			// Count event for this specific train (Monte Carlo mode only)
+			if (_statsCollector && action == "ACTIVATED")
+			{
+				_statsCollector->recordEventForTrain(train);
+			}
+			
 			auto writerIt = _outputWriters.find(train);
 			if (writerIt != _outputWriters.end() && writerIt->second)
 			{

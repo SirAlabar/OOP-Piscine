@@ -12,7 +12,7 @@ class EventManager;
 // Event configuration
 struct EventConfig
 {
-	double probabilityPerHour;  // 0.0-1.0
+	double probabilityPerTimestep;  // 0.0-1.0 checked once per minute
 	int    minDurationMinutes;
 	int    maxDurationMinutes;
 };
@@ -51,7 +51,8 @@ public:
 
 	// Attempt to generate events based on probability
 	// Returns vector of created events (may be empty)
-	std::vector<Event*> tryGenerateEvents(const Time& currentTime);
+	// timestep: simulation timestep in seconds (default 1.0)
+	std::vector<Event*> tryGenerateEvents(const Time& currentTime, double timestepSeconds = 1.0);
 
 	// Get the seed used
 	unsigned int getSeed() const;

@@ -11,11 +11,14 @@
 #include "patterns/strategies/AStarStrategy.hpp"
 #include "patterns/states/IdleState.hpp"
 #include "simulation/SimulationManager.hpp"
+#include "analysis/MonteCarloRunner.hpp"
 #include "core/Train.hpp"
 #include "core/Graph.hpp"
 #include "core/Node.hpp"
 #include "core/Rail.hpp"
 #include <ctime>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 Application::Application(int argc, char* argv[]) 
 	: _cli(argc, argv),
@@ -86,6 +89,35 @@ int Application::run()
 	{
 		std::string runs = std::to_string(_cli.getMonteCarloRuns()) + " runs";
 		_consoleWriter->writeConfiguration("Monte Carlo", runs);
+	}
+
+	// Monte Carlo mode - run multiple simulations and exit
+	if (_cli.hasMonteCarloRuns())
+	{
+		try
+		{
+			// Ensure output directory exists (same pattern as FileOutputWriter)
+			#ifdef _WIN32
+				_mkdir("output");
+			#else
+				mkdir("output", 0755);
+			#endif
+			
+			MonteCarloRunner runner(networkFile, trainFile, 
+			                        _cli.getSeed(), 
+			                        _cli.getMonteCarloRuns(),
+			                        _cli.getPathfinding());
+			
+			runner.runAll();
+			runner.writeCSV("output/monte_carlo_results.csv");
+			
+			return 0;
+		}
+		catch (const std::exception& e)
+		{
+			_consoleWriter->writeError(e.what());
+			return 1;
+		}
 	}
 
 	Graph* graph = nullptr;
