@@ -208,6 +208,9 @@ int Application::run()
 		SimulationManager& sim = SimulationManager::getInstance();
 		sim.reset();
 		
+		// Connect console output (Dependency Inversion - pass interface)
+		sim.setSimulationWriter(_consoleWriter);
+		
 		// Set seed for event generation
 		unsigned int seed;
 		if (_cli.hasSeed())

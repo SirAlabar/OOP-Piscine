@@ -10,6 +10,7 @@
 #include "core/Node.hpp"
 #include "patterns/states/AcceleratingState.hpp"
 #include "io/FileOutputWriter.hpp"
+#include "io/IOutputWriter.hpp"
 #include "patterns/observers/EventManager.hpp"
 #include "patterns/factories/EventFactory.hpp"
 #include "patterns/events/Event.hpp"
@@ -24,8 +25,10 @@ SimulationManager::SimulationManager()
 	  _currentTime(0.0),
 	  _timestep(1.0),
 	  _running(false),
-	  _eventSeed(0),  // Default 0 - must be set via setEventSeed() before use
-	  _lastSnapshotMinute(-1)
+	  _eventSeed(0),
+	  _simulationWriter(nullptr),
+	  _lastSnapshotMinute(-1),
+	  _lastDashboardMinute(-1)
 {
 }
 
@@ -98,6 +101,11 @@ void SimulationManager::setEventSeed(unsigned int seed)
 	}
 }
 
+void SimulationManager::setSimulationWriter(IOutputWriter* writer)
+{
+	_simulationWriter = writer;
+}
+
 void SimulationManager::registerOutputWriter(Train* train, FileOutputWriter* writer)
 {
 	if (!train || !writer)
@@ -113,6 +121,7 @@ void SimulationManager::start()
 {
 	_running = true;
 	_lastSnapshotMinute = -1;
+	_lastDashboardMinute = -1;
 
 	if (!_network || !_context)
 	{
@@ -164,7 +173,43 @@ void SimulationManager::step()
 	// Write snapshots (handles state changes + periodic writes internally)
 	writeSnapshots();
 	
-	// Display periodic status dashboard
+	// Display periodic status dashboard every 5 simulation minutes
+	int currentMinute = static_cast<int>(_currentTime / 60.0);
+	bool shouldShowDashboard = (currentMinute % 5 == 0 && currentMinute != _lastDashboardMinute && currentMinute > 0);
+	
+	if (shouldShowDashboard && _simulationWriter)
+	{
+		// Count active trains (not idle, not finished)
+		int activeTrains = 0;
+		int completedTrains = 0;
+		
+		for (Train* train : _trains)
+		{
+			if (!train) continue;
+			
+			if (train->isFinished())
+			{
+				completedTrains++;
+			}
+			else if (train->getCurrentState() && train->getCurrentState()->getName() != "Idle")
+			{
+				activeTrains++;
+			}
+		}
+		
+		// Only show dashboard if there are active trains
+		if (activeTrains > 0 || completedTrains > 0)
+		{
+			_lastDashboardMinute = currentMinute;
+			
+			// Count active events
+			int activeEvents = static_cast<int>(EventManager::getInstance().getActiveEvents().size());
+			
+			_simulationWriter->writeDashboard(getCurrentTimeFormatted(), activeTrains, 
+			                                  static_cast<int>(_trains.size()), 
+			                                  completedTrains, activeEvents);
+		}
+	}
 }
 
 void SimulationManager::run(double maxTime)
@@ -230,6 +275,7 @@ void SimulationManager::reset()
 	_currentTime = 0.0;
 	_running = false;
 	_lastSnapshotMinute = -1;
+	_lastDashboardMinute = -1;
 
 	if (_context)
 	{
@@ -488,6 +534,50 @@ void SimulationManager::updateEvents()
 		if (isNew)
 		{
 			logEventForAffectedTrains(event, "ACTIVATED");
+			
+			// Only notify on console/UI if writer available AND trains are active
+			if (_simulationWriter)
+			{
+				// Check if any trains are active (not idle, not finished)
+				bool hasActiveTrains = false;
+				for (Train* train : _trains)
+				{
+					if (train && !train->isFinished() && 
+					    train->getCurrentState() && train->getCurrentState()->getName() != "Idle")
+					{
+						hasActiveTrains = true;
+						break;
+					}
+				}
+				
+				// Only display event if trains are running
+				if (hasActiveTrains)
+				{
+					std::string eventTypeStr;
+					switch (event->getType())
+					{
+						case EventType::STATION_DELAY:
+							eventTypeStr = "STATION DELAY";
+							break;
+						case EventType::TRACK_MAINTENANCE:
+							eventTypeStr = "TRACK MAINTENANCE";
+							break;
+						case EventType::SIGNAL_FAILURE:
+							eventTypeStr = "SIGNAL FAILURE";
+							break;
+						case EventType::WEATHER:
+							eventTypeStr = "WEATHER EVENT";
+							break;
+						default:
+							eventTypeStr = "UNKNOWN EVENT";
+							break;
+					}
+					
+					_simulationWriter->writeEventActivated(getCurrentTimeFormatted(), 
+					                                       eventTypeStr,
+					                                       event->getDescription());
+				}
+			}
 		}
 	}
 	

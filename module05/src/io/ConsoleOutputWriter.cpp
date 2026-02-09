@@ -3,6 +3,7 @@
 #include "core/Rail.hpp"
 #include "core/Train.hpp"
 #include <iostream>
+#include <sstream>
 
 void ConsoleOutputWriter::writeStartupHeader()
 {
@@ -141,18 +142,33 @@ void ConsoleOutputWriter::writeDashboard(const Time& currentTime, int activeTrai
 	          << "] SIMULATION STATUS ════════════════════════╗\n";
 	std::cout << Color::RESET;
 	
+	// Build content string without colors to calculate actual width
+	std::stringstream content;
+	content << "Active: " << activeTrains << "/" << totalTrains;
+	content << "  |  ";
+	content << "Completed: " << completedTrains;
+	content << "  |  ";
+	content << "Events: " << activeEvents;
+	
+	std::string contentStr = content.str();
+	int contentWidth = static_cast<int>(contentStr.length());
+	
+	int targetWidth = 73;
+	int paddingSize = targetWidth - contentWidth;
+	if (paddingSize < 0) paddingSize = 0;
+	
+	// Output with colors
 	std::cout << Color::CYAN << "║ " << Color::RESET;
 	std::cout << Color::GREEN << "Active: " << activeTrains << "/" << totalTrains << Color::RESET;
 	std::cout << Color::DIM << "  |  " << Color::RESET;
 	std::cout << Color::BOLD_GREEN << "Completed: " << completedTrains << Color::RESET;
 	std::cout << Color::DIM << "  |  " << Color::RESET;
 	std::cout << Color::YELLOW << "Events: " << activeEvents << Color::RESET;
-	
-	std::string padding(48, ' ');
-	std::cout << padding << Color::CYAN << "║\n" << Color::RESET;
+	std::cout << std::string(paddingSize, ' ');
+	std::cout << Color::CYAN << " ║\n" << Color::RESET;
 	
 	std::cout << Color::CYAN;
-	std::cout << "╚═══════════════════════════════════════════════════════════════════════════════╝\n";
+	std::cout << "╚═══════════════════════════════════════════════════════════════════════════╝\n";
 	std::cout << Color::RESET << std::endl;
 }
 
