@@ -26,6 +26,7 @@ public:
 	std::string getPathfinding() const;  // Returns "dijkstra" or "astar"
 	bool hasRender() const;
 	bool hasHotReload() const;
+	bool hasRoundTrip() const;
 	
 	bool hasMonteCarloRuns() const;
 	unsigned int getMonteCarloRuns() const;

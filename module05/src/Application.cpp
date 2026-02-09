@@ -243,14 +243,31 @@ int Application::run()
 			sim.addTrain(train);
 		}
 
+		// Enable round-trip mode if requested
+		if (_cli.hasRoundTrip() || _cli.hasRender())
+		{
+			sim.setRoundTripMode(true);
+			_consoleWriter->writeConfiguration("Round-trip mode", "enabled (trains reverse at destination)");
+		}
+
 		_consoleWriter->writeSimulationStart();
         for (Train* train : trains)
         {
             _consoleWriter->writeTrainSchedule(train->getName(), train->getDepartureTime());
         }
 
-		// Run simulation step by step with snapshot writing
-		sim.run(106400.0);
+		// Run simulation
+		// If round-trip enabled, run for extended time (or indefinitely for render mode)
+		double maxTime = 106400.0;  // Default: ~29 hours
+		if (_cli.hasRoundTrip() || _cli.hasRender())
+		{
+			maxTime = 172800.0;  // 48 hours for round-trip demo
+			if (_cli.hasRender())
+			{
+				maxTime = 1e9;  // Near-infinite for rendering (user will Ctrl+C)
+			}
+		}
+		sim.run(maxTime);
 
 
 		// Write final snapshots

@@ -9,6 +9,7 @@
 #include "core/Rail.hpp"
 #include "core/Node.hpp"
 #include "patterns/states/AcceleratingState.hpp"
+#include "patterns/states/IdleState.hpp"
 #include "io/FileOutputWriter.hpp"
 #include "io/IOutputWriter.hpp"
 #include "patterns/observers/EventManager.hpp"
@@ -25,6 +26,7 @@ SimulationManager::SimulationManager()
 	  _currentTime(0.0),
 	  _timestep(1.0),
 	  _running(false),
+	  _roundTripEnabled(false),
 	  _eventSeed(0),
 	  _simulationWriter(nullptr),
 	  _lastSnapshotMinute(-1),
@@ -104,6 +106,11 @@ void SimulationManager::setEventSeed(unsigned int seed)
 void SimulationManager::setSimulationWriter(IOutputWriter* writer)
 {
 	_simulationWriter = writer;
+}
+
+void SimulationManager::setRoundTripMode(bool enabled)
+{
+	_roundTripEnabled = enabled;
 }
 
 void SimulationManager::registerOutputWriter(Train* train, FileOutputWriter* writer)
@@ -220,19 +227,23 @@ void SimulationManager::run(double maxTime)
 	{
 		step();
 		
-		// Check if all trains finished
-		bool allFinished = true;
-		for (Train* train : _trains)
+		// Only stop when all trains finished if NOT in round-trip mode
+		if (!_roundTripEnabled)
 		{
-			if (train && !train->isFinished())
+			// Check if all trains finished
+			bool allFinished = true;
+			for (Train* train : _trains)
 			{
-				allFinished = false;
-				break;
+				if (train && !train->isFinished())
+				{
+					allFinished = false;
+					break;
+				}
+			}		
+			if (allFinished)
+			{
+				stop();
 			}
-		}		
-		if (allFinished)
-		{
-			stop();
 		}
 	}
 }
@@ -306,7 +317,8 @@ void SimulationManager::updateTrainStates(double dt)
             continue;
 		}
 
-        if (train->isFinished())
+		// Skip finished trains UNLESS round-trip mode is enabled
+        if (train->isFinished() && !_roundTripEnabled)
 		{
             continue;
 		}
@@ -321,6 +333,37 @@ void SimulationManager::updateTrainStates(double dt)
             if (expired)
             {
                 _context->clearStopDuration(train);
+                
+                // If train is finished (at destination) and round-trip is enabled, reverse journey
+                if (train->isFinished() && _roundTripEnabled)
+                {
+                    // Reverse the journey
+                    train->reverseJourney();
+                    
+                    // Calculate next departure time (same time, next day = +24 hours)
+                    int currentMinutes = static_cast<int>(_currentTime / 60.0);
+                    Time currentTimeFormatted = getCurrentTimeFormatted();
+                    Time trainDepartureTime = train->getDepartureTime();
+                    
+                    // Calculate minutes until next occurrence of departure time
+                    int departureMinutes = trainDepartureTime.toMinutes();
+                    int nextDeparture = departureMinutes + 1440;  // +24 hours
+                    
+                    // If we're past this time today, wait for tomorrow
+                    while (nextDeparture <= currentMinutes)
+                    {
+                        nextDeparture += 1440;  // Add another day
+                    }
+                    
+					// Convert nextDeparture back to Time and update train
+					int nextHours = nextDeparture / 60;
+					int nextMins = nextDeparture % 60;
+					train->setDepartureTime(Time(nextHours, nextMins));
+
+					// Set train to Idle state - it will depart at the calculated time
+                    static IdleState idleState;
+                    train->setState(&idleState);
+                }
             }
         }
 

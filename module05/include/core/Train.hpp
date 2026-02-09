@@ -91,6 +91,7 @@ public:
 	std::string getArrivalStation() const;
 	Time        getDepartureTime() const;
 	Time        getStopDuration() const;
+	void        setDepartureTime(const Time& time);
 
 	// Path management
 	const Path& getPath() const;
@@ -98,6 +99,7 @@ public:
 	Rail*       getCurrentRail() const;
 	size_t      getCurrentRailIndex() const;
 	void        advanceToNextRail();
+	void        reverseJourney();  // Swap origin/dest, reverse path for round-trip mode
 
 	// State management
 	ITrainState* getCurrentState() const;

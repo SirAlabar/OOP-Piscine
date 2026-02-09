@@ -105,9 +105,13 @@ void MovementSystem::handleArrivalAtNode(Train* train, SimulationContext* ctx, N
     // If no more rails, journey is complete
     if (isJourneyComplete(train))
     {
-
         train->setVelocity(0.0);
         train->setState(ctx->states().stopped());
+        
+        // Set stop duration at final destination (needed for round-trip mode)
+        double stopSeconds = train->getStopDuration().toMinutes() * 60.0;
+        ctx->setStopDuration(train, stopSeconds);
+        
         train->advanceToNextRail();  // Sets currentRail to nullptr
         train->markFinished();
         return;

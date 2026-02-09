@@ -113,6 +113,7 @@ void CLI::printHelp() const
 	std::cout << "  --pathfinding=astar   Use A* pathfinding (default: dijkstra)\n";
 	std::cout << "  --render              Enable SFML visualization\n";
 	std::cout << "  --hot-reload          Watch input files for changes\n";
+	std::cout << "  --round-trip          Trains reverse at destination (indefinite)\n";
 	std::cout << "  --monte-carlo=N       Run N simulations and output statistics\n\n";
 	
 	std::cout << "Example:\n";
@@ -204,6 +205,11 @@ bool CLI::hasHotReload() const
 	return _flags.find("hot-reload") != _flags.end();
 }
 
+bool CLI::hasRoundTrip() const
+{
+	return _flags.find("round-trip") != _flags.end();
+}
+
 bool CLI::hasMonteCarloRuns() const
 {
 	return _flags.find("monte-carlo") != _flags.end();
@@ -226,7 +232,7 @@ bool CLI::validateFlags(std::string& errorMsg) const
 {
 	// Check for unknown flags
 	const std::vector<std::string> validFlags = {
-		"seed", "pathfinding", "render", "hot-reload", "monte-carlo"
+		"seed", "pathfinding", "render", "hot-reload", "monte-carlo", "round-trip"
 	};
 	
 	for (const auto& pair : _flags)

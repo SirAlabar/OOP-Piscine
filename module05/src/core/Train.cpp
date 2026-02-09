@@ -4,6 +4,7 @@
 #include "patterns/states/ITrainState.hpp"
 #include "patterns/events/Event.hpp"
 #include <iostream>
+#include <algorithm>
 
 // Initialize static ID counter
 int Train::_nextID = 1;
@@ -154,6 +155,11 @@ Time Train::getStopDuration() const
 	return _stopDuration;
 }
 
+void Train::setDepartureTime(const Time& time)
+{
+	_departureTime = time;
+}
+
 // Path management
 const Train::Path& Train::getPath() const
 {
@@ -193,6 +199,34 @@ void Train::advanceToNextRail()
 	}
 }
 
+void Train::reverseJourney()
+{
+	// Swap departure and arrival stations
+	std::string temp = _departureStation;
+	_departureStation = _arrivalStation;
+	_arrivalStation = temp;
+	
+	// Reverse the path vector (A→B→C becomes C→B→A)
+	std::reverse(_path.begin(), _path.end());
+	
+	// For each segment, swap from/to nodes to maintain correct direction
+	for (PathSegment& segment : _path)
+	{
+		Node* tempNode = segment.from;
+		segment.from = segment.to;
+		segment.to = tempNode;
+	}
+	
+	// Reset journey state
+	_currentRailIndex = 0;
+	_position = 0.0;
+	_velocity = 0.0;
+	_finished = false;
+	
+	// Departure time stays same (will be checked against next day's time)
+	// Stop duration remains unchanged
+}
+
 // State management
 ITrainState* Train::getCurrentState() const
 {
@@ -205,15 +239,6 @@ void Train::setState(ITrainState* state)
 	{
         return;
 	}
-
-	    // std::cout << "[STATE] Train " << _name
-        //       << " changing state from "
-        //       << (_currentState ? _currentState->getName() : "NULL")
-        //       << " to "
-        //       << (state ? state->getName() : "NULL")
-        //       << " | finished=" << (_finished ? "YES" : "NO")
-        //       << std::endl;
-
 	_currentState = state;
 }
 

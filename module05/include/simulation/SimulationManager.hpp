@@ -34,6 +34,7 @@ private:
 	double _currentTime;
 	double _timestep;
 	bool _running;
+	bool _roundTripEnabled;  // Enable train reversal at destination
 	unsigned int _eventSeed;  // For deterministic event generation
 	
 	// Output management
@@ -70,6 +71,7 @@ public:
 	void addTrain(Train* train);
 	void setTimestep(double timestep);
 	void setEventSeed(unsigned int seed);  // Set seed for deterministic events
+	void setRoundTripMode(bool enabled);  // Enable train reversal at destination
 	void setSimulationWriter(IOutputWriter* writer);  // Set console/UI writer (Dependency Inversion)
 	void registerOutputWriter(Train* train, FileOutputWriter* writer);  // Register writer from Application
 	
