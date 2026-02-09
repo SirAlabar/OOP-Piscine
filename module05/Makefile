@@ -3,6 +3,7 @@
 NAME		= Railway_Simulator
 TEST_NAME	= Railway_Simulator_tests
 BUILD_DIR	= build
+OUTPUT_DIR	= output
 BUILD_TYPE	?= Release
 
 # Colors
@@ -85,6 +86,7 @@ clean:
 fclean:
 	@echo "$(RED)Removing build directory...$(RESET)"
 	@rm -rf $(BUILD_DIR)
+	@rm -rf $(OUTPUT_DIR)
 	@rm -f valgrind-main.log valgrind-tests.log
 	@echo "$(GREEN)Full clean complete!$(RESET)"
 

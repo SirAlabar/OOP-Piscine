@@ -25,7 +25,7 @@ protected:
 		// Standard rail: 50km, 250 km/h limit
 		rail = new Rail(nodeA, nodeB, 50.0, 250.0);
 	}
-	
+
 	void TearDown() override
 	{
 		delete train;
@@ -33,7 +33,7 @@ protected:
 		delete nodeA;
 		delete nodeB;
 	}
-	
+
 	Train* train;
 	Rail* rail;
 	Node* nodeA;

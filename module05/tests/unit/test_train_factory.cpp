@@ -3,6 +3,7 @@
 #include "core/Train.hpp"
 #include "core/Graph.hpp"
 #include "core/Node.hpp"
+#include "core/Rail.hpp"
 #include "utils/Time.hpp"
 
 class TrainFactoryTest : public ::testing::Test
@@ -17,12 +18,6 @@ protected:
 		
 		graph.addNode(cityA);
 		graph.addNode(cityB);
-	}
-	
-	void TearDown() override
-	{
-		delete cityA;
-		delete cityB;
 	}
 	
 	Graph graph;

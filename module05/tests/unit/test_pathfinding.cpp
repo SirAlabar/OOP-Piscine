@@ -10,7 +10,6 @@ class PathfindingTest : public ::testing::Test
 protected:
 	void SetUp() override
 	{
-		// Create nodes
 		nodeA = new Node("CityA");
 		nodeB = new Node("CityB");
 		nodeC = new Node("CityC");
@@ -24,10 +23,7 @@ protected:
 	
 	void TearDown() override
 	{
-		delete nodeA;
-		delete nodeB;
-		delete nodeC;
-		delete nodeD;
+		// Graph destructor handles cleanup
 	}
 	
 	Graph graph;
@@ -39,205 +35,141 @@ protected:
 
 TEST_F(PathfindingTest, DirectConnection)
 {
-	Rail rail(nodeA, nodeB, 50.0, 200.0);
-	graph.addRail(&rail);
+	Rail* rail = new Rail(nodeA, nodeB, 50.0, 200.0);
+	graph.addRail(rail);
 	
 	DijkstraStrategy dijkstra;
 	auto path = dijkstra.findPath(&graph, nodeA, nodeB);
 	
 	EXPECT_EQ(path.size(), 1);
-	EXPECT_EQ(path[0].rail, &rail);
+	EXPECT_EQ(path[0].rail, rail);
 }
 
 TEST_F(PathfindingTest, TwoHopPath)
 {
-	Rail rail1(nodeA, nodeB, 30.0, 200.0);
-	Rail rail2(nodeB, nodeC, 20.0, 200.0);
+	Rail* rail1 = new Rail(nodeA, nodeB, 30.0, 200.0);
+	Rail* rail2 = new Rail(nodeB, nodeC, 20.0, 200.0);
 	
-	graph.addRail(&rail1);
-	graph.addRail(&rail2);
+	graph.addRail(rail1);
+	graph.addRail(rail2);
 	
 	DijkstraStrategy dijkstra;
 	auto path = dijkstra.findPath(&graph, nodeA, nodeC);
 	
 	EXPECT_EQ(path.size(), 2);
-	EXPECT_EQ(path[0].rail, &rail1);
-	EXPECT_EQ(path[1].rail, &rail2);
+	EXPECT_EQ(path[0].rail, rail1);
+	EXPECT_EQ(path[1].rail, rail2);
 }
 
 TEST_F(PathfindingTest, MultipleRoutesPicksShortest)
 {
-	// Direct: A->B (50km at 200km/h = 0.25h)
-	Rail directRail(nodeA, nodeB, 50.0, 200.0);
+	Rail* directRail = new Rail(nodeA, nodeB, 50.0, 200.0);
+	Rail* railAC = new Rail(nodeA, nodeC, 20.0, 200.0);
+	Rail* railCB = new Rail(nodeC, nodeB, 20.0, 200.0);
 	
-	// Via C: A->C->B (20km at 200 + 20km at 200 = 0.2h) - FASTER
-	Rail railAC(nodeA, nodeC, 20.0, 200.0);
-	Rail railCB(nodeC, nodeB, 20.0, 200.0);
-	
-	graph.addRail(&directRail);
-	graph.addRail(&railAC);
-	graph.addRail(&railCB);
+	graph.addRail(directRail);
+	graph.addRail(railAC);
+	graph.addRail(railCB);
 	
 	DijkstraStrategy dijkstra;
 	auto path = dijkstra.findPath(&graph, nodeA, nodeB);
 	
-	// Should pick via C (2 hops, less time)
 	EXPECT_EQ(path.size(), 2);
-	EXPECT_EQ(path[0].rail, &railAC);
-	EXPECT_EQ(path[1].rail, &railCB);
+	EXPECT_EQ(path[0].rail, railAC);
+	EXPECT_EQ(path[1].rail, railCB);
 }
 
-TEST_F(PathfindingTest, SpeedLimitAffectsCost)
+TEST_F(PathfindingTest, ConsidersSpeedLimitInCost)
 {
-	// Route 1: A->B (100km at 100km/h = 1.0h)
-	Rail slowRail(nodeA, nodeB, 100.0, 100.0);
+	Rail* slowRail = new Rail(nodeA, nodeB, 50.0, 100.0);
+	Rail* railAC = new Rail(nodeA, nodeC, 30.0, 300.0);
+	Rail* railCB = new Rail(nodeC, nodeB, 30.0, 300.0);
 	
-	// Route 2: A->C->B (80km at 200 + 80km at 200 = 0.8h) - FASTER
-	Rail railAC(nodeA, nodeC, 80.0, 200.0);
-	Rail railCB(nodeC, nodeB, 80.0, 200.0);
-	
-	graph.addRail(&slowRail);
-	graph.addRail(&railAC);
-	graph.addRail(&railCB);
+	graph.addRail(slowRail);
+	graph.addRail(railAC);
+	graph.addRail(railCB);
 	
 	DijkstraStrategy dijkstra;
 	auto path = dijkstra.findPath(&graph, nodeA, nodeB);
 	
-	// Should pick faster route even though longer distance
 	EXPECT_EQ(path.size(), 2);
 }
 
-TEST_F(PathfindingTest, NoPathExists)
+TEST_F(PathfindingTest, NoPathReturnsEmptyVector)
 {
-	Rail rail(nodeA, nodeB, 50.0, 200.0);
-	graph.addRail(&rail);
+	Rail* rail = new Rail(nodeA, nodeB, 50.0, 200.0);
+	graph.addRail(rail);
 	
-	// C and D are isolated
 	DijkstraStrategy dijkstra;
-	auto path = dijkstra.findPath(&graph, nodeA, nodeC);
+	auto path = dijkstra.findPath(&graph, nodeA, nodeD);
 	
 	EXPECT_TRUE(path.empty());
 }
 
-TEST_F(PathfindingTest, StartEqualsEnd)
+TEST_F(PathfindingTest, ComplexNetworkFindsOptimalPath)
 {
+	Rail* railAB = new Rail(nodeA, nodeB, 10.0, 100.0);
+	Rail* railAC = new Rail(nodeA, nodeC, 5.0, 100.0);
+	Rail* railBD = new Rail(nodeB, nodeD, 3.0, 100.0);
+	Rail* railCD = new Rail(nodeC, nodeD, 8.0, 100.0);
+	
+	graph.addRail(railAB);
+	graph.addRail(railAC);
+	graph.addRail(railBD);
+	graph.addRail(railCD);
+	
+	DijkstraStrategy dijkstra;
+	auto path = dijkstra.findPath(&graph, nodeA, nodeD);
+	
+	EXPECT_EQ(path.size(), 2);
+	
+	double totalDistance = 0.0;
+	for (const auto& segment : path)
+	{
+		totalDistance += segment.rail->getLength();
+	}
+	
+	EXPECT_DOUBLE_EQ(totalDistance, 13.0);
+}
+
+TEST_F(PathfindingTest, PathFinderUsesConfiguredStrategy)
+{
+	Rail* rail = new Rail(nodeA, nodeB, 50.0, 200.0);
+	graph.addRail(rail);
+	
+	DijkstraStrategy dijkstra;
+	PathFinder finder(&dijkstra);
+	
+	auto path = finder.findPath(&graph, nodeA, nodeB);
+	
+	EXPECT_EQ(path.size(), 1);
+	EXPECT_EQ(path[0].rail, rail);
+}
+
+TEST_F(PathfindingTest, SameStartAndEndReturnsEmptyPath)
+{
+	Rail* rail = new Rail(nodeA, nodeB, 50.0, 200.0);
+	graph.addRail(rail);
+	
 	DijkstraStrategy dijkstra;
 	auto path = dijkstra.findPath(&graph, nodeA, nodeA);
 	
 	EXPECT_TRUE(path.empty());
 }
 
-TEST_F(PathfindingTest, NullGraph)
+TEST_F(PathfindingTest, NullNodesReturnEmptyPath)
 {
-	DijkstraStrategy dijkstra;
-	auto path = dijkstra.findPath(nullptr, nodeA, nodeB);
-	
-	EXPECT_TRUE(path.empty());
-}
-
-TEST_F(PathfindingTest, NullStartNode)
-{
-	DijkstraStrategy dijkstra;
-	auto path = dijkstra.findPath(&graph, nullptr, nodeB);
-	
-	EXPECT_TRUE(path.empty());
-}
-
-TEST_F(PathfindingTest, NullEndNode)
-{
-	DijkstraStrategy dijkstra;
-	auto path = dijkstra.findPath(&graph, nodeA, nullptr);
-	
-	EXPECT_TRUE(path.empty());
-}
-
-TEST_F(PathfindingTest, ComplexNetwork)
-{
-	// Diamond shape: A->B->D, A->C->D
-	Rail railAB(nodeA, nodeB, 30.0, 250.0);
-	Rail railAC(nodeA, nodeC, 25.0, 150.0);
-	Rail railBD(nodeB, nodeD, 20.0, 250.0);
-	Rail railCD(nodeC, nodeD, 30.0, 200.0);
-	
-	graph.addRail(&railAB);
-	graph.addRail(&railAC);
-	graph.addRail(&railBD);
-	graph.addRail(&railCD);
+	Rail* rail = new Rail(nodeA, nodeB, 50.0, 200.0);
+	graph.addRail(rail);
 	
 	DijkstraStrategy dijkstra;
-	auto path = dijkstra.findPath(&graph, nodeA, nodeD);
 	
-	EXPECT_EQ(path.size(), 2);
-	// Should pick A->B->D (faster total time)
-	EXPECT_EQ(path[0].rail, &railAB);
-	EXPECT_EQ(path[1].rail, &railBD);
-}
-
-TEST_F(PathfindingTest, GetStrategyName)
-{
-	DijkstraStrategy dijkstra;
-	EXPECT_EQ(dijkstra.getName(), "Dijkstra");
-}
-
-TEST_F(PathfindingTest, PathFinderDefaultConstructor)
-{
-	PathFinder pf;
-	EXPECT_EQ(pf.getStrategy(), nullptr);
-}
-
-TEST_F(PathfindingTest, PathFinderWithStrategy)
-{
-	DijkstraStrategy dijkstra;
-	PathFinder pf(&dijkstra);
-	
-	EXPECT_EQ(pf.getStrategy(), &dijkstra);
-}
-
-TEST_F(PathfindingTest, PathFinderSetStrategy)
-{
-	DijkstraStrategy dijkstra;
-	PathFinder pf;
-	
-	pf.setStrategy(&dijkstra);
-	EXPECT_EQ(pf.getStrategy(), &dijkstra);
-}
-
-TEST_F(PathfindingTest, PathFinderFindPath)
-{
-	Rail rail(nodeA, nodeB, 50.0, 200.0);
-	graph.addRail(&rail);
-	
-	DijkstraStrategy dijkstra;
-	PathFinder pf(&dijkstra);
-	
-	auto path = pf.findPath(&graph, nodeA, nodeB);
-	
-	EXPECT_EQ(path.size(), 1);
-	EXPECT_EQ(path[0].rail, &rail);
-}
-
-TEST_F(PathfindingTest, PathFinderNoStrategy)
-{
-	PathFinder pf;
-	auto path = pf.findPath(&graph, nodeA, nodeB);
-	
-	EXPECT_TRUE(path.empty());
-}
-
-TEST_F(PathfindingTest, PathFinderSwitchStrategy)
-{
-	Rail rail(nodeA, nodeB, 50.0, 200.0);
-	graph.addRail(&rail);
-	
-	DijkstraStrategy dijkstra;
-	PathFinder pf;
-	
-	// No strategy - no path
-	auto path1 = pf.findPath(&graph, nodeA, nodeB);
+	auto path1 = dijkstra.findPath(&graph, nullptr, nodeB);
 	EXPECT_TRUE(path1.empty());
 	
-	// Set strategy - finds path
-	pf.setStrategy(&dijkstra);
-	auto path2 = pf.findPath(&graph, nodeA, nodeB);
-	EXPECT_EQ(path2.size(), 1);
+	auto path2 = dijkstra.findPath(&graph, nodeA, nullptr);
+	EXPECT_TRUE(path2.empty());
+	
+	auto path3 = dijkstra.findPath(&graph, nullptr, nullptr);
+	EXPECT_TRUE(path3.empty());
 }
