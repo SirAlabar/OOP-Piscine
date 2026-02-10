@@ -38,6 +38,7 @@ output/
 # OS files
 .DS_Store
 Thumbs.db
+Zone.Identifier
 
 # IDE
 .vscode/
