@@ -6,6 +6,13 @@ BUILD_DIR	= build
 OUTPUT_DIR	= output
 BUILD_TYPE	?= Release
 
+# Docker configuration
+DOCKER_COMPOSE = docker compose
+NETWORK_FILE ?= examples/network_simple.txt
+TRAIN_FILE ?= examples/trains_simple.txt
+MONTE_RUNS ?= 10
+VALGRIND_FLAGS ?= --leak-check=full --show-leak-kinds=all --track-origins=yes --error-exitcode=1
+
 # Colors
 GREEN		= \033[0;32m
 YELLOW		= \033[0;33m
@@ -93,11 +100,77 @@ fclean:
 # Rebuild from scratch
 re: fclean all
 
-# Install executable to system (requires sudo)
-install: release
-	@echo "$(YELLOW)Installing $(NAME)...$(RESET)"
-	@sudo cmake --install $(BUILD_DIR)
-	@echo "$(GREEN)Installation complete!$(RESET)"
+# # Install executable to system (requires sudo)
+# install: release
+# 	@echo "$(YELLOW)Installing $(NAME)...$(RESET)"
+# 	@sudo cmake --install $(BUILD_DIR)
+# 	@echo "$(GREEN)Installation complete!$(RESET)"
+
+# ------------------ DOCKER TARGETS ------------------
+
+# Ensure output directory exists before any docker operation
+ensure-output:
+	@echo "$(YELLOW)Checking output directory...$(RESET)"
+	@mkdir -p $(OUTPUT_DIR)
+
+# Build docker image using compose
+docker-build:
+	@echo "$(YELLOW)Building Docker image...$(RESET)"
+	@$(MAKE) ensure-output
+	@$(DOCKER_COMPOSE) build
+	@echo "$(GREEN)Docker image built successfully!$(RESET)"
+
+# Run simulator inside docker
+docker-run:
+	@echo "$(YELLOW)Running simulator inside Docker...$(RESET)"
+	@$(MAKE) ensure-output
+	@$(DOCKER_COMPOSE) run railway $(NETWORK_FILE) $(TRAIN_FILE)
+
+# Run Monte Carlo simulation inside docker
+docker-monte:
+	@echo "$(YELLOW)Running Monte Carlo inside Docker ($(MONTE_RUNS) runs)...$(RESET)"
+	@$(MAKE) ensure-output
+	@$(DOCKER_COMPOSE) run railway $(NETWORK_FILE) $(TRAIN_FILE) --monte-carlo=$(MONTE_RUNS)
+
+# Run with custom arguments
+docker-custom:
+	@echo "$(YELLOW)Running custom docker command...$(RESET)"
+	@$(MAKE) ensure-output
+	@$(DOCKER_COMPOSE) run railway $(ARGS)
+
+# Run simulator under valgrind inside docker (overrides ENTRYPOINT)
+docker-valgrind:
+	@echo "$(YELLOW)Running Valgrind inside Docker...$(RESET)"
+	@$(MAKE) ensure-output
+	@$(DOCKER_COMPOSE) run --entrypoint valgrind railway \
+		$(VALGRIND_FLAGS) \
+		./build/$(NAME) $(NETWORK_FILE) $(TRAIN_FILE)
+
+# Run unit tests under valgrind inside docker (overrides ENTRYPOINT)
+docker-valgrind-test:
+	@echo "$(YELLOW)Running Valgrind on tests inside Docker...$(RESET)"
+	@$(MAKE) ensure-output
+	@$(DOCKER_COMPOSE) run --entrypoint valgrind railway \
+		$(VALGRIND_FLAGS) \
+		./build/$(TEST_NAME)
+
+# Clean docker containers and volumes
+docker-clean:
+	@echo "$(RED)Cleaning Docker containers and volumes...$(RESET)"
+
+	@echo "$(YELLOW)Stopping any running compose containers...$(RESET)"
+	@docker compose down --remove-orphans || true
+
+	@echo "$(YELLOW)Removing old run containers...$(RESET)"
+	@docker ps -a --filter "name=module05-railway-run" -q | xargs -r docker rm -f
+
+	@echo "$(YELLOW)Removing dangling containers from this image...$(RESET)"
+	@docker ps -a --filter "ancestor=module05-railway" -q | xargs -r docker rm -f
+
+	@echo "$(YELLOW)Removing build volume...$(RESET)"
+	@docker volume rm module05_build_volume || true
+
+	@echo "$(GREEN)Docker cleanup complete!$(RESET)"
 
 # Show help
 help:

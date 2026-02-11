@@ -1,0 +1,17 @@
+services:
+  railway:
+    build: .
+    volumes:
+      - ./examples:/app/examples
+      - ./output:/app/output
+      - build_volume:/app/build
+    stdin_open: true
+    tty: true
+
+volumes:
+  build_volume:
+
+
+
+
+#docker compose run railway 

@@ -2,6 +2,7 @@
 #define COLLISIONAVOIDANCE_HPP
 
 #include <vector>
+#include <cstddef>
 
 class Train;
 class Graph;
