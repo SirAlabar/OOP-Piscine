@@ -19,6 +19,8 @@
 #include <ctime>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include "rendering/SFMLRenderer.hpp"
+
 
 Application::Application(int argc, char* argv[]) 
 	: _cli(argc, argv),
@@ -296,6 +298,9 @@ int Application::run()
 			maxTime = 172800.0;  // 48 hours for round-trip demo
 			if (_cli.hasRender())
 			{
+				SFMLRenderer renderer;
+				renderer.run(sim);
+
 				maxTime = 1e9;  // Near-infinite for rendering (user will Ctrl+C)
 			}
 		}
