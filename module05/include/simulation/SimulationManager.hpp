@@ -89,6 +89,7 @@ public:
 	const TrainList& getTrains() const;
 	const Graph* getNetwork() const;
 	bool isRunning() const;
+	unsigned int getSeed() const;
 
 	SimulationContext* getContext() const { return _context; }
 

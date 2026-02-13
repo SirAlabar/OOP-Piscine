@@ -3,15 +3,16 @@
 
 #include <SFML/Graphics.hpp>
 
-class Train;
 class SpriteAtlas;
+class Train;
 
 class TrainRenderer
 {
 public:
+	TrainRenderer() = default;
+	
 	void draw(sf::RenderWindow& window, const SpriteAtlas& atlas,
-	          const Train* train, const sf::Vector2f& position,
-	          bool movingRight) const;
+	          const Train* train, const sf::Vector2f& position, bool movingRight);
 };
 
 #endif

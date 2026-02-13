@@ -2,25 +2,26 @@
 #include "rendering/SpriteAtlas.hpp"
 #include "core/Train.hpp"
 
-void TrainRenderer::draw(sf::RenderWindow& window,
-                         const SpriteAtlas& atlas,
-                         const Train* train,
-                         const sf::Vector2f& position,
-                         bool movingRight) const
+void TrainRenderer::draw(sf::RenderWindow& window, const SpriteAtlas& atlas,
+                         const Train* train, const sf::Vector2f& position, bool movingRight)
 {
 	if (!train)
 	{
 		return;
 	}
-
-	const std::string frameName = movingRight ? "train_right.png" : "train_left.png";
-	if (!atlas.hasFrame(frameName))
+	
+	std::string spriteName = movingRight ? "train_right_10.png" : "train_left_5.png";
+	
+	if (!atlas.hasFrame(spriteName))
 	{
 		return;
 	}
-
-	sf::Sprite sprite(atlas.getTexture(), atlas.getFrame(frameName));
+	
+	sf::Sprite sprite;
+	sprite.setTexture(atlas.getTexture());
+	sprite.setTextureRect(atlas.getFrame(spriteName));
 	sprite.setOrigin(24.0f, 24.0f);
 	sprite.setPosition(position);
+	
 	window.draw(sprite);
 }

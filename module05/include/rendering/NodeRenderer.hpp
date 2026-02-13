@@ -3,20 +3,25 @@
 
 #include <SFML/Graphics.hpp>
 
-class Node;
 class SpriteAtlas;
+class Node;
+class World;
 
 class NodeRenderer
 {
-private:
-	sf::Font _font;
-	bool _fontLoaded;
-
 public:
-	NodeRenderer();
-
+	NodeRenderer() = default;
+	
+	void draw(sf::RenderWindow& window, const SpriteAtlas& atlas, 
+	          const Node* node, const sf::Vector2f& position);
+	
 	void draw(sf::RenderWindow& window, const SpriteAtlas& atlas,
-	          const Node* node, const sf::Vector2f& screenPosition) const;
+	          const Node* node, const sf::Vector2f& position,
+	          const World* world, int gridX, int gridY);
+
+private:
+	int computeStationBitmask(const World* world, int x, int y) const;
+	std::string getStationSpriteName(int bitmask) const;
 };
 
 #endif

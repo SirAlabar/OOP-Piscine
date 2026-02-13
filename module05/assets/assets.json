@@ -1220,7 +1220,7 @@
 				"h": 48
 			}
 		},
-		"station_5.png": {
+		"station_11.png": {
 			"frame": {
 				"x": 262,
 				"y": 366,
@@ -1240,7 +1240,7 @@
 				"h": 48
 			}
 		},
-		"train_left_5.png": {
+		"station_13.png": {
 			"frame": {
 				"x": 314,
 				"y": 366,
@@ -1260,7 +1260,7 @@
 				"h": 48
 			}
 		},
-		"train_right_10.png": {
+		"station_14.png": {
 			"frame": {
 				"x": 366,
 				"y": 366,
@@ -1280,7 +1280,7 @@
 				"h": 48
 			}
 		},
-		"water_01.png": {
+		"station_15.png": {
 			"frame": {
 				"x": 418,
 				"y": 2,
@@ -1300,7 +1300,7 @@
 				"h": 48
 			}
 		},
-		"water_02.png": {
+		"station_5.png": {
 			"frame": {
 				"x": 418,
 				"y": 54,
@@ -1320,10 +1320,110 @@
 				"h": 48
 			}
 		},
-		"water_snow.png": {
+		"station_7.png": {
 			"frame": {
 				"x": 418,
 				"y": 106,
+				"w": 48,
+				"h": 48
+			},
+			"rotated": false,
+			"trimmed": false,
+			"spriteSourceSize": {
+				"x": 0,
+				"y": 0,
+				"w": 48,
+				"h": 48
+			},
+			"sourceSize": {
+				"w": 48,
+				"h": 48
+			}
+		},
+		"train_left_5.png": {
+			"frame": {
+				"x": 418,
+				"y": 158,
+				"w": 48,
+				"h": 48
+			},
+			"rotated": false,
+			"trimmed": false,
+			"spriteSourceSize": {
+				"x": 0,
+				"y": 0,
+				"w": 48,
+				"h": 48
+			},
+			"sourceSize": {
+				"w": 48,
+				"h": 48
+			}
+		},
+		"train_right_10.png": {
+			"frame": {
+				"x": 418,
+				"y": 210,
+				"w": 48,
+				"h": 48
+			},
+			"rotated": false,
+			"trimmed": false,
+			"spriteSourceSize": {
+				"x": 0,
+				"y": 0,
+				"w": 48,
+				"h": 48
+			},
+			"sourceSize": {
+				"w": 48,
+				"h": 48
+			}
+		},
+		"water_01.png": {
+			"frame": {
+				"x": 418,
+				"y": 262,
+				"w": 48,
+				"h": 48
+			},
+			"rotated": false,
+			"trimmed": false,
+			"spriteSourceSize": {
+				"x": 0,
+				"y": 0,
+				"w": 48,
+				"h": 48
+			},
+			"sourceSize": {
+				"w": 48,
+				"h": 48
+			}
+		},
+		"water_02.png": {
+			"frame": {
+				"x": 418,
+				"y": 314,
+				"w": 48,
+				"h": 48
+			},
+			"rotated": false,
+			"trimmed": false,
+			"spriteSourceSize": {
+				"x": 0,
+				"y": 0,
+				"w": 48,
+				"h": 48
+			},
+			"sourceSize": {
+				"w": 48,
+				"h": 48
+			}
+		},
+		"water_snow.png": {
+			"frame": {
+				"x": 418,
+				"y": 366,
 				"w": 48,
 				"h": 48
 			},

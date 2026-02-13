@@ -9,8 +9,14 @@ class SpriteAtlas;
 class RailRenderer
 {
 public:
+	RailRenderer() = default;
+	
 	void drawTile(sf::RenderWindow& window, const SpriteAtlas& atlas,
-	              const std::string& frameName, const sf::Vector2f& screenPosition) const;
+	              const std::string& spriteName, const sf::Vector2f& position);
+	
+	void drawTileScaled(sf::RenderWindow& window, const SpriteAtlas& atlas,
+	                    const std::string& spriteName, const sf::Vector2f& position,
+	                    float zoom);
 };
 
 #endif

@@ -2,66 +2,57 @@
 #define SFMLRENDERER_HPP
 
 #include "rendering/IRenderer.hpp"
-#include "rendering/NodeRenderer.hpp"
-#include "rendering/RailRenderer.hpp"
-#include "rendering/TrainRenderer.hpp"
+#include "rendering/InputManager.hpp"
+#include "rendering/CameraManager.hpp"
+#include "rendering/RenderManager.hpp"
 #include "rendering/SpriteAtlas.hpp"
+#include "world/World.hpp"
+#include "world/WorldGenerator.hpp"
 #include <SFML/Graphics.hpp>
 #include <map>
 #include <set>
-#include <vector>
-#include <utility>
 
 class Graph;
 class Node;
-class Rail;
-class Train;
+class SimulationManager;
 
 class SFMLRenderer : public IRenderer
 {
+private:
+	sf::RenderWindow _window;
+	SpriteAtlas _atlas;
+	
+	InputManager _inputManager;
+	CameraManager _cameraManager;
+	RenderManager _renderManager;
+	
+	World* _world;
+	WorldGenerator* _worldGenerator;
+	
+	std::map<const Node*, sf::Vector2i> _nodeGridPositions;
+	std::set<std::pair<int, int> > _occupiedTiles;
+	
+	double _timeAccumulator;
+	double _simulationStepInterval;
+
 public:
 	SFMLRenderer();
-	~SFMLRenderer() override = default;
+	~SFMLRenderer() override;
 
 	void run(SimulationManager& simulation) override;
 
 private:
-	struct RailTile
-	{
-		sf::Vector2i grid;
-		std::string sprite;
-	};
-
-	sf::RenderWindow _window;
-	SpriteAtlas _atlas;
-	NodeRenderer _nodeRenderer;
-	RailRenderer _railRenderer;
-	TrainRenderer _trainRenderer;
-
-	std::map<const Node*, sf::Vector2i> _nodeGridPositions;
-	std::map<const Node*, sf::Vector2f> _nodeWorldPositions;
-	std::vector<RailTile> _railTiles;
-	std::set<std::pair<int, int> > _occupiedTiles;
-	sf::Vector2f _cameraOffset;
-	double _timeAccumulator;
-	double _simulationStepInterval;
-	double _zoom;
-	bool _dragging;
-	sf::Vector2i _lastMousePixel;
-
-	void processEvents(SimulationManager& simulation);
-	void update(SimulationManager& simulation, double realDt);
-	void handleKeyboardPan(double realDt);
-	void drawFrame(const SimulationManager& simulation);
-
+	void initializeWorld(SimulationManager& simulation);
 	void buildGraphLayout(const Graph* graph);
-	void buildRailTiles(const Graph* graph);
-	void routeRail(const sf::Vector2i& from, const sf::Vector2i& to);
-	void pushRailTile(const sf::Vector2i& grid, const std::string& sprite);
-	void drawEnvironment();
-	sf::Vector2f projectIsometric(const sf::Vector2f& worldPoint) const;
-	sf::Vector2f projectGrid(int gx, int gy) const;
-	sf::Vector2f computeTrainPosition(const Train* train, bool& movingRight) const;
+	void markRailsInWorld(const Graph* graph);
+	void generateWorld();
+	
+	void mainLoop(SimulationManager& simulation);
+	void processInput(SimulationManager& simulation, double deltaTime);
+	void updateSimulation(SimulationManager& simulation, double realDt);
+	void render(const SimulationManager& simulation);
+	
+	sf::Vector2i gridToWorldOffset(int gx, int gy) const;
 };
 
 #endif

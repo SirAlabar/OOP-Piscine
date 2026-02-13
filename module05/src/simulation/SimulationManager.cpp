@@ -725,3 +725,8 @@ void SimulationManager::logEventForAffectedTrains(Event* event, const std::strin
 		}
 	}
 }
+
+unsigned int SimulationManager::getSeed() const
+{
+	return _eventSeed;
+}

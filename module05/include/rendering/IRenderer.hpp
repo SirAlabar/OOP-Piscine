@@ -7,7 +7,6 @@ class IRenderer
 {
 public:
 	virtual ~IRenderer() = default;
-
 	virtual void run(SimulationManager& simulation) = 0;
 };
 

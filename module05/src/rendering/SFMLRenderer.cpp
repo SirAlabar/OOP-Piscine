@@ -1,180 +1,75 @@
 #include "rendering/SFMLRenderer.hpp"
 #include "simulation/SimulationManager.hpp"
 #include "core/Graph.hpp"
-#include "core/Rail.hpp"
 #include "core/Node.hpp"
-#include "core/Train.hpp"
-#include <algorithm>
-#include <cmath>
-#include <queue>
+#include "core/Rail.hpp"
 #include <stdexcept>
+#include <queue>
+#include <algorithm>
+#include <iostream>
 
 SFMLRenderer::SFMLRenderer()
-	: _window(sf::VideoMode(1400, 900), "Railway Simulation - Isometric"),
-	  _cameraOffset(700.0f, 180.0f),
+	: _window(sf::VideoMode(1400, 900), "Railway Simulation"),
+	  _world(nullptr),
+	  _worldGenerator(nullptr),
 	  _timeAccumulator(0.0),
-	  _simulationStepInterval(0.10),
-	  _zoom(1.0),
-	  _dragging(false),
-	  _lastMousePixel(0, 0)
+	  _simulationStepInterval(0.10)
 {
 	_window.setFramerateLimit(60);
+	
 	if (!_atlas.loadFromFiles("assets/assets.png", "assets/assets.json"))
 	{
-		throw std::runtime_error("Failed to load assets atlas (assets/assets.png + assets/assets.json)");
+		throw std::runtime_error("Failed to load assets atlas");
 	}
+	
+	_cameraManager.setZoomLimits(0.5f, 3.0f);
+}
+
+SFMLRenderer::~SFMLRenderer()
+{
+	delete _world;
+	delete _worldGenerator;
 }
 
 void SFMLRenderer::run(SimulationManager& simulation)
 {
-	buildGraphLayout(simulation.getNetwork());
+	initializeWorld(simulation);
 	simulation.start();
-
-	sf::Clock clock;
-	while (_window.isOpen())
-	{
-		processEvents(simulation);
-		double realDt = clock.restart().asSeconds();
-		update(simulation, realDt);
-		drawFrame(simulation);
-	}
-
+	mainLoop(simulation);
 	simulation.stop();
 }
 
-void SFMLRenderer::processEvents(SimulationManager& simulation)
+void SFMLRenderer::initializeWorld(SimulationManager& simulation)
 {
-	sf::Event event;
-	while (_window.pollEvent(event))
-	{
-		if (event.type == sf::Event::Closed)
-		{
-			simulation.stop();
-			_window.close();
-		}
-		else if (event.type == sf::Event::MouseWheelScrolled)
-		{
-			if (event.mouseWheelScroll.delta > 0.0f)
-			{
-				_zoom *= 1.10;
-			}
-			else if (event.mouseWheelScroll.delta < 0.0f)
-			{
-				_zoom /= 1.10;
-			}
-			_zoom = std::max(0.35, std::min(2.8, _zoom));
-		}
-		else if (event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Middle)
-		{
-			_dragging = true;
-			_lastMousePixel = sf::Mouse::getPosition(_window);
-		}
-		else if (event.type == sf::Event::MouseButtonReleased && event.mouseButton.button == sf::Mouse::Middle)
-		{
-			_dragging = false;
-		}
-		else if (event.type == sf::Event::MouseMoved && _dragging)
-		{
-			const sf::Vector2i current = sf::Mouse::getPosition(_window);
-			const sf::Vector2i delta = current - _lastMousePixel;
-			_cameraOffset += sf::Vector2f(static_cast<float>(delta.x), static_cast<float>(delta.y));
-			_lastMousePixel = current;
-		}
-	}
-}
-
-void SFMLRenderer::update(SimulationManager& simulation, double realDt)
-{
-	handleKeyboardPan(realDt);
-
-	_timeAccumulator += realDt;
-	while (_timeAccumulator >= _simulationStepInterval)
-	{
-		simulation.step();
-		_timeAccumulator -= _simulationStepInterval;
-	}
-}
-
-void SFMLRenderer::handleKeyboardPan(double realDt)
-{
-	const float speed = static_cast<float>(420.0 * realDt);
-	if (sf::Keyboard::isKeyPressed(sf::Keyboard::W) || sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
-	{
-		_cameraOffset.y += speed;
-	}
-	if (sf::Keyboard::isKeyPressed(sf::Keyboard::S) || sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
-	{
-		_cameraOffset.y -= speed;
-	}
-	if (sf::Keyboard::isKeyPressed(sf::Keyboard::A) || sf::Keyboard::isKeyPressed(sf::Keyboard::Left))
-	{
-		_cameraOffset.x += speed;
-	}
-	if (sf::Keyboard::isKeyPressed(sf::Keyboard::D) || sf::Keyboard::isKeyPressed(sf::Keyboard::Right))
-	{
-		_cameraOffset.x -= speed;
-	}
-}
-
-void SFMLRenderer::drawFrame(const SimulationManager& simulation)
-{
-	_window.clear(sf::Color(18, 18, 24));
-
-	drawEnvironment();
-
-	for (std::vector<RailTile>::const_iterator it = _railTiles.begin(); it != _railTiles.end(); ++it)
-	{
-		const sf::Vector2f pos = projectGrid(it->grid.x, it->grid.y);
-		_railRenderer.drawTile(_window, _atlas, it->sprite, pos);
-	}
-
-	const Graph* graph = simulation.getNetwork();
-	if (graph)
-	{
-		for (const Node* node : graph->getNodes())
-		{
-			if (!node || _nodeWorldPositions.count(node) == 0)
-			{
-				continue;
-			}
-
-			_nodeRenderer.draw(_window, _atlas, node, projectIsometric(_nodeWorldPositions[node]));
-		}
-	}
-
-	for (const Train* train : simulation.getTrains())
-	{
-		if (!train || !train->getCurrentRail())
-		{
-			continue;
-		}
-
-		bool movingRight = true;
-		const sf::Vector2f trainPos = computeTrainPosition(train, movingRight);
-		_trainRenderer.draw(_window, _atlas, train, trainPos, movingRight);
-	}
-
-	_window.display();
+	buildGraphLayout(simulation.getNetwork());
+	
+	const int worldSize = 56;
+	_world = new World(worldSize, worldSize);
+	
+	unsigned int seed = simulation.getSeed();
+	std::cout << "[SFMLRenderer] Got seed from simulation: " << seed << std::endl;
+	
+	_worldGenerator = new WorldGenerator(seed, worldSize, worldSize);
+	_renderManager.setWorldSeed(seed);
+	
+	std::cout << "[SFMLRenderer] Starting world generation..." << std::endl;
+	markRailsInWorld(simulation.getNetwork());
+	generateWorld();
+	std::cout << "[SFMLRenderer] World initialization complete!" << std::endl;
 }
 
 void SFMLRenderer::buildGraphLayout(const Graph* graph)
 {
 	_nodeGridPositions.clear();
-	_nodeWorldPositions.clear();
-	_railTiles.clear();
 	_occupiedTiles.clear();
-
-	if (!graph)
+	
+	if (!graph || graph->getNodes().empty())
 	{
 		return;
 	}
-
+	
 	const Graph::NodeList nodes = graph->getNodes();
-	if (nodes.empty())
-	{
-		return;
-	}
-
+	
 	const Node* root = nodes[0];
 	size_t rootDegree = graph->getRailsFromNode(const_cast<Node*>(nodes[0])).size();
 	for (size_t i = 1; i < nodes.size(); ++i)
@@ -186,24 +81,24 @@ void SFMLRenderer::buildGraphLayout(const Graph* graph)
 			rootDegree = degree;
 		}
 	}
-
+	
 	const std::vector<sf::Vector2i> dirs = {
 		sf::Vector2i(4, 0), sf::Vector2i(-4, 0), sf::Vector2i(0, 4), sf::Vector2i(0, -4),
 		sf::Vector2i(4, 4), sf::Vector2i(-4, -4), sf::Vector2i(4, -4), sf::Vector2i(-4, 4)
 	};
-
+	
 	std::queue<const Node*> q;
 	std::set<const Node*> visited;
 	_nodeGridPositions[root] = sf::Vector2i(0, 0);
 	visited.insert(root);
 	q.push(root);
-
+	
 	while (!q.empty())
 	{
 		const Node* current = q.front();
 		q.pop();
 		const sf::Vector2i base = _nodeGridPositions[current];
-
+		
 		const Graph::RailList rails = graph->getRailsFromNode(const_cast<Node*>(current));
 		size_t pick = 0;
 		for (Rail* rail : rails)
@@ -212,14 +107,14 @@ void SFMLRenderer::buildGraphLayout(const Graph* graph)
 			{
 				continue;
 			}
-
+			
 			Node* otherMutable = rail->getOtherNode(const_cast<Node*>(current));
 			const Node* other = otherMutable;
 			if (!other)
 			{
 				continue;
 			}
-
+			
 			if (visited.count(other) == 0)
 			{
 				sf::Vector2i candidate = base + dirs[pick % dirs.size()];
@@ -236,7 +131,7 @@ void SFMLRenderer::buildGraphLayout(const Graph* graph)
 			}
 		}
 	}
-
+	
 	for (const Node* node : nodes)
 	{
 		if (_nodeGridPositions.count(node) == 0)
@@ -245,168 +140,158 @@ void SFMLRenderer::buildGraphLayout(const Graph* graph)
 			_nodeGridPositions[node] = sf::Vector2i(fallback, fallback % 7);
 			_occupiedTiles.insert(std::make_pair(fallback, fallback % 7));
 		}
-		const sf::Vector2i p = _nodeGridPositions[node];
-		_nodeWorldPositions[node] = sf::Vector2f(static_cast<float>(p.x), static_cast<float>(p.y));
 	}
-
-	buildRailTiles(graph);
 }
 
-void SFMLRenderer::pushRailTile(const sf::Vector2i& grid, const std::string& sprite)
+void SFMLRenderer::markRailsInWorld(const Graph* graph)
 {
-	if (_nodeGridPositions.empty())
+	if (!graph || !_world)
 	{
 		return;
 	}
-	RailTile tile;
-	tile.grid = grid;
-	tile.sprite = sprite;
-	_railTiles.push_back(tile);
-	_occupiedTiles.insert(std::make_pair(grid.x, grid.y));
-}
-
-void SFMLRenderer::routeRail(const sf::Vector2i& from, const sf::Vector2i& to)
-{
-	sf::Vector2i p = from;
-	const int sx = (to.x > p.x) ? 1 : -1;
-	const int sy = (to.y > p.y) ? 1 : -1;
-
-	bool movedX = false;
-	while (p.x != to.x)
+	
+	std::map<const Node*, sf::Vector2f> worldPositions;
+	for (const auto& pair : _nodeGridPositions)
 	{
-		p.x += sx;
-		if (p != to)
+		sf::Vector2i gridPos = gridToWorldOffset(pair.second.x, pair.second.y);
+		worldPositions[pair.first] = sf::Vector2f(static_cast<float>(gridPos.x), static_cast<float>(gridPos.y));
+		
+		if (_world->isInBounds(gridPos.x, gridPos.y))
 		{
-			pushRailTile(p, "rail_x.png");
-		}
-		movedX = true;
-	}
-
-	if (movedX && p.y != to.y)
-	{
-		const std::string turn = ((sx > 0 && sy > 0) || (sx < 0 && sy < 0)) ? "right_turn_down.png" : "left_turn_down.png";
-		pushRailTile(p, turn);
-	}
-
-	while (p.y != to.y)
-	{
-		p.y += sy;
-		if (p != to)
-		{
-			pushRailTile(p, "rail_x.png");
+			_world->markRailOccupied(gridPos.x, gridPos.y);
 		}
 	}
-}
-
-void SFMLRenderer::buildRailTiles(const Graph* graph)
-{
-	if (!graph)
-	{
-		return;
-	}
-
+	
+	_renderManager.setNodePositions(worldPositions);
+	_renderManager.setNodeGridPositions(_nodeGridPositions);
+	
 	for (const Rail* rail : graph->getRails())
 	{
 		if (!rail)
 		{
 			continue;
 		}
-
+		
 		const Node* a = rail->getNodeA();
 		const Node* b = rail->getNodeB();
+		
 		if (_nodeGridPositions.count(a) == 0 || _nodeGridPositions.count(b) == 0)
 		{
 			continue;
 		}
-
-		routeRail(_nodeGridPositions[a], _nodeGridPositions[b]);
-	}
-}
-
-void SFMLRenderer::drawEnvironment()
-{
-	if (!_atlas.hasFrame("terrain_grass_01.png"))
-	{
-		return;
-	}
-
-	const int minX = -28;
-	const int maxX = 28;
-	const int minY = -20;
-	const int maxY = 20;
-
-	for (int y = minY; y <= maxY; ++y)
-	{
-		for (int x = minX; x <= maxX; ++x)
+		
+		sf::Vector2i from = gridToWorldOffset(_nodeGridPositions[a].x, _nodeGridPositions[a].y);
+		sf::Vector2i to = gridToWorldOffset(_nodeGridPositions[b].x, _nodeGridPositions[b].y);
+		
+		sf::Vector2i p = from;
+		const int sx = (to.x > p.x) ? 1 : -1;
+		const int sy = (to.y > p.y) ? 1 : -1;
+		
+		while (p.x != to.x)
 		{
-			if (_occupiedTiles.count(std::make_pair(x, y)) != 0)
+			if (_world->isInBounds(p.x, p.y))
 			{
-				continue;
+				_world->markRailOccupied(p.x, p.y);
 			}
-
-			const int hash = std::abs((x * 73856093) ^ (y * 19349663));
-			std::string frame = "terrain_grass_01.png";
-			if (hash % 19 == 0 && _atlas.hasFrame("water_01.png"))
+			p.x += sx;
+		}
+		
+		while (p.y != to.y)
+		{
+			if (_world->isInBounds(p.x, p.y))
 			{
-				frame = "water_01.png";
+				_world->markRailOccupied(p.x, p.y);
 			}
-			else if (hash % 13 == 0 && _atlas.hasFrame("terrain_forest3.png"))
-			{
-				frame = "terrain_forest3.png";
-			}
-			else if (hash % 23 == 0 && _atlas.hasFrame("mountain_01.png"))
-			{
-				frame = "mountain_01.png";
-			}
-
-			_railRenderer.drawTile(_window, _atlas, frame, projectGrid(x, y));
+			p.y += sy;
+		}
+		
+		if (_world->isInBounds(to.x, to.y))
+		{
+			_world->markRailOccupied(to.x, to.y);
 		}
 	}
 }
 
-sf::Vector2f SFMLRenderer::projectIsometric(const sf::Vector2f& worldPoint) const
+void SFMLRenderer::generateWorld()
 {
-	const float tileWidth = static_cast<float>(48.0 * _zoom);
-	const float tileHeight = static_cast<float>(24.0 * _zoom);
-	const float isoX = (worldPoint.x - worldPoint.y) * (tileWidth / 2.0f);
-	const float isoY = (worldPoint.x + worldPoint.y) * (tileHeight / 2.0f);
-	return sf::Vector2f(isoX + _cameraOffset.x, isoY + _cameraOffset.y);
+	if (!_world || !_worldGenerator)
+	{
+		return;
+	}
+	
+	_worldGenerator->generate(*_world);
+	_renderManager.buildRailBitmasks(*_world);
 }
 
-sf::Vector2f SFMLRenderer::projectGrid(int gx, int gy) const
+void SFMLRenderer::mainLoop(SimulationManager& simulation)
 {
-	return projectIsometric(sf::Vector2f(static_cast<float>(gx), static_cast<float>(gy)));
+	sf::Clock clock;
+	
+	while (_window.isOpen())
+	{
+		double realDt = clock.restart().asSeconds();
+		
+		processInput(simulation, realDt);
+		updateSimulation(simulation, realDt);
+		render(simulation);
+	}
 }
 
-sf::Vector2f SFMLRenderer::computeTrainPosition(const Train* train, bool& movingRight) const
+void SFMLRenderer::processInput(SimulationManager& simulation, double deltaTime)
 {
-	const Rail* rail = train->getCurrentRail();
-	if (!rail)
+	InputState input = _inputManager.processEvents(_window, deltaTime);
+	
+	if (input.closeRequested)
 	{
-		movingRight = true;
-		return _cameraOffset;
+		simulation.stop();
+		_window.close();
+		return;
 	}
-
-	const Node* nodeA = rail->getNodeA();
-	const Node* nodeB = rail->getNodeB();
-	if (_nodeWorldPositions.count(nodeA) == 0 || _nodeWorldPositions.count(nodeB) == 0)
+	
+	if (input.zoomDelta != 0.0f)
 	{
-		movingRight = true;
-		return _cameraOffset;
+		_cameraManager.addZoomDelta(input.zoomDelta);
 	}
+	
+	if (input.dragActive)
+	{
+		_cameraManager.moveOffset(sf::Vector2f(
+			static_cast<float>(input.dragDelta.x),
+			static_cast<float>(input.dragDelta.y)
+		));
+	}
+	
+	if (input.panX != 0.0f || input.panY != 0.0f)
+	{
+		_cameraManager.moveOffset(sf::Vector2f(input.panX, input.panY));
+	}
+}
 
-	const sf::Vector2f start = _nodeWorldPositions.at(nodeA);
-	const sf::Vector2f end = _nodeWorldPositions.at(nodeB);
-	movingRight = (end.x - start.x) >= 0.0f;
+void SFMLRenderer::updateSimulation(SimulationManager& simulation, double realDt)
+{
+	_cameraManager.update(realDt);
+	
+	_timeAccumulator += realDt;
+	while (_timeAccumulator >= _simulationStepInterval)
+	{
+		simulation.step();
+		_timeAccumulator -= _simulationStepInterval;
+	}
+}
 
-	double railLengthMeters = rail->getLength() * 1000.0;
-	double t = (railLengthMeters > 0.0) ? (train->getPosition() / railLengthMeters) : 0.0;
-	t = std::max(0.0, std::min(1.0, t));
+void SFMLRenderer::render(const SimulationManager& simulation)
+{
+	if (!_world)
+	{
+		return;
+	}
+	
+	_renderManager.render(_window, _atlas, simulation, _cameraManager, *_world);
+}
 
-	const sf::Vector2f world(
-		start.x + static_cast<float>((end.x - start.x) * t),
-		start.y + static_cast<float>((end.y - start.y) * t)
-	);
-
-	return projectIsometric(world);
+sf::Vector2i SFMLRenderer::gridToWorldOffset(int gx, int gy) const
+{
+	const int worldSize = _world ? _world->getWidth() : 56;
+	const int offset = worldSize / 2;
+	return sf::Vector2i(gx + offset, gy + offset);
 }
