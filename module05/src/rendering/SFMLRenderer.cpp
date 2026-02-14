@@ -6,7 +6,6 @@
 #include <stdexcept>
 #include <queue>
 #include <algorithm>
-#include <iostream>
 
 SFMLRenderer::SFMLRenderer()
 	: _window(sf::VideoMode(1400, 900), "Railway Simulation"),
@@ -81,24 +80,16 @@ void SFMLRenderer::initializeWorld(SimulationManager& simulation)
 	// Add padding and ensure minimum size
 	int worldSize = std::max(gridWidth + padding * 2, gridHeight + padding * 2);
 	worldSize = std::max(worldSize, 56);  // Minimum 56x56
-	
-	std::cout << "[SFMLRenderer] Network bounds: (" << minX << "," << minY 
-	          << ") to (" << maxX << "," << maxY << ")" << std::endl;
-	std::cout << "[SFMLRenderer] Network center: (" << _networkCenterX << "," << _networkCenterY << ")" << std::endl;
-	std::cout << "[SFMLRenderer] Creating world: " << worldSize << "x" << worldSize << std::endl;
-	
+
 	_world = new World(worldSize, worldSize);
 	
 	unsigned int seed = simulation.getSeed();
-	std::cout << "[SFMLRenderer] Got seed from simulation: " << seed << std::endl;
 	
 	_worldGenerator = new WorldGenerator(seed, worldSize, worldSize);
 	_renderManager.setWorldSeed(seed);
 	
-	std::cout << "[SFMLRenderer] Starting world generation..." << std::endl;
 	markRailsInWorld(simulation.getNetwork());
 	generateWorld(simulation.getNetwork());
-	std::cout << "[SFMLRenderer] World initialization complete!" << std::endl;
 }
 
 void SFMLRenderer::buildGraphLayout(const Graph* graph)
@@ -110,8 +101,6 @@ void SFMLRenderer::buildGraphLayout(const Graph* graph)
 	{
 		return;
 	}
-	
-	std::cout << "[SFMLRenderer] Building intelligent graph layout..." << std::endl;
 	
 	const Graph::NodeList nodes = graph->getNodes();
 	
@@ -130,10 +119,7 @@ void SFMLRenderer::buildGraphLayout(const Graph* graph)
 			junctions.push_back(node);
 		}
 	}
-	
-	std::cout << "[SFMLRenderer] Found " << cities.size() << " cities and " 
-	          << junctions.size() << " junctions" << std::endl;
-	
+
 	// PHASE 2: Place cities in a circular/grid pattern
 	if (cities.empty())
 	{
@@ -207,8 +193,6 @@ void SFMLRenderer::buildGraphLayout(const Graph* graph)
 	}
 	
 	// PHASE 3: Place junctions between their IMMEDIATE neighbors
-	std::cout << "[SFMLRenderer] Placing junctions between immediate neighbors..." << std::endl;
-	
 	// Multiple passes to resolve junction positions iteratively
 	for (int pass = 0; pass < 5; ++pass)
 	{
@@ -235,8 +219,6 @@ void SFMLRenderer::buildGraphLayout(const Graph* graph)
 				
 				if (neighbors.empty())
 				{
-					std::cout << "[WARNING] Junction " << junction->getName() 
-					          << " has no neighbors!" << std::endl;
 					_nodeGridPositions[junction] = sf::Vector2i(0, 0);
 					continue;
 				}
@@ -291,9 +273,6 @@ void SFMLRenderer::buildGraphLayout(const Graph* graph)
 			}
 		}
 	}
-	
-	std::cout << "[SFMLRenderer] Layout complete: " << _nodeGridPositions.size() 
-	          << " nodes positioned" << std::endl;
 }
 
 void SFMLRenderer::markRailsInWorld(const Graph* graph)
@@ -373,6 +352,10 @@ void SFMLRenderer::generateWorld(const Graph* graph)
 	}
 	
 	_worldGenerator->generate(*_world);
+	
+	unsigned int seed = _renderManager.getWorldSeed();
+	_world->cacheTileSprites(seed);
+	
 	_renderManager.buildRailBitmasks(*_world);
 	_renderManager.buildStationTiles(graph, *_world);
 }

@@ -20,7 +20,7 @@
 				"h": 48
 			}
 		},
-		"desert_path10.png": {
+		"desert_path_10.png": {
 			"frame": {
 				"x": 54,
 				"y": 2,
@@ -580,7 +580,7 @@
 				"h": 48
 			}
 		},
-		"forest_path_9.2.png": {
+		"forest_path_9.png": {
 			"frame": {
 				"x": 262,
 				"y": 158,

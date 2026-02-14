@@ -7,7 +7,8 @@ World::World(int width, int height)
 	  _tiles(width * height, BiomeType::Grass),
 	  _heightMap(width * height, 0.5f),
 	  _railOccupied(width * height, false),
-	  _stationOccupied(width * height, false)
+	  _stationOccupied(width * height, false),
+	  _tileSprites(width * height, "grass_01.png") // Initialize with default
 {
 }
 
@@ -91,6 +92,29 @@ bool World::isInBounds(int x, int y) const
 int World::getIndex(int x, int y) const
 {
 	return y * _width + x;
+}
+
+void World::cacheTileSprites(unsigned int seed)
+{
+	_tileSprites.resize(_width * _height);
+	
+	for (int y = 0; y < _height; ++y)
+	{
+		for (int x = 0; x < _width; ++x)
+		{
+			BiomeType biome = getTile(x, y);
+			_tileSprites[getIndex(x, y)] = getBiomeSpriteName(biome, x, y, seed);
+		}
+	}
+}
+
+std::string World::getCachedSprite(int x, int y) const
+{
+	if (!isInBounds(x, y))
+	{
+		return "grass_01.png";
+	}
+	return _tileSprites[getIndex(x, y)];
 }
 
 int World::computeSnowPathBitmask(int x, int y) const
@@ -194,8 +218,9 @@ int World::computeForestPathBitmask(int x, int y) const
 
 std::string World::getBiomeSpriteName(BiomeType biome, int x, int y, unsigned int seed) const
 {
-	unsigned int hash = static_cast<unsigned int>(x + y * 57 + seed * 131);
-	hash = (hash << 13) ^ hash;
+	unsigned int hash = static_cast<unsigned int>(x * 374761393U + y * 668265263U + seed * 1274126177U);
+	hash = (hash ^ (hash >> 13)) * 1274126177U;
+	hash = hash ^ (hash >> 16);
 	int variant = static_cast<int>((hash & 0x7fffffff) % 3);
 	
 	switch (biome)
@@ -203,37 +228,74 @@ std::string World::getBiomeSpriteName(BiomeType biome, int x, int y, unsigned in
 		case BiomeType::Snow:
 		{
 			int mask = computeSnowPathBitmask(x, y);
-			return "snow_path_" + std::to_string(mask) + ".png";
+			std::string sprite = "snow_path_" + std::to_string(mask) + ".png";
+			return sprite;
 		}
 			
 		case BiomeType::Grass:
-			if (variant == 0) return "grass_01.png";
-			else if (variant == 1) return "grass_02.png";
-			else return "grass_03.png";
+		{
+			std::string sprite;
+			if (variant == 0) sprite = "grass_01.png";
+			else if (variant == 1) sprite = "grass_02.png";
+			else sprite = "grass_03.png";
+			return sprite;
+		}
 			
 		case BiomeType::Forest:
 		{
 			int mask = computeForestPathBitmask(x, y);
-			return "forest_path_" + std::to_string(mask) + ".png";
+			std::string sprite;
+			
+			// Bitmask 5 has 3 variants: base, .2, .3
+			if (mask == 5)
+			{
+				if (variant == 0) sprite = "forest_path_5.png";
+				else if (variant == 1) sprite = "forest_path_5.2.png";
+				else sprite = "forest_path_5.3.png";
+			}
+			// Bitmasks 10,12,14,15 have 2 variants: base, .2
+			else if (mask == 10 || mask == 12 || mask == 14 || mask == 15)
+			{
+				if (variant == 0) sprite = "forest_path_" + std::to_string(mask) + ".png";
+				else sprite = "forest_path_" + std::to_string(mask) + ".2.png";
+			}
+			// Bitmasks 3,6,7,9 have single variant only
+			else
+			{
+				sprite = "forest_path_" + std::to_string(mask) + ".png";
+			}
+			
+			return sprite;
 		}
 			
 		case BiomeType::Desert:
 		{
 			int mask = computeDesertPathBitmask(x, y);
-			return "desert_path_" + std::to_string(mask) + ".png";
+			std::string sprite = "desert_path_" + std::to_string(mask) + ".png";
+			return sprite;
 		}
 			
 		case BiomeType::Mountain:
-			if (variant == 0) return "mountain_01.png";
-			else if (variant == 1) return "mountain_02.png";
-			else return "mountain_01.png";
+		{
+			std::string sprite;
+			if (variant == 0) sprite = "mountain_01.png";
+			else if (variant == 1) sprite = "mountain_02.png";
+			else sprite = "mountain_01.png";
+			return sprite;
+		}
 			
 		case BiomeType::Water:
-			if (variant == 0) return "water_01.png";
-			else if (variant == 1) return "water_02.png";
-			else return "water_01.png";
+		{
+			std::string sprite;
+			if (variant == 0) sprite = "water_01.png";
+			else if (variant == 1) sprite = "water_02.png";
+			else sprite = "water_01.png";
+			return sprite;
+		}
 			
 		default:
+		{
 			return "grass_01.png";
+		}
 	}
 }

@@ -7,11 +7,12 @@
 #include "core/Train.hpp"
 #include <cmath>
 #include <algorithm>
-#include <iostream>
 
 RenderManager::RenderManager()
-	: _worldSeed(42)
+	: _worldSeed(42),
+	  _fontLoaded(false)
 {
+	loadFont();
 }
 
 void RenderManager::setNodePositions(const std::map<const Node*, sf::Vector2f>& positions)
@@ -27,6 +28,35 @@ void RenderManager::setNodeGridPositions(const std::map<const Node*, sf::Vector2
 void RenderManager::setWorldSeed(unsigned int seed)
 {
 	_worldSeed = seed;
+}
+
+void RenderManager::loadFont()
+{
+	if (_fontLoaded)
+	{
+		return;
+	}
+	
+	_fontLoaded = _labelFont.loadFromFile("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf");
+	if (!_fontLoaded)
+	{
+		_fontLoaded = _labelFont.loadFromFile("/System/Library/Fonts/Helvetica.ttc");
+	}
+}
+
+void RenderManager::rebuildLookupCaches()
+{
+	_railBitmaskCache.clear();
+	for (const RailTile& tile : _railTiles)
+	{
+		_railBitmaskCache[std::make_pair(tile.gridX, tile.gridY)] = tile.bitmask;
+	}
+	
+	_stationMapCache.clear();
+	for (const StationTile& tile : _stationTiles)
+	{
+		_stationMapCache[std::make_pair(tile.gridX, tile.gridY)] = tile;
+	}
 }
 
 void RenderManager::buildRailBitmasks(World& world)
@@ -48,8 +78,7 @@ void RenderManager::buildRailBitmasks(World& world)
 			}
 		}
 	}
-	
-	std::cout << "[RenderManager] Built " << _railTiles.size() << " rail tiles with bitmasks" << std::endl;
+	rebuildLookupCaches();
 }
 
 void RenderManager::buildStationTiles(const Graph* graph, World& world)
@@ -117,8 +146,7 @@ void RenderManager::buildStationTiles(const Graph* graph, World& world)
 		stationTile.node = node;
 		_stationTiles.push_back(stationTile);
 	}
-	
-	std::cout << "[RenderManager] Built " << _stationTiles.size() << " station tiles" << std::endl;
+	rebuildLookupCaches();
 }
 
 void RenderManager::render(sf::RenderWindow& window, const SpriteAtlas& atlas,
@@ -126,16 +154,9 @@ void RenderManager::render(sf::RenderWindow& window, const SpriteAtlas& atlas,
                             const World& world)
 {
 	window.clear(sf::Color(18, 18, 24));
-	
-	// Single integrated rendering - stations, rails, and terrain all in one loop
 	renderWorld(window, atlas, camera, world);
-	
-	// Trains on top
 	renderTrains(window, atlas, simulation, camera);
-	
-	// Day/night overlay
 	renderDayNightOverlay(window, simulation);
-	
 	window.display();
 }
 
@@ -143,21 +164,7 @@ void RenderManager::renderWorld(sf::RenderWindow& window, const SpriteAtlas& atl
                                  const CameraManager& camera, const World& world)
 {
 	float zoom = camera.getCurrentZoom();
-	
-	// Create lookup maps for fast access
-	std::map<std::pair<int, int>, int> railBitmasks;
-	for (const RailTile& tile : _railTiles)
-	{
-		railBitmasks[std::make_pair(tile.gridX, tile.gridY)] = tile.bitmask;
-	}
-	
-	std::map<std::pair<int, int>, StationTile> stationMap;
-	for (const StationTile& tile : _stationTiles)
-	{
-		stationMap[std::make_pair(tile.gridX, tile.gridY)] = tile;
-	}
-	
-	// SINGLE INTEGRATED LOOP - render everything at same level
+
 	for (int y = 0; y < world.getHeight(); ++y)
 	{
 		for (int x = 0; x < world.getWidth(); ++x)
@@ -168,9 +175,9 @@ void RenderManager::renderWorld(sf::RenderWindow& window, const SpriteAtlas& atl
 			std::pair<int, int> pos = std::make_pair(x, y);
 			
 			// Priority 1: Station (highest priority)
-			if (stationMap.count(pos) != 0)
+			if (_stationMapCache.count(pos) != 0)
 			{
-				const StationTile& station = stationMap.at(pos);
+				const StationTile& station = _stationMapCache.at(pos);
 				
 				// Render station sprite
 				std::string stationSprite = "station_" + std::to_string(station.bitmask) + ".png";
@@ -180,18 +187,11 @@ void RenderManager::renderWorld(sf::RenderWindow& window, const SpriteAtlas& atl
 				}
 				_railRenderer.drawTileScaled(window, atlas, stationSprite, screenPos, zoom);
 				
-				// Render city label
-				sf::Font font;
-				bool hasFont = font.loadFromFile("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf");
-				if (!hasFont)
-				{
-					hasFont = font.loadFromFile("/System/Library/Fonts/Helvetica.ttc");
-				}
-				
-				if (hasFont && station.node)
+				// Render city label (using cached font)
+				if (_fontLoaded && station.node)
 				{
 					sf::Text label;
-					label.setFont(font);
+					label.setFont(_labelFont); // Using cached font!
 					label.setString(station.node->getName());
 					label.setCharacterSize(static_cast<unsigned int>(12 * zoom));
 					label.setFillColor(sf::Color(255, 255, 0)); // Yellow
@@ -209,9 +209,9 @@ void RenderManager::renderWorld(sf::RenderWindow& window, const SpriteAtlas& atl
 			}
 			
 			// Priority 2: Rail
-			if (railBitmasks.count(pos) != 0)
+			if (_railBitmaskCache.count(pos) != 0)
 			{
-				int bitmask = railBitmasks.at(pos);
+				int bitmask = _railBitmaskCache.at(pos);
 				std::string railSprite = getRailSpriteName(bitmask);
 				if (!atlas.hasFrame(railSprite))
 				{
@@ -222,8 +222,7 @@ void RenderManager::renderWorld(sf::RenderWindow& window, const SpriteAtlas& atl
 			}
 			
 			// Priority 3: Terrain (lowest priority)
-			BiomeType biome = world.getTile(x, y);
-			std::string spriteName = world.getBiomeSpriteName(biome, x, y, _worldSeed);
+			std::string spriteName = world.getCachedSprite(x, y);
 			
 			if (!atlas.hasFrame(spriteName))
 			{

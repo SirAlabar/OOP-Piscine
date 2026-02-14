@@ -45,6 +45,12 @@ private:
 	std::map<const Node*, sf::Vector2i> _nodeGridPositions;
 	unsigned int _worldSeed;
 	
+	std::map<std::pair<int, int>, int> _railBitmaskCache;
+	std::map<std::pair<int, int>, StationTile> _stationMapCache;
+	
+	sf::Font _labelFont;
+	bool _fontLoaded;
+	
 	const int DAY_LENGTH_MINUTES = 1440;
 
 public:
@@ -53,6 +59,7 @@ public:
 	void setNodePositions(const std::map<const Node*, sf::Vector2f>& positions);
 	void setNodeGridPositions(const std::map<const Node*, sf::Vector2i>& gridPositions);
 	void setWorldSeed(unsigned int seed);
+	unsigned int getWorldSeed() const { return _worldSeed; }
 	void buildRailBitmasks(World& world);
 	void buildStationTiles(const Graph* graph, World& world);
 	
@@ -74,6 +81,10 @@ private:
 	std::string getRailSpriteName(int bitmask) const;
 	
 	float calculateDayNightIntensity(double currentTime) const;
+	
+	void rebuildLookupCaches();
+	
+	void loadFont();
 };
 
 #endif

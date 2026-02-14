@@ -430,16 +430,6 @@ Priority 13 - Final Testing (1-2 days):
 ✅ Good for analysis, 
 ```
 
-### Bonus 6: Replay System (HARD - 1 week)
-```cpp
-□ CommandManager records actions
-□ Save to JSON
-□ Replay player
-□ --record/--replay flags
-
-⚠️ Complex, only if time abundant
-```
-
 ---
 
 ## Modeling Assumptions
