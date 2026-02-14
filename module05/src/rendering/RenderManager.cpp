@@ -7,6 +7,7 @@
 #include "core/Train.hpp"
 #include <cmath>
 #include <algorithm>
+#include <iomanip>
 
 RenderManager::RenderManager()
 	: _worldSeed(42),
@@ -154,9 +155,40 @@ void RenderManager::render(sf::RenderWindow& window, const SpriteAtlas& atlas,
                             const World& world)
 {
 	window.clear(sf::Color(18, 18, 24));
+	
+	// Render world layers (bottom to top)
 	renderWorld(window, atlas, camera, world);
 	renderTrains(window, atlas, simulation, camera);
 	renderDayNightOverlay(window, simulation);
+	
+	// UI LAYER - Draw time at top center (LAST, on top of everything)
+    if (_fontLoaded)
+    {
+        // Use SAME time as day/night overlay
+        double currentTimeSeconds = simulation.getCurrentTime();
+        int cycleSeconds = static_cast<int>(std::fmod(currentTimeSeconds, 1440.0));
+        int hours = (cycleSeconds / 60) % 24;
+        int minutes = cycleSeconds % 60;
+        
+        std::ostringstream timeStream;
+        timeStream << std::setfill('0') << std::setw(2) << hours 
+                << "h" << std::setw(2) << minutes;
+        
+        sf::Text timeLabel;
+        timeLabel.setFont(_labelFont);
+        timeLabel.setString(timeStream.str());
+        timeLabel.setCharacterSize(24);
+        timeLabel.setFillColor(sf::Color::White);
+        timeLabel.setOutlineColor(sf::Color::Black);
+        timeLabel.setOutlineThickness(2.0f);
+        
+        sf::FloatRect bounds = timeLabel.getLocalBounds();
+        timeLabel.setOrigin(bounds.width / 2.0f, 0);
+        timeLabel.setPosition(window.getSize().x / 2.0f, 10.0f);
+        
+        window.draw(timeLabel);
+    }
+	
 	window.display();
 }
 
@@ -249,6 +281,23 @@ void RenderManager::renderTrains(sf::RenderWindow& window, const SpriteAtlas& at
 		bool movingRight = true;
 		sf::Vector2f trainPos = computeTrainPosition(train, camera, movingRight);
 		_trainRenderer.draw(window, atlas, train, trainPos, movingRight, zoom);
+		
+		if (_fontLoaded)
+		{
+			sf::Text label;
+			label.setFont(_labelFont);
+			label.setString(train->getName());
+			label.setCharacterSize(static_cast<unsigned int>(10 * zoom));
+			label.setFillColor(sf::Color(255, 0, 0));
+			label.setOutlineColor(sf::Color::Black);
+			label.setOutlineThickness(1.0f * zoom);
+			
+			sf::FloatRect bounds = label.getLocalBounds();
+			label.setOrigin(bounds.width / 2.0f, bounds.height / 2.0f);
+			label.setPosition(trainPos.x, trainPos.y - 20.0f * zoom);
+			
+			window.draw(label);
+		}
 	}
 }
 
