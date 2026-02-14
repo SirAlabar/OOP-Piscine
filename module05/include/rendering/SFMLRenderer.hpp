@@ -32,6 +32,9 @@ private:
 	std::map<const Node*, sf::Vector2i> _nodeGridPositions;
 	std::set<std::pair<int, int> > _occupiedTiles;
 	
+	int _networkCenterX;
+	int _networkCenterY;
+	
 	double _timeAccumulator;
 	double _simulationStepInterval;
 

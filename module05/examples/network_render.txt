@@ -1,0 +1,48 @@
+Node CityA
+Node CityB
+Node CityC
+Node CityD
+Node CityE
+Node CityF
+
+Node Junction_AB
+Node Junction_BC
+Node Junction_DE
+Node Junction_EF
+Node Junction_AD
+Node Junction_BE
+Node Junction_CF
+Node Junction_Center1
+Node Junction_Center2
+
+Rail CityA Junction_AB 8.0 180.0
+Rail Junction_AB CityB 8.0 180.0
+
+Rail CityB Junction_BC 8.0 180.0
+Rail Junction_BC CityC 8.0 180.0
+
+Rail CityD Junction_DE 8.0 180.0
+Rail Junction_DE CityE 8.0 180.0
+
+Rail CityE Junction_EF 8.0 180.0
+Rail Junction_EF CityF 8.0 180.0
+
+Rail CityA Junction_AD 8.0 180.0
+Rail Junction_AD CityD 8.0 180.0
+
+Rail CityB Junction_BE 8.0 180.0
+Rail Junction_BE CityE 8.0 180.0
+
+Rail CityC Junction_CF 8.0 180.0
+Rail Junction_CF CityF 8.0 180.0
+
+Rail Junction_AD Junction_Center1 6.0 150.0
+Rail Junction_Center1 Junction_BE 6.0 150.0
+Rail Junction_BE Junction_Center2 6.0 150.0
+Rail Junction_Center2 Junction_CF 6.0 150.0
+
+Rail Junction_AB Junction_Center1 6.0 150.0
+Rail Junction_Center1 Junction_DE 6.0 150.0
+
+Rail Junction_BC Junction_Center2 6.0 150.0
+Rail Junction_Center2 Junction_EF 6.0 150.0

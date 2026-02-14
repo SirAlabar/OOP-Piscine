@@ -18,7 +18,3 @@ Rail RailNodeE CityC 6.0 150.0
 Rail CityA RailNodeF 6.0 150.0
 Rail RailNodeF RailNodeG 17.0 250.0
 Rail RailNodeG CityC 17.0 250.0
-Rail RailNodeA RailNodeD 23.02 250.0
-Rail RailNodeA RailNodeE 19.0 250.0
-Rail RailNodeA RailNodeG 6.7 150.0
-Rail RailNodeB RailNodeD 20.24 225.0
