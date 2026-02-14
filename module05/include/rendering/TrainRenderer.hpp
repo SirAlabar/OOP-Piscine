@@ -12,7 +12,7 @@ public:
 	TrainRenderer() = default;
 	
 	void draw(sf::RenderWindow& window, const SpriteAtlas& atlas,
-	          const Train* train, const sf::Vector2f& position, bool movingRight);
+	          const Train* train, const sf::Vector2f& position, bool movingRight, float zoom);
 };
 
 #endif

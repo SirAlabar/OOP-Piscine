@@ -13,11 +13,11 @@ public:
 	NodeRenderer() = default;
 	
 	void draw(sf::RenderWindow& window, const SpriteAtlas& atlas, 
-	          const Node* node, const sf::Vector2f& position);
+	          const Node* node, const sf::Vector2f& position, float zoom);
 	
 	void draw(sf::RenderWindow& window, const SpriteAtlas& atlas,
 	          const Node* node, const sf::Vector2f& position,
-	          const World* world, int gridX, int gridY);
+	          const World* world, int worldX, int worldY, float zoom);
 
 private:
 	int computeStationBitmask(const World* world, int x, int y) const;

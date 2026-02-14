@@ -4,7 +4,7 @@
 #include "world/World.hpp"
 
 void NodeRenderer::draw(sf::RenderWindow& window, const SpriteAtlas& atlas,
-                        const Node* node, const sf::Vector2f& position)
+                        const Node* node, const sf::Vector2f& position, float zoom)
 {
 	if (!node)
 	{
@@ -22,13 +22,14 @@ void NodeRenderer::draw(sf::RenderWindow& window, const SpriteAtlas& atlas,
 	sprite.setTextureRect(atlas.getFrame(spriteName));
 	sprite.setOrigin(24.0f, 24.0f);
 	sprite.setPosition(position);
+	sprite.setScale(zoom, zoom);
 	
 	window.draw(sprite);
 }
 
 void NodeRenderer::draw(sf::RenderWindow& window, const SpriteAtlas& atlas,
                         const Node* node, const sf::Vector2f& position,
-                        const World* world, int gridX, int gridY)
+                        const World* world, int worldX, int worldY, float zoom)
 {
 	if (!node)
 	{
@@ -38,7 +39,7 @@ void NodeRenderer::draw(sf::RenderWindow& window, const SpriteAtlas& atlas,
 	int bitmask = 5;
 	if (world)
 	{
-		bitmask = computeStationBitmask(world, gridX, gridY);
+		bitmask = computeStationBitmask(world, worldX, worldY);
 	}
 	
 	std::string spriteName = getStationSpriteName(bitmask);
@@ -52,6 +53,7 @@ void NodeRenderer::draw(sf::RenderWindow& window, const SpriteAtlas& atlas,
 	sprite.setTextureRect(atlas.getFrame(spriteName));
 	sprite.setOrigin(24.0f, 24.0f);
 	sprite.setPosition(position);
+	sprite.setScale(zoom, zoom);
 	
 	window.draw(sprite);
 }
@@ -94,10 +96,18 @@ std::string NodeRenderer::getStationSpriteName(int bitmask) const
 {
 	switch (bitmask)
 	{
+		case 1:  return "station_14.png";
+		case 2:  return "station_13.png";
+		case 3:  return "station_11.png";
+		case 4:  return "station_14.png";
 		case 5:  return "station_5.png";
+		case 6:  return "station_7.png";
 		case 7:  return "station_7.png";
+		case 8:  return "station_7.png";
+		case 9:  return "station_13.png";
 		case 10: return "station_10.png";
 		case 11: return "station_11.png";
+		case 12: return "station_14.png";
 		case 13: return "station_13.png";
 		case 14: return "station_14.png";
 		case 15: return "station_15.png";

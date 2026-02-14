@@ -52,40 +52,88 @@ void RenderManager::buildRailBitmasks(World& world)
 	std::cout << "[RenderManager] Built " << _railTiles.size() << " rail tiles with bitmasks" << std::endl;
 }
 
+void RenderManager::buildStationTiles(const Graph* graph, World& world)
+{
+	_stationTiles.clear();
+	
+	if (!graph)
+	{
+		return;
+	}
+	
+	for (const Node* node : graph->getNodes())
+	{
+		// Only process CITY nodes
+		if (!node || node->getType() != NodeType::CITY)
+		{
+			continue;
+		}
+		
+		if (_nodeWorldPositions.count(node) == 0)
+		{
+			continue;
+		}
+		
+		sf::Vector2f worldPos = _nodeWorldPositions.at(node);
+		int worldX = static_cast<int>(worldPos.x);
+		int worldY = static_cast<int>(worldPos.y);
+		
+		if (!world.isInBounds(worldX, worldY))
+		{
+			continue;
+		}
+		
+		// Mark this position as station occupied
+		world.markStationOccupied(worldX, worldY);
+		
+		// Compute station bitmask based on rail connections
+		int bitmask = 5; // Default
+		if (world.isInBounds(worldX, worldY - 1) && world.isRailOccupied(worldX, worldY - 1))
+		{
+			bitmask |= 1;
+		}
+		if (world.isInBounds(worldX + 1, worldY) && world.isRailOccupied(worldX + 1, worldY))
+		{
+			bitmask |= 2;
+		}
+		if (world.isInBounds(worldX, worldY + 1) && world.isRailOccupied(worldX, worldY + 1))
+		{
+			bitmask |= 4;
+		}
+		if (world.isInBounds(worldX - 1, worldY) && world.isRailOccupied(worldX - 1, worldY))
+		{
+			bitmask |= 8;
+		}
+		
+		if (bitmask == 0)
+		{
+			bitmask = 5;
+		}
+		
+		StationTile stationTile;
+		stationTile.gridX = worldX;
+		stationTile.gridY = worldY;
+		stationTile.bitmask = bitmask;
+		stationTile.node = node;
+		_stationTiles.push_back(stationTile);
+	}
+	
+	std::cout << "[RenderManager] Built " << _stationTiles.size() << " station tiles" << std::endl;
+}
+
 void RenderManager::render(sf::RenderWindow& window, const SpriteAtlas& atlas,
                             const SimulationManager& simulation, const CameraManager& camera,
                             const World& world)
 {
 	window.clear(sf::Color(18, 18, 24));
 	
+	// Single integrated rendering - stations, rails, and terrain all in one loop
 	renderWorld(window, atlas, camera, world);
-	renderRails(window, atlas, camera, world);
 	
-	const Graph* graph = simulation.getNetwork();
-	if (graph)
-	{
-		for (const Node* node : graph->getNodes())
-		{
-			if (!node || _nodeWorldPositions.count(node) == 0)
-			{
-				continue;
-			}
-			
-			sf::Vector2f screenPos = projectIsometric(_nodeWorldPositions.at(node), camera);
-			
-			if (_nodeGridPositions.count(node) != 0)
-			{
-				sf::Vector2i gridPos = _nodeGridPositions.at(node);
-				_nodeRenderer.draw(window, atlas, node, screenPos, &world, gridPos.x, gridPos.y);
-			}
-			else
-			{
-				_nodeRenderer.draw(window, atlas, node, screenPos);
-			}
-		}
-	}
-	
+	// Trains on top
 	renderTrains(window, atlas, simulation, camera);
+	
+	// Day/night overlay
 	renderDayNightOverlay(window, simulation);
 	
 	window.display();
@@ -96,10 +144,84 @@ void RenderManager::renderWorld(sf::RenderWindow& window, const SpriteAtlas& atl
 {
 	float zoom = camera.getCurrentZoom();
 	
+	// Create lookup maps for fast access
+	std::map<std::pair<int, int>, int> railBitmasks;
+	for (const RailTile& tile : _railTiles)
+	{
+		railBitmasks[std::make_pair(tile.gridX, tile.gridY)] = tile.bitmask;
+	}
+	
+	std::map<std::pair<int, int>, StationTile> stationMap;
+	for (const StationTile& tile : _stationTiles)
+	{
+		stationMap[std::make_pair(tile.gridX, tile.gridY)] = tile;
+	}
+	
+	// SINGLE INTEGRATED LOOP - render everything at same level
 	for (int y = 0; y < world.getHeight(); ++y)
 	{
 		for (int x = 0; x < world.getWidth(); ++x)
 		{
+			sf::Vector2f worldPos(static_cast<float>(x), static_cast<float>(y));
+			sf::Vector2f screenPos = projectIsometric(worldPos, camera);
+			
+			std::pair<int, int> pos = std::make_pair(x, y);
+			
+			// Priority 1: Station (highest priority)
+			if (stationMap.count(pos) != 0)
+			{
+				const StationTile& station = stationMap.at(pos);
+				
+				// Render station sprite
+				std::string stationSprite = "station_" + std::to_string(station.bitmask) + ".png";
+				if (!atlas.hasFrame(stationSprite))
+				{
+					stationSprite = "station_5.png";
+				}
+				_railRenderer.drawTileScaled(window, atlas, stationSprite, screenPos, zoom);
+				
+				// Render city label
+				sf::Font font;
+				bool hasFont = font.loadFromFile("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf");
+				if (!hasFont)
+				{
+					hasFont = font.loadFromFile("/System/Library/Fonts/Helvetica.ttc");
+				}
+				
+				if (hasFont && station.node)
+				{
+					sf::Text label;
+					label.setFont(font);
+					label.setString(station.node->getName());
+					label.setCharacterSize(static_cast<unsigned int>(12 * zoom));
+					label.setFillColor(sf::Color(255, 255, 0)); // Yellow
+					label.setOutlineColor(sf::Color::Black);
+					label.setOutlineThickness(1.0f * zoom);
+					
+					sf::FloatRect bounds = label.getLocalBounds();
+					label.setOrigin(bounds.width / 2.0f, bounds.height / 2.0f);
+					label.setPosition(screenPos.x, screenPos.y - 30.0f * zoom);
+					
+					window.draw(label);
+				}
+				
+				continue; // Station rendered, skip to next tile
+			}
+			
+			// Priority 2: Rail
+			if (railBitmasks.count(pos) != 0)
+			{
+				int bitmask = railBitmasks.at(pos);
+				std::string railSprite = getRailSpriteName(bitmask);
+				if (!atlas.hasFrame(railSprite))
+				{
+					railSprite = "rail_5.png";
+				}
+				_railRenderer.drawTileScaled(window, atlas, railSprite, screenPos, zoom);
+				continue; // Rail rendered, skip to next tile
+			}
+			
+			// Priority 3: Terrain (lowest priority)
 			BiomeType biome = world.getTile(x, y);
 			std::string spriteName = world.getBiomeSpriteName(biome, x, y, _worldSeed);
 			
@@ -108,42 +230,16 @@ void RenderManager::renderWorld(sf::RenderWindow& window, const SpriteAtlas& atl
 				spriteName = "grass_01.png";
 			}
 			
-			sf::Vector2f worldPos(static_cast<float>(x), static_cast<float>(y));
-			sf::Vector2f screenPos = projectIsometric(worldPos, camera);
-			
 			_railRenderer.drawTileScaled(window, atlas, spriteName, screenPos, zoom);
 		}
-	}
-}
-
-void RenderManager::renderRails(sf::RenderWindow& window, const SpriteAtlas& atlas,
-                                const CameraManager& camera, const World& world)
-{
-	for (const RailTile& tile : _railTiles)
-	{
-		BiomeType biome = world.getTile(tile.gridX, tile.gridY);
-		std::string spriteName = getRailSpriteName(tile.bitmask, biome);
-		
-		if (!atlas.hasFrame(spriteName))
-		{
-			spriteName = "rail_" + std::to_string(tile.bitmask) + ".png";
-			if (!atlas.hasFrame(spriteName))
-			{
-				spriteName = "rail_5.png";
-			}
-		}
-		
-		sf::Vector2f worldPos(static_cast<float>(tile.gridX), static_cast<float>(tile.gridY));
-		sf::Vector2f screenPos = projectIsometric(worldPos, camera);
-		
-		float zoom = camera.getCurrentZoom();
-		_railRenderer.drawTileScaled(window, atlas, spriteName, screenPos, zoom);
 	}
 }
 
 void RenderManager::renderTrains(sf::RenderWindow& window, const SpriteAtlas& atlas,
                                  const SimulationManager& simulation, const CameraManager& camera)
 {
+	float zoom = camera.getCurrentZoom();
+	
 	for (const Train* train : simulation.getTrains())
 	{
 		if (!train || !train->getCurrentRail())
@@ -153,7 +249,7 @@ void RenderManager::renderTrains(sf::RenderWindow& window, const SpriteAtlas& at
 		
 		bool movingRight = true;
 		sf::Vector2f trainPos = computeTrainPosition(train, camera, movingRight);
-		_trainRenderer.draw(window, atlas, train, trainPos, movingRight);
+		_trainRenderer.draw(window, atlas, train, trainPos, movingRight, zoom);
 	}
 }
 
@@ -191,27 +287,41 @@ sf::Vector2f RenderManager::projectIsometric(const sf::Vector2f& worldPoint, con
 
 sf::Vector2f RenderManager::computeTrainPosition(const Train* train, const CameraManager& camera, bool& movingRight) const
 {
-	const Rail* rail = train->getCurrentRail();
-	if (!rail)
+	const PathSegment* segment = train->getCurrentPathSegment();
+	if (!segment || !segment->rail)
 	{
 		movingRight = true;
 		return camera.getOffset();
 	}
 	
-	const Node* nodeA = rail->getNodeA();
-	const Node* nodeB = rail->getNodeB();
+	const Node* fromNode = segment->from;
+	const Node* toNode = segment->to;
 	
-	if (_nodeWorldPositions.count(nodeA) == 0 || _nodeWorldPositions.count(nodeB) == 0)
+	if (_nodeWorldPositions.count(fromNode) == 0 || _nodeWorldPositions.count(toNode) == 0)
 	{
 		movingRight = true;
 		return camera.getOffset();
 	}
 	
-	const sf::Vector2f start = _nodeWorldPositions.at(nodeA);
-	const sf::Vector2f end = _nodeWorldPositions.at(nodeB);
-	movingRight = (end.x - start.x) >= 0.0f;
+	// Use from->to direction (actual travel direction)
+	const sf::Vector2f start = _nodeWorldPositions.at(fromNode);
+	const sf::Vector2f end = _nodeWorldPositions.at(toNode);
+	float dx = end.x - start.x;
+	float dy = end.y - start.y;
 	
-	double railLengthMeters = rail->getLength() * 1000.0;
+	// Determine orientation based on rail direction
+	// If rail is more horizontal (dx > dy), use right sprite
+	// If rail is more vertical (dy > dx), use left sprite
+	if (std::abs(dx) > std::abs(dy))
+	{
+		movingRight = true;  // Horizontal rail uses train_right_10.png
+	}
+	else
+	{
+		movingRight = false; // Vertical rail uses train_left_5.png
+	}
+	
+	double railLengthMeters = segment->rail->getLength() * 1000.0;
 	double t = (railLengthMeters > 0.0) ? (train->getPosition() / railLengthMeters) : 0.0;
 	t = std::max(0.0, std::min(1.0, t));
 	
@@ -252,29 +362,9 @@ int RenderManager::computeRailBitmask(const World& world, int x, int y) const
 	return mask;
 }
 
-std::string RenderManager::getRailSpriteName(int bitmask, BiomeType biome) const
+std::string RenderManager::getRailSpriteName(int bitmask) const
 {
-	std::string prefix;
-	
-	switch (biome)
-	{
-		case BiomeType::Snow:
-			prefix = "snow_path_";
-			break;
-		case BiomeType::Desert:
-			prefix = "desert_path_";
-			break;
-		case BiomeType::Forest:
-			prefix = "forest_path_";
-			break;
-		case BiomeType::Grass:
-		case BiomeType::Mountain:
-		case BiomeType::Water:
-		default:
-			return "rail_" + std::to_string(bitmask) + ".png";
-	}
-	
-	return prefix + std::to_string(bitmask) + ".png";
+	return "rail_" + std::to_string(bitmask) + ".png";
 }
 
 float RenderManager::calculateDayNightIntensity(double currentTime) const

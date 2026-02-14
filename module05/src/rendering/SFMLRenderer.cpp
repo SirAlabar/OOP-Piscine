@@ -54,7 +54,7 @@ void SFMLRenderer::initializeWorld(SimulationManager& simulation)
 	
 	std::cout << "[SFMLRenderer] Starting world generation..." << std::endl;
 	markRailsInWorld(simulation.getNetwork());
-	generateWorld();
+	generateWorld(simulation.getNetwork());
 	std::cout << "[SFMLRenderer] World initialization complete!" << std::endl;
 }
 
@@ -212,7 +212,7 @@ void SFMLRenderer::markRailsInWorld(const Graph* graph)
 	}
 }
 
-void SFMLRenderer::generateWorld()
+void SFMLRenderer::generateWorld(const Graph* graph)
 {
 	if (!_world || !_worldGenerator)
 	{
@@ -221,6 +221,7 @@ void SFMLRenderer::generateWorld()
 	
 	_worldGenerator->generate(*_world);
 	_renderManager.buildRailBitmasks(*_world);
+	_renderManager.buildStationTiles(graph, *_world);
 }
 
 void SFMLRenderer::mainLoop(SimulationManager& simulation)

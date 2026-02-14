@@ -45,7 +45,7 @@ private:
 	void initializeWorld(SimulationManager& simulation);
 	void buildGraphLayout(const Graph* graph);
 	void markRailsInWorld(const Graph* graph);
-	void generateWorld();
+	void generateWorld(const Graph* graph);
 	
 	void mainLoop(SimulationManager& simulation);
 	void processInput(SimulationManager& simulation, double deltaTime);

@@ -24,6 +24,14 @@ struct RailTile
 	int bitmask;
 };
 
+struct StationTile
+{
+	int gridX;
+	int gridY;
+	int bitmask;
+	const Node* node;
+};
+
 class RenderManager
 {
 private:
@@ -32,6 +40,7 @@ private:
 	TrainRenderer _trainRenderer;
 	
 	std::vector<RailTile> _railTiles;
+	std::vector<StationTile> _stationTiles;
 	std::map<const Node*, sf::Vector2f> _nodeWorldPositions;
 	std::map<const Node*, sf::Vector2i> _nodeGridPositions;
 	unsigned int _worldSeed;
@@ -45,6 +54,7 @@ public:
 	void setNodeGridPositions(const std::map<const Node*, sf::Vector2i>& gridPositions);
 	void setWorldSeed(unsigned int seed);
 	void buildRailBitmasks(World& world);
+	void buildStationTiles(const Graph* graph, World& world);
 	
 	void render(sf::RenderWindow& window, const SpriteAtlas& atlas, 
 	            const SimulationManager& simulation, const CameraManager& camera,
@@ -52,8 +62,6 @@ public:
 
 private:
 	void renderWorld(sf::RenderWindow& window, const SpriteAtlas& atlas, 
-	                 const CameraManager& camera, const World& world);
-	void renderRails(sf::RenderWindow& window, const SpriteAtlas& atlas, 
 	                 const CameraManager& camera, const World& world);
 	void renderTrains(sf::RenderWindow& window, const SpriteAtlas& atlas, 
 	                  const SimulationManager& simulation, const CameraManager& camera);
@@ -63,7 +71,7 @@ private:
 	sf::Vector2f computeTrainPosition(const Train* train, const CameraManager& camera, bool& movingRight) const;
 	
 	int computeRailBitmask(const World& world, int x, int y) const;
-	std::string getRailSpriteName(int bitmask, BiomeType biome) const;
+	std::string getRailSpriteName(int bitmask) const;
 	
 	float calculateDayNightIntensity(double currentTime) const;
 };

@@ -50,11 +50,11 @@ void InputManager::handleMouseWheelScroll(const sf::Event& event, InputState& st
 {
 	if (event.mouseWheelScroll.delta > 0.0f)
 	{
-		state.zoomDelta = 0.10f;
+		state.zoomDelta += 0.10f;
 	}
 	else if (event.mouseWheelScroll.delta < 0.0f)
 	{
-		state.zoomDelta = -0.10f;
+		state.zoomDelta -= 0.10f;
 	}
 }
 

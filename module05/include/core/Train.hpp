@@ -97,6 +97,7 @@ public:
 	const Path& getPath() const;
 	void        setPath(const Path& path);
 	Rail*       getCurrentRail() const;
+	const PathSegment* getCurrentPathSegment() const;
 	size_t      getCurrentRailIndex() const;
 	void        advanceToNextRail();
 	void        reverseJourney();  // Swap origin/dest, reverse path for round-trip mode

@@ -181,6 +181,15 @@ Rail* Train::getCurrentRail() const
 	return nullptr;
 }
 
+const PathSegment* Train::getCurrentPathSegment() const
+{
+	if (_currentRailIndex < _path.size())
+	{
+		return &_path[_currentRailIndex];
+	}
+	return nullptr;
+}
+
 size_t Train::getCurrentRailIndex() const
 {
 	return _currentRailIndex;
@@ -206,7 +215,7 @@ void Train::reverseJourney()
 	_departureStation = _arrivalStation;
 	_arrivalStation = temp;
 	
-	// Reverse the path vector (A→B→C becomes C→B→A)
+	// Reverse the path vector (Aâ†’Bâ†’C becomes Câ†’Bâ†’A)
 	std::reverse(_path.begin(), _path.end());
 	
 	// For each segment, swap from/to nodes to maintain correct direction

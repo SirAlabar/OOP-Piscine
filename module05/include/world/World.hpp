@@ -24,6 +24,11 @@ private:
 	std::vector<BiomeType> _tiles;
 	std::vector<float> _heightMap;
 	std::vector<bool> _railOccupied;
+	std::vector<bool> _stationOccupied;
+
+	int computeSnowPathBitmask(int x, int y) const;
+	int computeDesertPathBitmask(int x, int y) const;
+	int computeForestPathBitmask(int x, int y) const;
 
 public:
 	World(int width, int height);
@@ -39,6 +44,9 @@ public:
 
 	void markRailOccupied(int x, int y);
 	bool isRailOccupied(int x, int y) const;
+
+	void markStationOccupied(int x, int y);
+	bool isStationOccupied(int x, int y) const;
 
 	bool isInBounds(int x, int y) const;
 	int getIndex(int x, int y) const;

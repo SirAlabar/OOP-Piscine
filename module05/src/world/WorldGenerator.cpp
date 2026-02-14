@@ -31,7 +31,20 @@ void WorldGenerator::generate(World& world)
 	
 	applyAdjacencyRules(world);
 	
-	std::cout << "[WorldGenerator] World generation complete!" << std::endl;
+	// CRITICAL: Set all rail-occupied tiles to Grass
+	// This prevents mountains/snow/desert from being placed on rails
+	for (int y = 0; y < _height; ++y)
+	{
+		for (int x = 0; x < _width; ++x)
+		{
+			if (world.isRailOccupied(x, y))
+			{
+				world.setTile(x, y, BiomeType::Grass);
+			}
+		}
+	}
+	
+	std::cout << "[WorldGenerator] Rail tiles cleared - World generation complete!" << std::endl;
 }
 
 float WorldGenerator::perlinNoise(int x, int y, float scale) const
@@ -134,11 +147,6 @@ void WorldGenerator::classifyBiomes(World& world, const std::vector<float>& temp
 	{
 		for (int x = 0; x < _width; ++x)
 		{
-			if (world.isRailOccupied(x, y))
-			{
-				continue;
-			}
-			
 			float height = world.getHeight(x, y);
 			float temp = tempMap[y * _width + x];
 			

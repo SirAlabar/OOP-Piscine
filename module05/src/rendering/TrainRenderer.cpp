@@ -3,7 +3,7 @@
 #include "core/Train.hpp"
 
 void TrainRenderer::draw(sf::RenderWindow& window, const SpriteAtlas& atlas,
-                         const Train* train, const sf::Vector2f& position, bool movingRight)
+                         const Train* train, const sf::Vector2f& position, bool movingRight, float zoom)
 {
 	if (!train)
 	{
@@ -22,6 +22,7 @@ void TrainRenderer::draw(sf::RenderWindow& window, const SpriteAtlas& atlas,
 	sprite.setTextureRect(atlas.getFrame(spriteName));
 	sprite.setOrigin(24.0f, 24.0f);
 	sprite.setPosition(position);
+	sprite.setScale(zoom, zoom);
 	
 	window.draw(sprite);
 }
