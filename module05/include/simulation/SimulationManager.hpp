@@ -6,13 +6,15 @@
 #include "utils/Time.hpp"
 
 // Simulation time configuration (single source of truth)
+// ALL TIME VALUES IN SECONDS
 namespace SimConfig
 {
-	constexpr double BASE_TIMESTEP_MINUTES = 1.0;
-	constexpr double MINUTES_PER_HOUR = 60.0;
-	constexpr double MINUTES_PER_DAY = 1440.0;
+	constexpr double BASE_TIMESTEP_SECONDS = 1.0;     // 1 second per step
+	constexpr double SECONDS_PER_MINUTE = 60.0;
+	constexpr double SECONDS_PER_HOUR = 3600.0;       // 60 * 60
+	constexpr double SECONDS_PER_DAY = 86400.0;       // 24 * 60 * 60
 	
-	// Speed limits
+	// Speed control limits
 	constexpr double MIN_SPEED = 0.1;   // 0.1x (slow motion)
 	constexpr double MAX_SPEED = 100.0; // 100x (fast forward)
 	constexpr double DEFAULT_SPEED = 10.0;
@@ -46,8 +48,8 @@ private:
 	EventFactory* _eventFactory;
 	StatsCollector* _statsCollector;  // Optional: for Monte Carlo mode only
 	
-	double _currentTime;  // Stored in MINUTES (not seconds)
-	double _timestep;     // Stored in MINUTES (default 1.0)
+	double _currentTime;      // Stored in SECONDS
+	double _timestep;         // Stored in SECONDS (default 1.0)
 	double _simulationSpeed;  // Runtime speed control (1.0 = real-time, 10.0 = 10x)
 	bool _running;
 	bool _roundTripEnabled;  // Enable train reversal at destination
@@ -96,7 +98,7 @@ public:
 	void start();
 	void stop();
 	void step();
-	void run(double maxTime);
+	void run(double maxTime, bool renderMode = false);
 	
 	double getCurrentTime() const;
 	Time getCurrentTimeFormatted() const;

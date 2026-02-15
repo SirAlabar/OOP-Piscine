@@ -27,8 +27,8 @@ SimulationManager::SimulationManager()
 	  _context(nullptr),
 	  _eventFactory(nullptr),
 	  _statsCollector(nullptr),
-	  _currentTime(0.0),  // Minutes
-	  _timestep(SimConfig::BASE_TIMESTEP_MINUTES),  // 1.0 minute
+	  _currentTime(0.0),  // Seconds
+	  _timestep(SimConfig::BASE_TIMESTEP_SECONDS),  // 1.0 second
 	  _simulationSpeed(SimConfig::DEFAULT_SPEED),  // 10.0x
 	  _running(false),
 	  _roundTripEnabled(false),
@@ -180,6 +180,8 @@ void SimulationManager::step()
 	_context->refreshAllRiskData();
 	handleStateTransitions();
 	_context->refreshAllRiskData();
+	
+	// Physics receives timestep in seconds (1.0)
 	updateTrainStates(_timestep);
 	// Note: Finished trains are marked by MovementSystem when they reach destination
 	
@@ -192,7 +194,7 @@ void SimulationManager::step()
 	writeSnapshots();
 	
 	// Display periodic status dashboard every 5 simulation minutes
-	int currentMinute = static_cast<int>(_currentTime);
+	int currentMinute = static_cast<int>(_currentTime / SimConfig::SECONDS_PER_MINUTE);
 	bool shouldShowDashboard = (currentMinute % 5 == 0 && currentMinute != _lastDashboardMinute && currentMinute > 0);
 	
 	if (shouldShowDashboard && _simulationWriter)
@@ -230,45 +232,70 @@ void SimulationManager::step()
 	}
 }
 
-void SimulationManager::run(double maxTime)
+void SimulationManager::run(double maxTime, bool renderMode)
 {
     start();
 
-    using clock = std::chrono::steady_clock;
-
-    auto previous = clock::now();
-    double accumulator = 0.0;
-
-    while (_running && _currentTime < maxTime)
+    if (!renderMode)
     {
-        auto now = clock::now();
-        std::chrono::duration<double> elapsed = now - previous;
-        previous = now;
-
-        accumulator += elapsed.count() * _simulationSpeed;
-
-        while (accumulator >= _timestep)
+        // CONSOLE MODE: Full speed, no timing constraints
+        while (_running && _currentTime < maxTime)
         {
             step();
-            accumulator -= _timestep;
-        }
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
-
-        if (!_roundTripEnabled)
-        {
-            bool allFinished = true;
-            for (Train* train : _trains)
+            
+            if (!_roundTripEnabled)
             {
-                if (train && !train->isFinished())
+                bool allFinished = true;
+                for (Train* train : _trains)
                 {
-                    allFinished = false;
-                    break;
+                    if (train && !train->isFinished())
+                    {
+                        allFinished = false;
+                        break;
+                    }
                 }
+                if (allFinished)
+                    stop();
+            }
+        }
+    }
+    else
+    {
+        // RENDER MODE: Real-time with speed control
+        using clock = std::chrono::steady_clock;
+        auto previous = clock::now();
+        double accumulator = 0.0;
+
+        while (_running && _currentTime < maxTime)
+        {
+            auto now = clock::now();
+            std::chrono::duration<double> elapsed = now - previous;
+            previous = now;
+
+            accumulator += elapsed.count() * _simulationSpeed * SimConfig::SECONDS_PER_MINUTE;
+
+            while (accumulator >= _timestep)
+            {
+                step();
+                accumulator -= _timestep;
             }
 
-            if (allFinished)
-                stop();
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+
+            if (!_roundTripEnabled)
+            {
+                bool allFinished = true;
+                for (Train* train : _trains)
+                {
+                    if (train && !train->isFinished())
+                    {
+                        allFinished = false;
+                        break;
+                    }
+                }
+                if (allFinished)
+                    stop();
+            }
         }
     }
 }
@@ -282,8 +309,8 @@ double SimulationManager::getCurrentTime() const
 
 Time SimulationManager::getCurrentTimeFormatted() const
 {
-	// _currentTime is now in minutes
-	int totalMinutes = static_cast<int>(_currentTime);
+	// Convert seconds to minutes
+	int totalMinutes = static_cast<int>(_currentTime / SimConfig::SECONDS_PER_MINUTE);
 	int hours = totalMinutes / 60;
 	int minutes = totalMinutes % 60;
 	return Time(hours, minutes);
@@ -375,18 +402,18 @@ void SimulationManager::updateTrainStates(double dt)
                     train->reverseJourney();
                     
                     // Calculate next departure time (same time, next day = +24 hours)
-                    int currentMinutes = static_cast<int>(_currentTime);
+                    int currentMinutes = static_cast<int>(_currentTime / SimConfig::SECONDS_PER_MINUTE);
                     Time currentTimeFormatted = getCurrentTimeFormatted();
                     Time trainDepartureTime = train->getDepartureTime();
                     
                     // Calculate minutes until next occurrence of departure time
                     int departureMinutes = trainDepartureTime.toMinutes();
-                    int nextDeparture = departureMinutes + static_cast<int>(SimConfig::MINUTES_PER_DAY);
+                    int nextDeparture = departureMinutes + 1440;  // +24 hours in minutes
                     
                     // If we're past this time today, wait for tomorrow
                     while (nextDeparture <= currentMinutes)
                     {
-                        nextDeparture += static_cast<int>(SimConfig::MINUTES_PER_DAY);
+                        nextDeparture += 1440;  // Add another day
                     }
                     
 					// Convert nextDeparture back to Time and update train
@@ -480,7 +507,7 @@ void SimulationManager::handleStateTransitions()
 void SimulationManager::writeSnapshots()
 {
 	// Write snapshots every 2 minutes
-	int currentMinute = static_cast<int>(_currentTime);
+	int currentMinute = static_cast<int>(_currentTime / SimConfig::SECONDS_PER_MINUTE);
 	bool periodicWrite = (currentMinute % 2 == 0 && currentMinute != _lastSnapshotMinute);
 	
 	if (periodicWrite)

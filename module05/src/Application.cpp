@@ -299,7 +299,7 @@ int Application::run()
 			
 			// Start simulation thread (runs sim.run() independently)
 			std::thread simulationThread([&sim]() {
-				sim.run(1e9);  // Run indefinitely (user closes window to stop)
+				sim.run(1e9, true);  // Run indefinitely in RENDER mode
 			});
 			
 			// Main thread runs renderer (SFML requires main thread)
@@ -312,12 +312,12 @@ int Application::run()
 		else
 		{
 			// Console mode: run simulation at full speed
-			double maxTime = 106400.0;  // Default: ~29 hours
+			double maxTime = 106400.0;  // ~29.5 hours in seconds
 			if (_cli.hasRoundTrip())
 			{
-				maxTime = 172800.0;  // 48 hours for round-trip demo
+				maxTime = 172800.0;  // 48 hours in seconds
 			}
-			sim.run(maxTime);
+			sim.run(maxTime);  // Console mode (renderMode = false by default)
 		}
 
 

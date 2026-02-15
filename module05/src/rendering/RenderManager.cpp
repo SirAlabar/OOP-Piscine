@@ -164,9 +164,10 @@ void RenderManager::render(sf::RenderWindow& window, const SpriteAtlas& atlas,
 	// UI LAYER - Draw time and speed at top center (LAST, on top of everything)
     if (_fontLoaded)
     {
-        // _currentTime is now in MINUTES
-        double currentTimeMinutes = simulation.getCurrentTime();
-        int cycleMinutes = static_cast<int>(std::fmod(currentTimeMinutes, SimConfig::MINUTES_PER_DAY));
+        // _currentTime is in SECONDS, convert to minutes for display
+        double currentTimeSeconds = simulation.getCurrentTime();
+        int totalMinutes = static_cast<int>(currentTimeSeconds / SimConfig::SECONDS_PER_MINUTE);
+        int cycleMinutes = totalMinutes % 1440;  // Minutes in a day
         int hours = cycleMinutes / 60;
         int minutes = cycleMinutes % 60;
         
@@ -435,8 +436,8 @@ std::string RenderManager::getRailSpriteName(int bitmask) const
 
 float RenderManager::calculateDayNightIntensity(double currentTime) const
 {
-	// currentTime is now in MINUTES
-	double normalizedTime = std::fmod(currentTime, SimConfig::MINUTES_PER_DAY) / SimConfig::MINUTES_PER_DAY;
+	// currentTime is in SECONDS, convert to normalized day cycle
+	double normalizedTime = std::fmod(currentTime, SimConfig::SECONDS_PER_DAY) / SimConfig::SECONDS_PER_DAY;
 	
 	float lightFactor = std::sin(normalizedTime * 2.0 * 3.14159265359 - 3.14159265359 / 2.0) * 0.5f + 0.5f;
 	
