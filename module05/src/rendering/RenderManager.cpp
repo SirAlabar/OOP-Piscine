@@ -161,14 +161,14 @@ void RenderManager::render(sf::RenderWindow& window, const SpriteAtlas& atlas,
 	renderTrains(window, atlas, simulation, camera);
 	renderDayNightOverlay(window, simulation);
 	
-	// UI LAYER - Draw time at top center (LAST, on top of everything)
+	// UI LAYER - Draw time and speed at top center (LAST, on top of everything)
     if (_fontLoaded)
     {
-        // Use SAME time as day/night overlay
-        double currentTimeSeconds = simulation.getCurrentTime();
-        int cycleSeconds = static_cast<int>(std::fmod(currentTimeSeconds, 1440.0));
-        int hours = (cycleSeconds / 60) % 24;
-        int minutes = cycleSeconds % 60;
+        // _currentTime is now in MINUTES
+        double currentTimeMinutes = simulation.getCurrentTime();
+        int cycleMinutes = static_cast<int>(std::fmod(currentTimeMinutes, SimConfig::MINUTES_PER_DAY));
+        int hours = cycleMinutes / 60;
+        int minutes = cycleMinutes % 60;
         
         std::ostringstream timeStream;
         timeStream << std::setfill('0') << std::setw(2) << hours 
@@ -187,6 +187,24 @@ void RenderManager::render(sf::RenderWindow& window, const SpriteAtlas& atlas,
         timeLabel.setPosition(window.getSize().x / 2.0f, 10.0f);
         
         window.draw(timeLabel);
+        
+        // Draw speed indicator below clock
+        std::ostringstream speedStream;
+        speedStream << std::fixed << std::setprecision(1) << simulation.getSimulationSpeed() << "x";
+        
+        sf::Text speedLabel;
+        speedLabel.setFont(_labelFont);
+        speedLabel.setString(speedStream.str());
+        speedLabel.setCharacterSize(18);
+        speedLabel.setFillColor(sf::Color(150, 255, 150));  // Light green
+        speedLabel.setOutlineColor(sf::Color::Black);
+        speedLabel.setOutlineThickness(1.5f);
+        
+        sf::FloatRect speedBounds = speedLabel.getLocalBounds();
+        speedLabel.setOrigin(speedBounds.width / 2.0f, 0);
+        speedLabel.setPosition(window.getSize().x / 2.0f, 40.0f);
+        
+        window.draw(speedLabel);
     }
 	
 	window.display();
@@ -417,7 +435,8 @@ std::string RenderManager::getRailSpriteName(int bitmask) const
 
 float RenderManager::calculateDayNightIntensity(double currentTime) const
 {
-	double normalizedTime = std::fmod(currentTime, static_cast<double>(DAY_LENGTH_MINUTES)) / static_cast<double>(DAY_LENGTH_MINUTES);
+	// currentTime is now in MINUTES
+	double normalizedTime = std::fmod(currentTime, SimConfig::MINUTES_PER_DAY) / SimConfig::MINUTES_PER_DAY;
 	
 	float lightFactor = std::sin(normalizedTime * 2.0 * 3.14159265359 - 3.14159265359 / 2.0) * 0.5f + 0.5f;
 	

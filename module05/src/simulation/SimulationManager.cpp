@@ -16,6 +16,8 @@
 #include "patterns/factories/EventFactory.hpp"
 #include "patterns/events/Event.hpp"
 #include "analysis/StatsCollector.hpp"
+#include <thread>
+#include <chrono>
 
 // Constructor
 SimulationManager::SimulationManager()
@@ -25,12 +27,13 @@ SimulationManager::SimulationManager()
 	  _context(nullptr),
 	  _eventFactory(nullptr),
 	  _statsCollector(nullptr),
-	  _currentTime(0.0),
-	  _timestep(1.0),
+	  _currentTime(0.0),  // Minutes
+	  _timestep(SimConfig::BASE_TIMESTEP_MINUTES),  // 1.0 minute
+	  _simulationSpeed(SimConfig::DEFAULT_SPEED),  // 10.0x
 	  _running(false),
 	  _roundTripEnabled(false),
 	  _eventSeed(0),
-	  _lastEventGenerationTime(-60.0),  // Start at -60 so first check happens immediately
+	  _lastEventGenerationTime(-60.0),
 	  _simulationWriter(nullptr),
 	  _lastSnapshotMinute(-1),
 	  _lastDashboardMinute(-1)
@@ -189,7 +192,7 @@ void SimulationManager::step()
 	writeSnapshots();
 	
 	// Display periodic status dashboard every 5 simulation minutes
-	int currentMinute = static_cast<int>(_currentTime / 60.0);
+	int currentMinute = static_cast<int>(_currentTime);
 	bool shouldShowDashboard = (currentMinute % 5 == 0 && currentMinute != _lastDashboardMinute && currentMinute > 0);
 	
 	if (shouldShowDashboard && _simulationWriter)
@@ -229,32 +232,47 @@ void SimulationManager::step()
 
 void SimulationManager::run(double maxTime)
 {
-	start();
-	
-	while (_running && _currentTime < maxTime)
-	{
-		step();
-		
-		// Only stop when all trains finished if NOT in round-trip mode
-		if (!_roundTripEnabled)
-		{
-			// Check if all trains finished
-			bool allFinished = true;
-			for (Train* train : _trains)
-			{
-				if (train && !train->isFinished())
-				{
-					allFinished = false;
-					break;
-				}
-			}		
-			if (allFinished)
-			{
-				stop();
-			}
-		}
-	}
+    start();
+
+    using clock = std::chrono::steady_clock;
+
+    auto previous = clock::now();
+    double accumulator = 0.0;
+
+    while (_running && _currentTime < maxTime)
+    {
+        auto now = clock::now();
+        std::chrono::duration<double> elapsed = now - previous;
+        previous = now;
+
+        accumulator += elapsed.count() * _simulationSpeed;
+
+        while (accumulator >= _timestep)
+        {
+            step();
+            accumulator -= _timestep;
+        }
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+
+        if (!_roundTripEnabled)
+        {
+            bool allFinished = true;
+            for (Train* train : _trains)
+            {
+                if (train && !train->isFinished())
+                {
+                    allFinished = false;
+                    break;
+                }
+            }
+
+            if (allFinished)
+                stop();
+        }
+    }
 }
+
 
 // Getters
 double SimulationManager::getCurrentTime() const
@@ -264,7 +282,8 @@ double SimulationManager::getCurrentTime() const
 
 Time SimulationManager::getCurrentTimeFormatted() const
 {
-	int totalMinutes = static_cast<int>(_currentTime / 60.0);
+	// _currentTime is now in minutes
+	int totalMinutes = static_cast<int>(_currentTime);
 	int hours = totalMinutes / 60;
 	int minutes = totalMinutes % 60;
 	return Time(hours, minutes);
@@ -356,18 +375,18 @@ void SimulationManager::updateTrainStates(double dt)
                     train->reverseJourney();
                     
                     // Calculate next departure time (same time, next day = +24 hours)
-                    int currentMinutes = static_cast<int>(_currentTime / 60.0);
+                    int currentMinutes = static_cast<int>(_currentTime);
                     Time currentTimeFormatted = getCurrentTimeFormatted();
                     Time trainDepartureTime = train->getDepartureTime();
                     
                     // Calculate minutes until next occurrence of departure time
                     int departureMinutes = trainDepartureTime.toMinutes();
-                    int nextDeparture = departureMinutes + 1440;  // +24 hours
+                    int nextDeparture = departureMinutes + static_cast<int>(SimConfig::MINUTES_PER_DAY);
                     
                     // If we're past this time today, wait for tomorrow
                     while (nextDeparture <= currentMinutes)
                     {
-                        nextDeparture += 1440;  // Add another day
+                        nextDeparture += static_cast<int>(SimConfig::MINUTES_PER_DAY);
                     }
                     
 					// Convert nextDeparture back to Time and update train
@@ -461,7 +480,7 @@ void SimulationManager::handleStateTransitions()
 void SimulationManager::writeSnapshots()
 {
 	// Write snapshots every 2 minutes
-	int currentMinute = static_cast<int>(_currentTime / 60.0);
+	int currentMinute = static_cast<int>(_currentTime);
 	bool periodicWrite = (currentMinute % 2 == 0 && currentMinute != _lastSnapshotMinute);
 	
 	if (periodicWrite)
@@ -729,4 +748,26 @@ void SimulationManager::logEventForAffectedTrains(Event* event, const std::strin
 unsigned int SimulationManager::getSeed() const
 {
 	return _eventSeed;
+}
+
+double SimulationManager::getSimulationSpeed() const
+{
+	return _simulationSpeed;
+}
+
+void SimulationManager::setSimulationSpeed(double speed)
+{
+	// Clamp between min and max
+	if (speed < SimConfig::MIN_SPEED)
+	{
+		_simulationSpeed = SimConfig::MIN_SPEED;
+	}
+	else if (speed > SimConfig::MAX_SPEED)
+	{
+		_simulationSpeed = SimConfig::MAX_SPEED;
+	}
+	else
+	{
+		_simulationSpeed = speed;
+	}
 }

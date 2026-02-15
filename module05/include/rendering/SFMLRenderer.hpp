@@ -34,9 +34,6 @@ private:
 	
 	int _networkCenterX;
 	int _networkCenterY;
-	
-	double _timeAccumulator;
-	double _simulationStepInterval;
 
 public:
 	SFMLRenderer();
@@ -49,10 +46,6 @@ private:
 	void buildGraphLayout(const Graph* graph);
 	void markRailsInWorld(const Graph* graph);
 	void generateWorld(const Graph* graph);
-	
-	void mainLoop(SimulationManager& simulation);
-	void processInput(SimulationManager& simulation, double deltaTime);
-	void updateSimulation(SimulationManager& simulation, double realDt);
 	void render(const SimulationManager& simulation);
 	
 	sf::Vector2i gridToWorldOffset(int gx, int gy) const;

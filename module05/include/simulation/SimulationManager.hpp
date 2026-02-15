@@ -5,6 +5,19 @@
 #include <map>
 #include "utils/Time.hpp"
 
+// Simulation time configuration (single source of truth)
+namespace SimConfig
+{
+	constexpr double BASE_TIMESTEP_MINUTES = 1.0;
+	constexpr double MINUTES_PER_HOUR = 60.0;
+	constexpr double MINUTES_PER_DAY = 1440.0;
+	
+	// Speed limits
+	constexpr double MIN_SPEED = 0.1;   // 0.1x (slow motion)
+	constexpr double MAX_SPEED = 100.0; // 100x (fast forward)
+	constexpr double DEFAULT_SPEED = 10.0;
+}
+
 class Train;
 class Graph;
 class CollisionAvoidance;
@@ -33,8 +46,9 @@ private:
 	EventFactory* _eventFactory;
 	StatsCollector* _statsCollector;  // Optional: for Monte Carlo mode only
 	
-	double _currentTime;
-	double _timestep;
+	double _currentTime;  // Stored in MINUTES (not seconds)
+	double _timestep;     // Stored in MINUTES (default 1.0)
+	double _simulationSpeed;  // Runtime speed control (1.0 = real-time, 10.0 = 10x)
 	bool _running;
 	bool _roundTripEnabled;  // Enable train reversal at destination
 	unsigned int _eventSeed;  // For deterministic event generation
@@ -90,6 +104,10 @@ public:
 	const Graph* getNetwork() const;
 	bool isRunning() const;
 	unsigned int getSeed() const;
+	
+	// Simulation speed control
+	double getSimulationSpeed() const;
+	void setSimulationSpeed(double speed);
 
 	SimulationContext* getContext() const { return _context; }
 

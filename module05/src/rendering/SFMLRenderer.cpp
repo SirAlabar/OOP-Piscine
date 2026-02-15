@@ -12,9 +12,7 @@ SFMLRenderer::SFMLRenderer()
 	  _world(nullptr),
 	  _worldGenerator(nullptr),
 	  _networkCenterX(0),
-	  _networkCenterY(0),
-	  _timeAccumulator(0.0),
-	  _simulationStepInterval(0.10)
+	  _networkCenterY(0)
 {
 	_window.setFramerateLimit(60);
 	
@@ -35,9 +33,50 @@ SFMLRenderer::~SFMLRenderer()
 void SFMLRenderer::run(SimulationManager& simulation)
 {
 	initializeWorld(simulation);
-	simulation.start();
-	mainLoop(simulation);
-	simulation.stop();
+	
+	sf::Clock clock;
+	while (_window.isOpen())
+	{
+		double realDt = clock.restart().asSeconds();
+		
+		InputState input = _inputManager.processEvents(_window, realDt);
+		
+		if (input.closeRequested)
+		{
+			_window.close();
+			break;
+		}
+		
+		if (input.zoomDelta != 0.0f)
+		{
+			_cameraManager.addZoomDelta(input.zoomDelta);
+		}
+		
+		if (input.dragActive)
+		{
+			_cameraManager.moveOffset(sf::Vector2f(
+				static_cast<float>(input.dragDelta.x),
+				static_cast<float>(input.dragDelta.y)
+			));
+		}
+		
+		if (input.panX != 0.0f || input.panY != 0.0f)
+		{
+			_cameraManager.moveOffset(sf::Vector2f(input.panX, input.panY));
+		}
+		
+		// Apply speed changes
+		if (input.speedMultiplier != 1.0)
+		{
+			double currentSpeed = simulation.getSimulationSpeed();
+			simulation.setSimulationSpeed(currentSpeed * input.speedMultiplier);
+		}
+		
+		_cameraManager.update(realDt);
+		
+		// Just render - simulation runs in separate thread
+		render(simulation);
+	}
 }
 
 void SFMLRenderer::initializeWorld(SimulationManager& simulation)
@@ -90,6 +129,16 @@ void SFMLRenderer::initializeWorld(SimulationManager& simulation)
 	
 	markRailsInWorld(simulation.getNetwork());
 	generateWorld(simulation.getNetwork());
+}
+
+void SFMLRenderer::render(const SimulationManager& simulation)
+{
+	if (!_world)
+	{
+		return;
+	}
+	
+	_renderManager.render(_window, _atlas, simulation, _cameraManager, *_world);
 }
 
 void SFMLRenderer::buildGraphLayout(const Graph* graph)
@@ -358,72 +407,6 @@ void SFMLRenderer::generateWorld(const Graph* graph)
 	
 	_renderManager.buildRailBitmasks(*_world);
 	_renderManager.buildStationTiles(graph, *_world);
-}
-
-void SFMLRenderer::mainLoop(SimulationManager& simulation)
-{
-	sf::Clock clock;
-	
-	while (_window.isOpen())
-	{
-		double realDt = clock.restart().asSeconds();
-		
-		processInput(simulation, realDt);
-		updateSimulation(simulation, realDt);
-		render(simulation);
-	}
-}
-
-void SFMLRenderer::processInput(SimulationManager& simulation, double deltaTime)
-{
-	InputState input = _inputManager.processEvents(_window, deltaTime);
-	
-	if (input.closeRequested)
-	{
-		simulation.stop();
-		_window.close();
-		return;
-	}
-	
-	if (input.zoomDelta != 0.0f)
-	{
-		_cameraManager.addZoomDelta(input.zoomDelta);
-	}
-	
-	if (input.dragActive)
-	{
-		_cameraManager.moveOffset(sf::Vector2f(
-			static_cast<float>(input.dragDelta.x),
-			static_cast<float>(input.dragDelta.y)
-		));
-	}
-	
-	if (input.panX != 0.0f || input.panY != 0.0f)
-	{
-		_cameraManager.moveOffset(sf::Vector2f(input.panX, input.panY));
-	}
-}
-
-void SFMLRenderer::updateSimulation(SimulationManager& simulation, double realDt)
-{
-	_cameraManager.update(realDt);
-	
-	_timeAccumulator += realDt;
-	while (_timeAccumulator >= _simulationStepInterval)
-	{
-		simulation.step();
-		_timeAccumulator -= _simulationStepInterval;
-	}
-}
-
-void SFMLRenderer::render(const SimulationManager& simulation)
-{
-	if (!_world)
-	{
-		return;
-	}
-	
-	_renderManager.render(_window, _atlas, simulation, _cameraManager, *_world);
 }
 
 sf::Vector2i SFMLRenderer::gridToWorldOffset(int gx, int gy) const

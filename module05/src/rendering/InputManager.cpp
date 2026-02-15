@@ -15,6 +15,7 @@ InputState InputManager::processEvents(sf::RenderWindow& window, double deltaTim
 	state.zoomDelta = 0.0f;
 	state.dragActive = false;
 	state.dragDelta = sf::Vector2i(0, 0);
+	state.speedMultiplier = 1.0;  // Default: no change
 
 	sf::Event event;
 	while (window.pollEvent(event))
@@ -22,6 +23,10 @@ InputState InputManager::processEvents(sf::RenderWindow& window, double deltaTim
 		if (event.type == sf::Event::Closed)
 		{
 			state.closeRequested = true;
+		}
+		else if (event.type == sf::Event::KeyPressed)
+		{
+			handleKeyPressed(event, state);
 		}
 		else if (event.type == sf::Event::MouseWheelScrolled)
 		{
@@ -55,6 +60,19 @@ void InputManager::handleMouseWheelScroll(const sf::Event& event, InputState& st
 	else if (event.mouseWheelScroll.delta < 0.0f)
 	{
 		state.zoomDelta -= 0.10f;
+	}
+}
+
+void InputManager::handleKeyPressed(const sf::Event& event, InputState& state)
+{
+	// Speed control: + / = to increase, - to decrease
+	if (event.key.code == sf::Keyboard::Add || event.key.code == sf::Keyboard::Equal)
+	{
+		state.speedMultiplier = 2.0;  // Double speed
+	}
+	else if (event.key.code == sf::Keyboard::Subtract || event.key.code == sf::Keyboard::Hyphen)
+	{
+		state.speedMultiplier = 0.5;  // Half speed
 	}
 }
 

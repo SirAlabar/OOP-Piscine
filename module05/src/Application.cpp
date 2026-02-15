@@ -19,6 +19,7 @@
 #include <ctime>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <thread>
 #include "rendering/SFMLRenderer.hpp"
 
 
@@ -291,20 +292,33 @@ int Application::run()
         }
 
 		// Run simulation
-		// If round-trip enabled, run for extended time (or indefinitely for render mode)
-		double maxTime = 106400.0;  // Default: ~29 hours
-		if (_cli.hasRoundTrip() || _cli.hasRender())
+		if (_cli.hasRender())
 		{
-			maxTime = 172800.0;  // 48 hours for round-trip demo
-			if (_cli.hasRender())
-			{
-				SFMLRenderer renderer;
-				renderer.run(sim);
-
-				maxTime = 1e9;  // Near-infinite for rendering (user will Ctrl+C)
-			}
+			// Render mode: simulation runs in background thread
+			SFMLRenderer renderer;
+			
+			// Start simulation thread (runs sim.run() independently)
+			std::thread simulationThread([&sim]() {
+				sim.run(1e9);  // Run indefinitely (user closes window to stop)
+			});
+			
+			// Main thread runs renderer (SFML requires main thread)
+			renderer.run(sim);  // Blocks here, just renders
+			
+			// When window closes, stop simulation and wait for thread
+			sim.stop();
+			simulationThread.join();
 		}
-		sim.run(maxTime);
+		else
+		{
+			// Console mode: run simulation at full speed
+			double maxTime = 106400.0;  // Default: ~29 hours
+			if (_cli.hasRoundTrip())
+			{
+				maxTime = 172800.0;  // 48 hours for round-trip demo
+			}
+			sim.run(maxTime);
+		}
 
 
 		// Write final snapshots

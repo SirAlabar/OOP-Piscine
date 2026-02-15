@@ -50,8 +50,6 @@ private:
 	
 	sf::Font _labelFont;
 	bool _fontLoaded;
-	
-	const int DAY_LENGTH_MINUTES = 1440;
 
 public:
 	RenderManager();

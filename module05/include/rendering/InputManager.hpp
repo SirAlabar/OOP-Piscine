@@ -11,6 +11,7 @@ struct InputState
 	float zoomDelta;
 	bool dragActive;
 	sf::Vector2i dragDelta;
+	double speedMultiplier;  // Speed change multiplier (2.0 = double, 0.5 = half, 1.0 = no change)
 };
 
 class InputManager
@@ -26,6 +27,7 @@ public:
 	
 private:
 	void handleMouseWheelScroll(const sf::Event& event, InputState& state);
+	void handleKeyPressed(const sf::Event& event, InputState& state);
 	void handleMouseButtonPressed(const sf::Event& event, sf::RenderWindow& window);
 	void handleMouseButtonReleased(const sf::Event& event);
 	void handleMouseMoved(const sf::Event& event, sf::RenderWindow& window, InputState& state);
