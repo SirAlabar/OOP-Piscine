@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <queue>
 #include <algorithm>
+#include <iostream>
 
 SFMLRenderer::SFMLRenderer()
 	: _window(sf::VideoMode(1400, 900), "Railway Simulation"),
@@ -175,83 +176,54 @@ void SFMLRenderer::buildGraphLayout(const Graph* graph)
 		return;
 	}
 	
-	// Place first city at origin
-	_nodeGridPositions[cities[0]] = sf::Vector2i(0, 0);
-	_occupiedTiles.insert(std::make_pair(0, 0));
+	std::cout << "\n=== PHASE 2: CITY PLACEMENT ===" << std::endl;
+	std::cout << "Total cities: " << cities.size() << std::endl;
 	
-	// Place remaining cities using BFS
-	std::queue<const Node*> cityQueue;
-	std::set<const Node*> visitedCities;
-	cityQueue.push(cities[0]);
-	visitedCities.insert(cities[0]);
+	// Place cities in a 2D grid pattern for better visualization
+	// For 6 cities: 3x2 grid
+	const int spacing = 16;  // Grid spacing between cities
+	const int cols = 3;      // 3 columns
 	
-	const std::vector<sf::Vector2i> cityDirections = {
-		sf::Vector2i(8, 0), sf::Vector2i(-8, 0), sf::Vector2i(0, 8), sf::Vector2i(0, -8),
-		sf::Vector2i(6, 6), sf::Vector2i(-6, -6), sf::Vector2i(6, -6), sf::Vector2i(-6, 6)
-	};
-	
-	while (!cityQueue.empty())
+	for (size_t i = 0; i < cities.size(); ++i)
 	{
-		const Node* current = cityQueue.front();
-		cityQueue.pop();
-		const sf::Vector2i basePos = _nodeGridPositions[current];
+		int row = static_cast<int>(i) / cols;
+		int col = static_cast<int>(i) % cols;
 		
-		// Find connected cities
-		const Graph::RailList rails = graph->getRailsFromNode(const_cast<Node*>(current));
-		size_t dirIndex = 0;
+		// Stagger odd rows for more interesting layout
+		int offsetX = (row % 2 == 1) ? spacing / 2 : 0;
 		
-		for (Rail* rail : rails)
-		{
-			if (!rail) continue;
-			
-			Node* otherMutable = rail->getOtherNode(const_cast<Node*>(current));
-			const Node* other = otherMutable;
-			
-			if (!other || other->getType() != NodeType::CITY) continue;
-			if (visitedCities.count(other) != 0) continue;
-			
-			// Find free position for this city
-			sf::Vector2i newPos = basePos + cityDirections[dirIndex % cityDirections.size()];
-			int attempts = 0;
-			while (_occupiedTiles.count(std::make_pair(newPos.x, newPos.y)) != 0 && attempts < 20)
-			{
-				dirIndex++;
-				newPos = basePos + cityDirections[dirIndex % cityDirections.size()];
-				newPos.x += (attempts / 4) * 2;
-				attempts++;
-			}
-			
-			_nodeGridPositions[other] = newPos;
-			_occupiedTiles.insert(std::make_pair(newPos.x, newPos.y));
-			visitedCities.insert(other);
-			cityQueue.push(other);
-			dirIndex++;
-		}
+		sf::Vector2i pos(col * spacing + offsetX, row * spacing);
+		
+		_nodeGridPositions[cities[i]] = pos;
+		_occupiedTiles.insert(std::make_pair(pos.x, pos.y));
+		
+		std::cout << "  " << cities[i]->getName() << " placed at (" << pos.x << ", " << pos.y << ")" << std::endl;
 	}
 	
-	// Place any unconnected cities
-	for (const Node* city : cities)
-	{
-		if (_nodeGridPositions.count(city) == 0)
-		{
-			int fallbackX = static_cast<int>(_nodeGridPositions.size()) * 4;
-			int fallbackY = 0;
-			_nodeGridPositions[city] = sf::Vector2i(fallbackX, fallbackY);
-			_occupiedTiles.insert(std::make_pair(fallbackX, fallbackY));
-		}
-	}
+	std::cout << "City placement complete!" << std::endl;
 	
 	// PHASE 3: Place junctions between their IMMEDIATE neighbors
 	// Multiple passes to resolve junction positions iteratively
+	std::cout << "\n=== PHASE 3: JUNCTION PLACEMENT ===" << std::endl;
+	std::cout << "Total junctions to place: " << junctions.size() << std::endl;
+	
 	for (int pass = 0; pass < 5; ++pass)
 	{
+		std::cout << "\n--- Pass " << pass << " ---" << std::endl;
 		for (const Node* junction : junctions)
 		{
+			std::cout << "Processing junction: " << junction->getName();
+			
 			if (pass == 0 || _nodeGridPositions.count(junction) == 0)
 			{
-				// Get IMMEDIATE neighbors only
-				std::vector<const Node*> neighbors;
+				std::cout << " (needs placement)" << std::endl;
+				
+				// Get IMMEDIATE neighbors, separated by type
+				std::vector<const Node*> cityNeighbors;
+				std::vector<const Node*> junctionNeighbors;
 				const Graph::RailList rails = graph->getRailsFromNode(const_cast<Node*>(junction));
+				
+				std::cout << "  Total rails: " << rails.size() << std::endl;
 				
 				for (Rail* rail : rails)
 				{
@@ -262,30 +234,85 @@ void SFMLRenderer::buildGraphLayout(const Graph* graph)
 					
 					if (neighbor)
 					{
-						neighbors.push_back(neighbor);
+						if (neighbor->getType() == NodeType::CITY)
+						{
+							cityNeighbors.push_back(neighbor);
+						}
+						else
+						{
+							junctionNeighbors.push_back(neighbor);
+						}
 					}
 				}
 				
-				if (neighbors.empty())
+				if (cityNeighbors.empty() && junctionNeighbors.empty())
 				{
+					std::cout << "  WARNING: No neighbors found!" << std::endl;
 					_nodeGridPositions[junction] = sf::Vector2i(0, 0);
 					continue;
 				}
 				
-				// Calculate position as average of positioned neighbors
+				std::cout << "  City neighbors: " << cityNeighbors.size() << " [";
+				for (const Node* city : cityNeighbors)
+				{
+					std::cout << city->getName();
+					if (_nodeGridPositions.count(city) == 0)
+					{
+						std::cout << "(NOT PLACED YET) ";
+					}
+					else
+					{
+						std::cout << " ";
+					}
+				}
+				std::cout << "]" << std::endl;
+				
+				std::cout << "  Junction neighbors: " << junctionNeighbors.size() << " [";
+				for (const Node* junc : junctionNeighbors)
+				{
+					std::cout << junc->getName() << " ";
+				}
+				std::cout << "]" << std::endl;
+				
+				// SMART PLACEMENT: Prioritize city connections
 				sf::Vector2f avgPos(0.0f, 0.0f);
 				int count = 0;
 				
-				for (const Node* neighbor : neighbors)
+				if (!cityNeighbors.empty())
 				{
-					if (_nodeGridPositions.count(neighbor) != 0)
+					std::cout << "  STRATEGY: Using CITY positions only (ignoring " << junctionNeighbors.size() << " junctions)" << std::endl;
+					
+					// Use ONLY city neighbors for positioning (ignore junction neighbors)
+					for (const Node* city : cityNeighbors)
 					{
-						sf::Vector2i neighborPos = _nodeGridPositions[neighbor];
-						avgPos.x += static_cast<float>(neighborPos.x);
-						avgPos.y += static_cast<float>(neighborPos.y);
-						count++;
+						if (_nodeGridPositions.count(city) != 0)
+						{
+							sf::Vector2i cityPos = _nodeGridPositions[city];
+							std::cout << "    Adding city " << city->getName() << " at (" << cityPos.x << ", " << cityPos.y << ")" << std::endl;
+							avgPos.x += static_cast<float>(cityPos.x);
+							avgPos.y += static_cast<float>(cityPos.y);
+							count++;
+						}
 					}
 				}
+				else
+				{
+					std::cout << "  STRATEGY: No cities available, using junction positions" << std::endl;
+					
+					// Fallback: use junction neighbors if no cities
+					for (const Node* junc : junctionNeighbors)
+					{
+						if (_nodeGridPositions.count(junc) != 0)
+						{
+							sf::Vector2i juncPos = _nodeGridPositions[junc];
+							std::cout << "    Adding junction " << junc->getName() << " at (" << juncPos.x << ", " << juncPos.y << ")" << std::endl;
+							avgPos.x += static_cast<float>(juncPos.x);
+							avgPos.y += static_cast<float>(juncPos.y);
+							count++;
+						}
+					}
+				}
+
 				
 				if (count > 0)
 				{
@@ -296,6 +323,7 @@ void SFMLRenderer::buildGraphLayout(const Graph* graph)
 						static_cast<int>(std::round(avgPos.x)),
 						static_cast<int>(std::round(avgPos.y))
 					);
+					std::cout << "  -> Calculated position: (" << junctionPos.x << ", " << junctionPos.y << ")" << std::endl;
 					
 					// Handle collisions with small offset
 					int offset = 0;
@@ -316,12 +344,33 @@ void SFMLRenderer::buildGraphLayout(const Graph* graph)
 						else if (pos == 7) { junctionPos.x -= ring; junctionPos.y -= ring; }
 					}
 					
+					if (offset > 0) { std::cout << "  -> Collision! Moved to: (" << junctionPos.x << ", " << junctionPos.y << ")" << std::endl; }
 					_nodeGridPositions[junction] = junctionPos;
 					_occupiedTiles.insert(std::make_pair(junctionPos.x, junctionPos.y));
 				}
 			}
+			else
+			{
+				std::cout << " (already placed)" << std::endl;
+			}
 		}
 	}
+	
+	std::cout << "\n=== JUNCTION PLACEMENT COMPLETE ===" << std::endl;
+	std::cout << "Final positions:" << std::endl;
+	for (const Node* junction : junctions)
+	{
+		if (_nodeGridPositions.count(junction) != 0)
+		{
+			sf::Vector2i pos = _nodeGridPositions[junction];
+			std::cout << "  " << junction->getName() << ": (" << pos.x << ", " << pos.y << ")" << std::endl;
+		}
+		else
+		{
+			std::cout << "  " << junction->getName() << ": NOT PLACED!" << std::endl;
+		}
+	}
+	std::cout << std::endl;
 }
 
 void SFMLRenderer::markRailsInWorld(const Graph* graph)
@@ -331,7 +380,11 @@ void SFMLRenderer::markRailsInWorld(const Graph* graph)
 		return;
 	}
 	
+	std::cout << "\n=== MARKING RAILS IN WORLD ===" << std::endl;
+	
 	std::map<const Node*, sf::Vector2f> worldPositions;
+	std::map<const Rail*, RailPath> railPaths;
+	
 	for (const auto& pair : _nodeGridPositions)
 	{
 		sf::Vector2i gridPos = gridToWorldOffset(pair.second.x, pair.second.y);
@@ -346,6 +399,7 @@ void SFMLRenderer::markRailsInWorld(const Graph* graph)
 	_renderManager.setNodePositions(worldPositions);
 	_renderManager.setNodeGridPositions(_nodeGridPositions);
 	
+	int railCount = 0;
 	for (const Rail* rail : graph->getRails())
 	{
 		if (!rail)
@@ -364,24 +418,41 @@ void SFMLRenderer::markRailsInWorld(const Graph* graph)
 		sf::Vector2i from = gridToWorldOffset(_nodeGridPositions[a].x, _nodeGridPositions[a].y);
 		sf::Vector2i to = gridToWorldOffset(_nodeGridPositions[b].x, _nodeGridPositions[b].y);
 		
+		std::cout << "  Rail " << ++railCount << ": " << a->getName() << " → " << b->getName() 
+		          << " | Grid: (" << from.x << "," << from.y << ") → (" << to.x << "," << to.y << ")" << std::endl;
+		
+		// Create L-path: horizontal first, then vertical
+		// Corner point is at (to.x, from.y)
+		RailPath path;
+		path.start = sf::Vector2f(static_cast<float>(from.x), static_cast<float>(from.y));
+		path.corner = sf::Vector2f(static_cast<float>(to.x), static_cast<float>(from.y));
+		path.end = sf::Vector2f(static_cast<float>(to.x), static_cast<float>(to.y));
+		
+		railPaths[rail] = path;
+		
+		// Mark horizontal segment
 		sf::Vector2i p = from;
 		const int sx = (to.x > p.x) ? 1 : -1;
 		const int sy = (to.y > p.y) ? 1 : -1;
 		
+		int tilesMarked = 0;
 		while (p.x != to.x)
 		{
 			if (_world->isInBounds(p.x, p.y))
 			{
 				_world->markRailOccupied(p.x, p.y);
+				tilesMarked++;
 			}
 			p.x += sx;
 		}
 		
+		// Mark vertical segment
 		while (p.y != to.y)
 		{
 			if (_world->isInBounds(p.x, p.y))
 			{
 				_world->markRailOccupied(p.x, p.y);
+				tilesMarked++;
 			}
 			p.y += sy;
 		}
@@ -389,8 +460,15 @@ void SFMLRenderer::markRailsInWorld(const Graph* graph)
 		if (_world->isInBounds(to.x, to.y))
 		{
 			_world->markRailOccupied(to.x, to.y);
+			tilesMarked++;
 		}
+		
+		std::cout << "    Marked " << tilesMarked << " tiles" << std::endl;
 	}
+	
+	std::cout << "Total rails marked: " << railCount << std::endl << std::endl;
+	
+	_renderManager.setRailPaths(railPaths);
 }
 
 void SFMLRenderer::generateWorld(const Graph* graph)

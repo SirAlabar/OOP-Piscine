@@ -26,6 +26,11 @@ void RenderManager::setNodeGridPositions(const std::map<const Node*, sf::Vector2
 	_nodeGridPositions = gridPositions;
 }
 
+void RenderManager::setRailPaths(const std::map<const Rail*, RailPath>& railPaths)
+{
+	_railPaths = railPaths;
+}
+
 void RenderManager::setWorldSeed(unsigned int seed)
 {
 	_worldSeed = seed;
@@ -370,34 +375,90 @@ sf::Vector2f RenderManager::computeTrainPosition(const Train* train, const Camer
 		return camera.getOffset();
 	}
 	
-	// Use from->to direction (actual travel direction)
-	const sf::Vector2f start = _nodeWorldPositions.at(fromNode);
-	const sf::Vector2f end = _nodeWorldPositions.at(toNode);
-	float dx = end.x - start.x;
-	float dy = end.y - start.y;
-	
-	// Determine orientation based on rail direction
-	// If rail is more horizontal (dx > dy), use right sprite
-	// If rail is more vertical (dy > dx), use left sprite
-	if (std::abs(dx) > std::abs(dy))
+	// Check if we have a stored L-path for this rail
+	const Rail* rail = segment->rail;
+	if (_railPaths.count(rail) == 0)
 	{
-		movingRight = true;  // Horizontal rail uses train_right_10.png
+		// Fallback: straight line interpolation (shouldn't happen)
+		const sf::Vector2f start = _nodeWorldPositions.at(fromNode);
+		const sf::Vector2f end = _nodeWorldPositions.at(toNode);
+		
+		double railLengthMeters = rail->getLength() * 1000.0;
+		double t = (railLengthMeters > 0.0) ? (train->getPosition() / railLengthMeters) : 0.0;
+		t = std::max(0.0, std::min(1.0, t));
+		
+		const sf::Vector2f world(
+			start.x + static_cast<float>((end.x - start.x) * t),
+			start.y + static_cast<float>((end.y - start.y) * t)
+		);
+		
+		movingRight = true;
+		return projectIsometric(world, camera);
+	}
+	
+	// Use stored L-path
+	const RailPath& path = _railPaths.at(rail);
+	
+	// Determine direction based on travel direction
+	sf::Vector2f pathStart, pathCorner, pathEnd;
+	if (fromNode == rail->getNodeA())
+	{
+		// Traveling A -> B, use path as-is
+		pathStart = path.start;
+		pathCorner = path.corner;
+		pathEnd = path.end;
 	}
 	else
 	{
-		movingRight = false; // Vertical rail uses train_left_5.png
+		// Traveling B -> A, reverse the path
+		pathStart = path.end;
+		pathCorner = path.corner;
+		pathEnd = path.start;
 	}
 	
-	double railLengthMeters = segment->rail->getLength() * 1000.0;
+	// Calculate segment lengths
+	float dx1 = pathCorner.x - pathStart.x;
+	float dy1 = pathCorner.y - pathStart.y;
+	float segment1Length = std::sqrt(dx1 * dx1 + dy1 * dy1);
+	
+	float dx2 = pathEnd.x - pathCorner.x;
+	float dy2 = pathEnd.y - pathCorner.y;
+	float segment2Length = std::sqrt(dx2 * dx2 + dy2 * dy2);
+	
+	float totalLength = segment1Length + segment2Length;
+	
+	// Calculate train progress (0.0 to 1.0)
+	double railLengthMeters = rail->getLength() * 1000.0;
 	double t = (railLengthMeters > 0.0) ? (train->getPosition() / railLengthMeters) : 0.0;
 	t = std::max(0.0, std::min(1.0, t));
 	
-	const sf::Vector2f world(
-		start.x + static_cast<float>((end.x - start.x) * t),
-		start.y + static_cast<float>((end.y - start.y) * t)
-	);
+	// Convert progress to distance along path
+	float distanceAlongPath = static_cast<float>(t) * totalLength;
 	
-	return projectIsometric(world, camera);
+	sf::Vector2f worldPos;
+	
+	if (distanceAlongPath <= segment1Length)
+	{
+		// Train is on first segment (start -> corner)
+		float segmentT = (segment1Length > 0.0f) ? (distanceAlongPath / segment1Length) : 0.0f;
+		worldPos.x = pathStart.x + (pathCorner.x - pathStart.x) * segmentT;
+		worldPos.y = pathStart.y + (pathCorner.y - pathStart.y) * segmentT;
+		
+		// Determine orientation
+		movingRight = (std::abs(dx1) > std::abs(dy1));
+	}
+	else
+	{
+		// Train is on second segment (corner -> end)
+		float segmentT = (segment2Length > 0.0f) ? ((distanceAlongPath - segment1Length) / segment2Length) : 0.0f;
+		worldPos.x = pathCorner.x + (pathEnd.x - pathCorner.x) * segmentT;
+		worldPos.y = pathCorner.y + (pathEnd.y - pathCorner.y) * segmentT;
+		
+		// Determine orientation
+		movingRight = (std::abs(dx2) > std::abs(dy2));
+	}
+	
+	return projectIsometric(worldPos, camera);
 }
 
 int RenderManager::computeRailBitmask(const World& world, int x, int y) const

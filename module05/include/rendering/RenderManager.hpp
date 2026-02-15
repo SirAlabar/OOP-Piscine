@@ -15,6 +15,7 @@ class SimulationManager;
 class CameraManager;
 class Graph;
 class Node;
+class Rail;
 class Train;
 
 struct RailTile
@@ -32,6 +33,13 @@ struct StationTile
 	const Node* node;
 };
 
+struct RailPath
+{
+	sf::Vector2f start;
+	sf::Vector2f corner;
+	sf::Vector2f end;
+};
+
 class RenderManager
 {
 private:
@@ -43,6 +51,7 @@ private:
 	std::vector<StationTile> _stationTiles;
 	std::map<const Node*, sf::Vector2f> _nodeWorldPositions;
 	std::map<const Node*, sf::Vector2i> _nodeGridPositions;
+	std::map<const Rail*, RailPath> _railPaths;
 	unsigned int _worldSeed;
 	
 	std::map<std::pair<int, int>, int> _railBitmaskCache;
@@ -56,6 +65,7 @@ public:
 
 	void setNodePositions(const std::map<const Node*, sf::Vector2f>& positions);
 	void setNodeGridPositions(const std::map<const Node*, sf::Vector2i>& gridPositions);
+	void setRailPaths(const std::map<const Rail*, RailPath>& railPaths);
 	void setWorldSeed(unsigned int seed);
 	unsigned int getWorldSeed() const { return _worldSeed; }
 	void buildRailBitmasks(World& world);

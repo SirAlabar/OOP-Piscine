@@ -5,44 +5,44 @@ Node CityD
 Node CityE
 Node CityF
 
-Node Junction_AB
-Node Junction_BC
-Node Junction_DE
-Node Junction_EF
-Node Junction_AD
-Node Junction_BE
-Node Junction_CF
-Node Junction_Center1
-Node Junction_Center2
+Node RailNode_AB
+Node RailNode_BC
+Node RailNode_DE
+Node RailNode_EF
+Node RailNode_AD
+Node RailNode_BE
+Node RailNode_CF
+Node RailNode_Center1
+Node RailNode_Center2
 
-Rail CityA Junction_AB 8.0 180.0
-Rail Junction_AB CityB 8.0 180.0
+Rail CityA RailNode_AB 8.0 180.0
+Rail RailNode_AB CityB 8.0 180.0
 
-Rail CityB Junction_BC 8.0 180.0
-Rail Junction_BC CityC 8.0 180.0
+Rail CityB RailNode_BC 8.0 180.0
+Rail RailNode_BC CityC 8.0 180.0
 
-Rail CityD Junction_DE 8.0 180.0
-Rail Junction_DE CityE 8.0 180.0
+Rail CityD RailNode_DE 8.0 180.0
+Rail RailNode_DE CityE 8.0 180.0
 
-Rail CityE Junction_EF 8.0 180.0
-Rail Junction_EF CityF 8.0 180.0
+Rail CityE RailNode_EF 8.0 180.0
+Rail RailNode_EF CityF 8.0 180.0
 
-Rail CityA Junction_AD 8.0 180.0
-Rail Junction_AD CityD 8.0 180.0
+Rail CityA RailNode_AD 8.0 180.0
+Rail RailNode_AD CityD 8.0 180.0
 
-Rail CityB Junction_BE 8.0 180.0
-Rail Junction_BE CityE 8.0 180.0
+Rail CityB RailNode_BE 8.0 180.0
+Rail RailNode_BE CityE 8.0 180.0
 
-Rail CityC Junction_CF 8.0 180.0
-Rail Junction_CF CityF 8.0 180.0
+Rail CityC RailNode_CF 8.0 180.0
+Rail RailNode_CF CityF 8.0 180.0
 
-Rail Junction_AD Junction_Center1 6.0 150.0
-Rail Junction_Center1 Junction_BE 6.0 150.0
-Rail Junction_BE Junction_Center2 6.0 150.0
-Rail Junction_Center2 Junction_CF 6.0 150.0
+Rail RailNode_AD RailNode_Center1 6.0 150.0
+Rail RailNode_Center1 RailNode_BE 6.0 150.0
+Rail RailNode_BE RailNode_Center2 6.0 150.0
+Rail RailNode_Center2 RailNode_CF 6.0 150.0
 
-Rail Junction_AB Junction_Center1 6.0 150.0
-Rail Junction_Center1 Junction_DE 6.0 150.0
+Rail RailNode_AB RailNode_Center1 6.0 150.0
+Rail RailNode_Center1 RailNode_DE 6.0 150.0
 
-Rail Junction_BC Junction_Center2 6.0 150.0
-Rail Junction_Center2 Junction_EF 6.0 150.0
+Rail RailNode_BC RailNode_Center2 6.0 150.0
+Rail RailNode_Center2 RailNode_EF 6.0 150.0
