@@ -75,7 +75,13 @@ void RenderManager::buildRailBitmasks(World& world)
 		{
 			if (world.isRailOccupied(x, y))
 			{
-				int bitmask = computeRailBitmask(world, x, y);
+				uint8_t bitmask = world.getRailMask(x, y);
+				
+				if (bitmask == 0)
+				{
+					bitmask = 5;
+				}
+				
 				RailTile tile;
 				tile.gridX = x;
 				tile.gridY = y;
@@ -98,7 +104,6 @@ void RenderManager::buildStationTiles(const Graph* graph, World& world)
 	
 	for (const Node* node : graph->getNodes())
 	{
-		// Only process CITY nodes
 		if (!node || node->getType() != NodeType::CITY)
 		{
 			continue;
@@ -118,31 +123,14 @@ void RenderManager::buildStationTiles(const Graph* graph, World& world)
 			continue;
 		}
 		
-		// Mark this position as station occupied
 		world.markStationOccupied(worldX, worldY);
 		
-		// Compute station bitmask based on rail connections
-		int bitmask = 5; // Default
-		if (world.isInBounds(worldX, worldY - 1) && world.isRailOccupied(worldX, worldY - 1))
-		{
-			bitmask |= 1;
-		}
-		if (world.isInBounds(worldX + 1, worldY) && world.isRailOccupied(worldX + 1, worldY))
-		{
-			bitmask |= 2;
-		}
-		if (world.isInBounds(worldX, worldY + 1) && world.isRailOccupied(worldX, worldY + 1))
-		{
-			bitmask |= 4;
-		}
-		if (world.isInBounds(worldX - 1, worldY) && world.isRailOccupied(worldX - 1, worldY))
-		{
-			bitmask |= 8;
-		}
+		// Use explicit rail connections instead of proximity
+		int bitmask = world.getRailMask(worldX, worldY);
 		
 		if (bitmask == 0)
 		{
-			bitmask = 5;
+			bitmask = 5; // Default vertical if no connections
 		}
 		
 		StationTile stationTile;
@@ -463,24 +451,7 @@ sf::Vector2f RenderManager::computeTrainPosition(const Train* train, const Camer
 
 int RenderManager::computeRailBitmask(const World& world, int x, int y) const
 {
-	int mask = 0;
-	
-	if (world.isInBounds(x, y - 1) && world.isRailOccupied(x, y - 1))
-	{
-		mask |= 1;
-	}
-	if (world.isInBounds(x + 1, y) && world.isRailOccupied(x + 1, y))
-	{
-		mask |= 2;
-	}
-	if (world.isInBounds(x, y + 1) && world.isRailOccupied(x, y + 1))
-	{
-		mask |= 4;
-	}
-	if (world.isInBounds(x - 1, y) && world.isRailOccupied(x - 1, y))
-	{
-		mask |= 8;
-	}
+	int mask = world.getRailMask(x, y);
 	
 	if (mask == 0)
 	{

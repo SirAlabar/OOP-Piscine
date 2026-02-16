@@ -7,8 +7,9 @@ World::World(int width, int height)
 	  _tiles(width * height, BiomeType::Grass),
 	  _heightMap(width * height, 0.5f),
 	  _railOccupied(width * height, false),
+	  _railMask(width * height, 0),
 	  _stationOccupied(width * height, false),
-	  _tileSprites(width * height, "grass_01.png") // Initialize with default
+	  _tileSprites(width * height, "grass_01.png")
 {
 }
 
@@ -55,6 +56,43 @@ void World::markRailOccupied(int x, int y)
 		return;
 	}
 	_railOccupied[getIndex(x, y)] = true;
+}
+
+void World::setRailConnections(int x, int y, RailDir directions)
+{
+	if (!isInBounds(x, y))
+	{
+		return;
+	}
+	_railMask[getIndex(x, y)] = static_cast<uint8_t>(directions);
+}
+
+void World::addRailConnection(int x, int y, RailDir direction)
+{
+	if (!isInBounds(x, y))
+	{
+		return;
+	}
+	RailDir current = static_cast<RailDir>(_railMask[getIndex(x, y)]);
+	_railMask[getIndex(x, y)] = static_cast<uint8_t>(current | direction);
+}
+
+RailDir World::getRailConnections(int x, int y) const
+{
+	if (!isInBounds(x, y))
+	{
+		return RailDir::None;
+	}
+	return static_cast<RailDir>(_railMask[getIndex(x, y)]);
+}
+
+uint8_t World::getRailMask(int x, int y) const
+{
+	if (!isInBounds(x, y))
+	{
+		return 0;
+	}
+	return _railMask[getIndex(x, y)];
 }
 
 bool World::isRailOccupied(int x, int y) const
@@ -121,22 +159,18 @@ int World::computeSnowPathBitmask(int x, int y) const
 {
 	int mask = 0;
 	
-	// North
 	if (isInBounds(x, y - 1) && getTile(x, y - 1) == BiomeType::Snow)
 	{
 		mask |= 1;
 	}
-	// East
 	if (isInBounds(x + 1, y) && getTile(x + 1, y) == BiomeType::Snow)
 	{
 		mask |= 2;
 	}
-	// South
 	if (isInBounds(x, y + 1) && getTile(x, y + 1) == BiomeType::Snow)
 	{
 		mask |= 4;
 	}
-	// West
 	if (isInBounds(x - 1, y) && getTile(x - 1, y) == BiomeType::Snow)
 	{
 		mask |= 8;
@@ -144,7 +178,7 @@ int World::computeSnowPathBitmask(int x, int y) const
 	
 	if (mask == 0)
 	{
-		mask = 5; // Default vertical
+		mask = 5;
 	}
 	
 	return mask;
@@ -154,22 +188,18 @@ int World::computeDesertPathBitmask(int x, int y) const
 {
 	int mask = 0;
 	
-	// North
 	if (isInBounds(x, y - 1) && getTile(x, y - 1) == BiomeType::Desert)
 	{
 		mask |= 1;
 	}
-	// East
 	if (isInBounds(x + 1, y) && getTile(x + 1, y) == BiomeType::Desert)
 	{
 		mask |= 2;
 	}
-	// South
 	if (isInBounds(x, y + 1) && getTile(x, y + 1) == BiomeType::Desert)
 	{
 		mask |= 4;
 	}
-	// West
 	if (isInBounds(x - 1, y) && getTile(x - 1, y) == BiomeType::Desert)
 	{
 		mask |= 8;
@@ -177,7 +207,7 @@ int World::computeDesertPathBitmask(int x, int y) const
 	
 	if (mask == 0)
 	{
-		mask = 5; // Default vertical
+		mask = 5;
 	}
 	
 	return mask;
@@ -187,22 +217,18 @@ int World::computeForestPathBitmask(int x, int y) const
 {
 	int mask = 0;
 	
-	// North
 	if (isInBounds(x, y - 1) && getTile(x, y - 1) == BiomeType::Forest)
 	{
 		mask |= 1;
 	}
-	// East
 	if (isInBounds(x + 1, y) && getTile(x + 1, y) == BiomeType::Forest)
 	{
 		mask |= 2;
 	}
-	// South
 	if (isInBounds(x, y + 1) && getTile(x, y + 1) == BiomeType::Forest)
 	{
 		mask |= 4;
 	}
-	// West
 	if (isInBounds(x - 1, y) && getTile(x - 1, y) == BiomeType::Forest)
 	{
 		mask |= 8;
@@ -210,7 +236,7 @@ int World::computeForestPathBitmask(int x, int y) const
 	
 	if (mask == 0)
 	{
-		mask = 5; // Default vertical
+		mask = 5;
 	}
 	
 	return mask;
@@ -246,20 +272,17 @@ std::string World::getBiomeSpriteName(BiomeType biome, int x, int y, unsigned in
 			int mask = computeForestPathBitmask(x, y);
 			std::string sprite;
 			
-			// Bitmask 5 has 3 variants: base, .2, .3
 			if (mask == 5)
 			{
 				if (variant == 0) sprite = "forest_path_5.png";
 				else if (variant == 1) sprite = "forest_path_5.2.png";
 				else sprite = "forest_path_5.3.png";
 			}
-			// Bitmasks 10,12,14,15 have 2 variants: base, .2
 			else if (mask == 10 || mask == 12 || mask == 14 || mask == 15)
 			{
 				if (variant == 0) sprite = "forest_path_" + std::to_string(mask) + ".png";
 				else sprite = "forest_path_" + std::to_string(mask) + ".2.png";
 			}
-			// Bitmasks 3,6,7,9 have single variant only
 			else
 			{
 				sprite = "forest_path_" + std::to_string(mask) + ".png";

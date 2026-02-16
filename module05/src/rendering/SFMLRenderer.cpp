@@ -144,234 +144,178 @@ void SFMLRenderer::render(const SimulationManager& simulation)
 
 void SFMLRenderer::buildGraphLayout(const Graph* graph)
 {
-	_nodeGridPositions.clear();
-	_occupiedTiles.clear();
-	
-	if (!graph || graph->getNodes().empty())
-	{
-		return;
-	}
-	
-	const Graph::NodeList nodes = graph->getNodes();
-	
-	// PHASE 1: Separate cities and junctions
-	std::vector<const Node*> cities;
-	std::vector<const Node*> junctions;
-	
-	for (const Node* node : nodes)
-	{
-		if (node->getType() == NodeType::CITY)
-		{
-			cities.push_back(node);
-		}
-		else
-		{
-			junctions.push_back(node);
-		}
-	}
+    _nodeGridPositions.clear();
 
-	// PHASE 2: Place cities in a circular/grid pattern
-	if (cities.empty())
-	{
-		return;
-	}
-	
-	std::cout << "\n=== PHASE 2: CITY PLACEMENT ===" << std::endl;
-	std::cout << "Total cities: " << cities.size() << std::endl;
-	
-	// Place cities in a 2D grid pattern for better visualization
-	// For 6 cities: 3x2 grid
-	const int spacing = 16;  // Grid spacing between cities
-	const int cols = 3;      // 3 columns
-	
-	for (size_t i = 0; i < cities.size(); ++i)
-	{
-		int row = static_cast<int>(i) / cols;
-		int col = static_cast<int>(i) % cols;
-		
-		// Stagger odd rows for more interesting layout
-		int offsetX = (row % 2 == 1) ? spacing / 2 : 0;
-		
-		sf::Vector2i pos(col * spacing + offsetX, row * spacing);
-		
-		_nodeGridPositions[cities[i]] = pos;
-		_occupiedTiles.insert(std::make_pair(pos.x, pos.y));
-		
-		std::cout << "  " << cities[i]->getName() << " placed at (" << pos.x << ", " << pos.y << ")" << std::endl;
-	}
-	
-	std::cout << "City placement complete!" << std::endl;
-	
-	// PHASE 3: Place junctions between their IMMEDIATE neighbors
-	// Multiple passes to resolve junction positions iteratively
-	std::cout << "\n=== PHASE 3: JUNCTION PLACEMENT ===" << std::endl;
-	std::cout << "Total junctions to place: " << junctions.size() << std::endl;
-	
-	for (int pass = 0; pass < 5; ++pass)
-	{
-		std::cout << "\n--- Pass " << pass << " ---" << std::endl;
-		for (const Node* junction : junctions)
-		{
-			std::cout << "Processing junction: " << junction->getName();
-			
-			if (pass == 0 || _nodeGridPositions.count(junction) == 0)
-			{
-				std::cout << " (needs placement)" << std::endl;
-				
-				// Get IMMEDIATE neighbors, separated by type
-				std::vector<const Node*> cityNeighbors;
-				std::vector<const Node*> junctionNeighbors;
-				const Graph::RailList rails = graph->getRailsFromNode(const_cast<Node*>(junction));
-				
-				std::cout << "  Total rails: " << rails.size() << std::endl;
-				
-				for (Rail* rail : rails)
-				{
-					if (!rail) continue;
-					
-					Node* neighborMutable = rail->getOtherNode(const_cast<Node*>(junction));
-					const Node* neighbor = neighborMutable;
-					
-					if (neighbor)
-					{
-						if (neighbor->getType() == NodeType::CITY)
-						{
-							cityNeighbors.push_back(neighbor);
-						}
-						else
-						{
-							junctionNeighbors.push_back(neighbor);
-						}
-					}
-				}
-				
-				if (cityNeighbors.empty() && junctionNeighbors.empty())
-				{
-					std::cout << "  WARNING: No neighbors found!" << std::endl;
-					_nodeGridPositions[junction] = sf::Vector2i(0, 0);
-					continue;
-				}
-				
-				std::cout << "  City neighbors: " << cityNeighbors.size() << " [";
-				for (const Node* city : cityNeighbors)
-				{
-					std::cout << city->getName();
-					if (_nodeGridPositions.count(city) == 0)
-					{
-						std::cout << "(NOT PLACED YET) ";
-					}
-					else
-					{
-						std::cout << " ";
-					}
-				}
-				std::cout << "]" << std::endl;
-				
-				std::cout << "  Junction neighbors: " << junctionNeighbors.size() << " [";
-				for (const Node* junc : junctionNeighbors)
-				{
-					std::cout << junc->getName() << " ";
-				}
-				std::cout << "]" << std::endl;
-				
-				// SMART PLACEMENT: Prioritize city connections
-				sf::Vector2f avgPos(0.0f, 0.0f);
-				int count = 0;
-				
-				if (!cityNeighbors.empty())
-				{
-					std::cout << "  STRATEGY: Using CITY positions only (ignoring " << junctionNeighbors.size() << " junctions)" << std::endl;
-					
-					// Use ONLY city neighbors for positioning (ignore junction neighbors)
-					for (const Node* city : cityNeighbors)
-					{
-						if (_nodeGridPositions.count(city) != 0)
-						{
-							sf::Vector2i cityPos = _nodeGridPositions[city];
-							std::cout << "    Adding city " << city->getName() << " at (" << cityPos.x << ", " << cityPos.y << ")" << std::endl;
-							avgPos.x += static_cast<float>(cityPos.x);
-							avgPos.y += static_cast<float>(cityPos.y);
-							count++;
-						}
-					}
-				}
-				else
-				{
-					std::cout << "  STRATEGY: No cities available, using junction positions" << std::endl;
-					
-					// Fallback: use junction neighbors if no cities
-					for (const Node* junc : junctionNeighbors)
-					{
-						if (_nodeGridPositions.count(junc) != 0)
-						{
-							sf::Vector2i juncPos = _nodeGridPositions[junc];
-							std::cout << "    Adding junction " << junc->getName() << " at (" << juncPos.x << ", " << juncPos.y << ")" << std::endl;
-							avgPos.x += static_cast<float>(juncPos.x);
-							avgPos.y += static_cast<float>(juncPos.y);
-							count++;
-						}
-					}
-				}
+    if (!graph)
+        return;
 
-				
-				if (count > 0)
-				{
-					avgPos.x /= static_cast<float>(count);
-					avgPos.y /= static_cast<float>(count);
-					
-					sf::Vector2i junctionPos(
-						static_cast<int>(std::round(avgPos.x)),
-						static_cast<int>(std::round(avgPos.y))
-					);
-					std::cout << "  -> Calculated position: (" << junctionPos.x << ", " << junctionPos.y << ")" << std::endl;
-					
-					// Handle collisions with small offset
-					int offset = 0;
-					while (_occupiedTiles.count(std::make_pair(junctionPos.x, junctionPos.y)) != 0 && offset < 20)
-					{
-						offset++;
-						// Offset in a spiral pattern
-						int ring = (offset - 1) / 8 + 1;
-						int pos = (offset - 1) % 8;
-						
-						if (pos == 0) junctionPos.x += ring;
-						else if (pos == 1) junctionPos.y += ring;
-						else if (pos == 2) junctionPos.x -= ring;
-						else if (pos == 3) junctionPos.y -= ring;
-						else if (pos == 4) { junctionPos.x += ring; junctionPos.y += ring; }
-						else if (pos == 5) { junctionPos.x -= ring; junctionPos.y += ring; }
-						else if (pos == 6) { junctionPos.x += ring; junctionPos.y -= ring; }
-						else if (pos == 7) { junctionPos.x -= ring; junctionPos.y -= ring; }
-					}
-					
-					if (offset > 0) { std::cout << "  -> Collision! Moved to: (" << junctionPos.x << ", " << junctionPos.y << ")" << std::endl; }
-					_nodeGridPositions[junction] = junctionPos;
-					_occupiedTiles.insert(std::make_pair(junctionPos.x, junctionPos.y));
-				}
-			}
-			else
-			{
-				std::cout << " (already placed)" << std::endl;
-			}
-		}
-	}
-	
-	std::cout << "\n=== JUNCTION PLACEMENT COMPLETE ===" << std::endl;
-	std::cout << "Final positions:" << std::endl;
-	for (const Node* junction : junctions)
-	{
-		if (_nodeGridPositions.count(junction) != 0)
-		{
-			sf::Vector2i pos = _nodeGridPositions[junction];
-			std::cout << "  " << junction->getName() << ": (" << pos.x << ", " << pos.y << ")" << std::endl;
-		}
-		else
-		{
-			std::cout << "  " << junction->getName() << ": NOT PLACED!" << std::endl;
-		}
-	}
-	std::cout << std::endl;
+    std::vector<Node*> nodes = graph->getNodes();
+    if (nodes.empty())
+        return;
+
+    // --- PARAMETERS ---
+    const int iterations = 300;
+    const float repulsionStrength = 80.0f;
+    const float attractionStrength = 0.08f;
+    const float damping = 0.75f;
+    const float minDistance = 6.0f;
+
+    const float initialRadius = std::max(10.0f, nodes.size() * 2.0f);
+    const float maxRadius = nodes.size() * 4.0f;
+
+    // --- STATE ---
+    std::map<const Node*, sf::Vector2f> positions;
+    std::map<const Node*, sf::Vector2f> velocities;
+
+    // deterministic circular initialization
+    const float angleStep = 2.0f * 3.14159265f / static_cast<float>(nodes.size());
+
+    for (size_t i = 0; i < nodes.size(); ++i)
+    {
+        const Node* node = nodes[i];
+
+        float angle = i * angleStep;
+
+        positions[node] = sf::Vector2f(
+            std::cos(angle) * initialRadius,
+            std::sin(angle) * initialRadius
+        );
+
+        velocities[node] = sf::Vector2f(0.0f, 0.0f);
+    }
+
+    // --- FORCE SIMULATION ---
+    for (int iter = 0; iter < iterations; ++iter)
+    {
+        std::map<const Node*, sf::Vector2f> forces;
+
+        for (const Node* node : nodes)
+            forces[node] = sf::Vector2f(0.0f, 0.0f);
+
+        // REPULSION
+        for (size_t i = 0; i < nodes.size(); ++i)
+        {
+            for (size_t j = i + 1; j < nodes.size(); ++j)
+            {
+                const Node* a = nodes[i];
+                const Node* b = nodes[j];
+
+                sf::Vector2f delta = positions[b] - positions[a];
+
+                float distSq = delta.x * delta.x + delta.y * delta.y;
+                float dist = std::sqrt(distSq);
+
+                if (dist < 0.1f)
+                    dist = 0.1f;
+
+                sf::Vector2f dir = delta / dist;
+
+                float force = repulsionStrength / distSq;
+
+                forces[a] -= dir * force;
+                forces[b] += dir * force;
+            }
+        }
+
+        // ATTRACTION
+        for (const Rail* rail : graph->getRails())
+        {
+            const Node* a = rail->getNodeA();
+            const Node* b = rail->getNodeB();
+
+            sf::Vector2f delta = positions[b] - positions[a];
+
+            float dist = std::sqrt(delta.x * delta.x + delta.y * delta.y);
+
+            if (dist < 0.1f)
+                continue;
+
+            sf::Vector2f dir = delta / dist;
+
+            float force = (dist - minDistance) * attractionStrength;
+
+            forces[a] += dir * force;
+            forces[b] -= dir * force;
+        }
+
+        // INTEGRATION + CLAMP
+        for (const Node* node : nodes)
+        {
+            velocities[node] =
+                (velocities[node] + forces[node]) * damping;
+
+            positions[node] += velocities[node];
+
+            float len = std::sqrt(
+                positions[node].x * positions[node].x +
+                positions[node].y * positions[node].y
+            );
+
+            if (len > maxRadius)
+            {
+                positions[node] =
+                    (positions[node] / len) * maxRadius;
+            }
+        }
+    }
+
+    // --- CENTER GRAPH ---
+    sf::Vector2f center(0.0f, 0.0f);
+
+    for (const Node* node : nodes)
+        center += positions[node];
+
+    center /= static_cast<float>(nodes.size());
+
+    for (const Node* node : nodes)
+        positions[node] -= center;
+
+    // --- NORMALIZE LAYOUT TO FIXED SIZE ---
+
+    float minX = std::numeric_limits<float>::max();
+    float maxX = std::numeric_limits<float>::lowest();
+    float minY = std::numeric_limits<float>::max();
+    float maxY = std::numeric_limits<float>::lowest();
+
+    for (const Node* node : nodes)
+    {
+        const auto& p = positions[node];
+
+        if (p.x < minX) minX = p.x;
+        if (p.x > maxX) maxX = p.x;
+        if (p.y < minY) minY = p.y;
+        if (p.y > maxY) maxY = p.y;
+    }
+
+    float width = maxX - minX;
+    float height = maxY - minY;
+
+    float maxDim = std::max(width, height);
+
+    if (maxDim < 1.0f)
+        maxDim = 1.0f;
+
+    // desired grid size
+    const float targetSize = 40.0f;
+
+    float scale = targetSize / maxDim;
+
+    for (const Node* node : nodes)
+    {
+        sf::Vector2f p = positions[node];
+
+        p.x = (p.x - minX) * scale;
+        p.y = (p.y - minY) * scale;
+
+        _nodeGridPositions[node] = sf::Vector2i(
+            static_cast<int>(std::round(p.x)),
+            static_cast<int>(std::round(p.y))
+        );
+    }
+
 }
+
+
 
 void SFMLRenderer::markRailsInWorld(const Graph* graph)
 {
@@ -421,8 +365,6 @@ void SFMLRenderer::markRailsInWorld(const Graph* graph)
 		std::cout << "  Rail " << ++railCount << ": " << a->getName() << " → " << b->getName() 
 		          << " | Grid: (" << from.x << "," << from.y << ") → (" << to.x << "," << to.y << ")" << std::endl;
 		
-		// Create L-path: horizontal first, then vertical
-		// Corner point is at (to.x, from.y)
 		RailPath path;
 		path.start = sf::Vector2f(static_cast<float>(from.x), static_cast<float>(from.y));
 		path.corner = sf::Vector2f(static_cast<float>(to.x), static_cast<float>(from.y));
@@ -430,20 +372,70 @@ void SFMLRenderer::markRailsInWorld(const Graph* graph)
 		
 		railPaths[rail] = path;
 		
-		// Mark horizontal segment
-		sf::Vector2i p = from;
-		const int sx = (to.x > p.x) ? 1 : -1;
-		const int sy = (to.y > p.y) ? 1 : -1;
+		const int sx = (to.x > from.x) ? 1 : -1;
+		const int sy = (to.y > from.y) ? 1 : -1;
 		
 		int tilesMarked = 0;
+		
+		// Add START node outgoing connection
+		if (_world->isInBounds(from.x, from.y))
+		{
+			if (from.x != to.x)
+			{
+				// Horizontal segment exists - add outgoing horizontal
+				if (sx > 0) _world->addRailConnection(from.x, from.y, RailDir::East);
+				else _world->addRailConnection(from.x, from.y, RailDir::West);
+				std::cout << "    START (" << from.x << "," << from.y << "): added " 
+				          << (sx > 0 ? "East" : "West") << " -> mask=" 
+				          << (int)_world->getRailMask(from.x, from.y) << std::endl;
+			}
+			else if (from.y != to.y)
+			{
+				// Only vertical segment - add outgoing vertical
+				if (sy > 0) _world->addRailConnection(from.x, from.y, RailDir::South);
+				else _world->addRailConnection(from.x, from.y, RailDir::North);
+				std::cout << "    START (" << from.x << "," << from.y << "): added " 
+				          << (sy > 0 ? "South" : "North") << " -> mask=" 
+				          << (int)_world->getRailMask(from.x, from.y) << std::endl;
+			}
+		}
+		
+		// Mark horizontal segment
+		sf::Vector2i p = from;
+		p.x += sx; // Skip start node
 		while (p.x != to.x)
 		{
 			if (_world->isInBounds(p.x, p.y))
 			{
 				_world->markRailOccupied(p.x, p.y);
+				_world->addRailConnection(p.x, p.y, RailDir::East | RailDir::West);
+				std::cout << "    H-SEG (" << p.x << "," << p.y << "): mask=" 
+				          << (int)_world->getRailMask(p.x, p.y) << std::endl;
 				tilesMarked++;
 			}
 			p.x += sx;
+		}
+		
+		// Mark corner tile (if L-shaped rail)
+		if (from.x != to.x && from.y != to.y)
+		{
+			if (_world->isInBounds(p.x, p.y))
+			{
+				_world->markRailOccupied(p.x, p.y);
+				
+				RailDir cornerDir = RailDir::None;
+				if (sx > 0) cornerDir |= RailDir::West;
+				else cornerDir |= RailDir::East;
+				if (sy > 0) cornerDir |= RailDir::South;
+				else cornerDir |= RailDir::North;
+				
+				_world->addRailConnection(p.x, p.y, cornerDir);
+				std::cout << "    CORNER (" << p.x << "," << p.y << "): mask=" 
+				          << (int)_world->getRailMask(p.x, p.y) << std::endl;
+				tilesMarked++;
+			}
+			
+			p.y += sy;
 		}
 		
 		// Mark vertical segment
@@ -452,14 +444,36 @@ void SFMLRenderer::markRailsInWorld(const Graph* graph)
 			if (_world->isInBounds(p.x, p.y))
 			{
 				_world->markRailOccupied(p.x, p.y);
+				_world->addRailConnection(p.x, p.y, RailDir::North | RailDir::South);
+				std::cout << "    V-SEG (" << p.x << "," << p.y << "): mask=" 
+				          << (int)_world->getRailMask(p.x, p.y) << std::endl;
 				tilesMarked++;
 			}
 			p.y += sy;
 		}
 		
+		// Mark destination - add ONLY incoming direction
 		if (_world->isInBounds(to.x, to.y))
 		{
 			_world->markRailOccupied(to.x, to.y);
+			
+			if (from.y != to.y)
+			{
+				if (sy > 0) _world->addRailConnection(to.x, to.y, RailDir::North);
+				else _world->addRailConnection(to.x, to.y, RailDir::South);
+				std::cout << "    END (" << to.x << "," << to.y << "): added " 
+				          << (sy > 0 ? "North" : "South") << " -> mask=" 
+				          << (int)_world->getRailMask(to.x, to.y) << std::endl;
+			}
+			else if (from.x != to.x)
+			{
+				if (sx > 0) _world->addRailConnection(to.x, to.y, RailDir::West);
+				else _world->addRailConnection(to.x, to.y, RailDir::East);
+				std::cout << "    END (" << to.x << "," << to.y << "): added " 
+				          << (sx > 0 ? "West" : "East") << " -> mask=" 
+				          << (int)_world->getRailMask(to.x, to.y) << std::endl;
+			}
+			
 			tilesMarked++;
 		}
 		
