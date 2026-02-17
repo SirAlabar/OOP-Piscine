@@ -408,12 +408,12 @@ void SimulationManager::updateTrainStates(double dt)
                     
                     // Calculate minutes until next occurrence of departure time
                     int departureMinutes = trainDepartureTime.toMinutes();
-                    int nextDeparture = departureMinutes + 1440;  // +24 hours in minutes
+                    int nextDeparture = departureMinutes + SimConfig::MINUTES_PER_HALF_DAY;  // +24 hours in minutes
                     
                     // If we're past this time today, wait for tomorrow
                     while (nextDeparture <= currentMinutes)
                     {
-                        nextDeparture += 1440;  // Add another day
+                        nextDeparture += SimConfig::MINUTES_PER_HALF_DAY;  // Add another day
                     }
                     
 					// Convert nextDeparture back to Time and update train

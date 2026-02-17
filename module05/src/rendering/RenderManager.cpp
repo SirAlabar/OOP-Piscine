@@ -126,12 +126,18 @@ void RenderManager::buildStationTiles(const Graph* graph, World& world)
 		world.markStationOccupied(worldX, worldY);
 		
 		// Use explicit rail connections instead of proximity
-		int bitmask = world.getRailMask(worldX, worldY);
-		
-		if (bitmask == 0)
-		{
-			bitmask = 5; // Default vertical if no connections
-		}
+        int bitmask = world.getRailMask(worldX, worldY);
+
+        if (bitmask == 0)
+        {
+            bitmask = 5;
+        }
+
+        // Remap corners to T-junctions for stations
+        if (bitmask == 3)  bitmask = 7;   // N+E → N+E+S
+        if (bitmask == 6)  bitmask = 14;  // E+S → E+S+W
+        if (bitmask == 9)  bitmask = 11;  // N+W → N+S+W
+        if (bitmask == 12) bitmask = 13;  // S+W → N+E+W
 		
 		StationTile stationTile;
 		stationTile.gridX = worldX;
@@ -154,13 +160,13 @@ void RenderManager::render(sf::RenderWindow& window, const SpriteAtlas& atlas,
 	renderTrains(window, atlas, simulation, camera);
 	renderDayNightOverlay(window, simulation);
 	
-	// UI LAYER - Draw time and speed at top center (LAST, on top of everything)
+	// UI LAYER - Draw time and speed at top center
     if (_fontLoaded)
     {
         // _currentTime is in SECONDS, convert to minutes for display
         double currentTimeSeconds = simulation.getCurrentTime();
         int totalMinutes = static_cast<int>(currentTimeSeconds / SimConfig::SECONDS_PER_MINUTE);
-        int cycleMinutes = totalMinutes % 1440;  // Minutes in a day
+        int cycleMinutes = totalMinutes % SimConfig::MINUTES_PER_DAY;  // Minutes in a day
         int hours = cycleMinutes / 60;
         int minutes = cycleMinutes % 60;
         
@@ -367,7 +373,7 @@ sf::Vector2f RenderManager::computeTrainPosition(const Train* train, const Camer
 	const Rail* rail = segment->rail;
 	if (_railPaths.count(rail) == 0)
 	{
-		// Fallback: straight line interpolation (shouldn't happen)
+		// Fallback: straight line interpolation
 		const sf::Vector2f start = _nodeWorldPositions.at(fromNode);
 		const sf::Vector2f end = _nodeWorldPositions.at(toNode);
 		

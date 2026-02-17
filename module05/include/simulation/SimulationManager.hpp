@@ -5,15 +5,19 @@
 #include <map>
 #include "utils/Time.hpp"
 
-// Simulation time configuration (single source of truth)
-// ALL TIME VALUES IN SECONDS
+// Simulation time configuration
 namespace SimConfig
 {
+	// Base units
 	constexpr double BASE_TIMESTEP_SECONDS = 1.0;     // 1 second per step
 	constexpr double SECONDS_PER_MINUTE = 60.0;
 	constexpr double SECONDS_PER_HOUR = 3600.0;       // 60 * 60
 	constexpr double SECONDS_PER_DAY = 86400.0;       // 24 * 60 * 60
-	
+
+	// Logical scheduling units
+	constexpr int MINUTES_PER_DAY = 1440;
+	constexpr int MINUTES_PER_HALF_DAY = 720;
+
 	// Speed control limits
 	constexpr double MIN_SPEED = 0.1;   // 0.1x (slow motion)
 	constexpr double MAX_SPEED = 100.0; // 100x (fast forward)

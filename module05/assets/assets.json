@@ -20,7 +20,7 @@
 				"h": 48
 			}
 		},
-		"desert_path_10.png": {
+		"desert_path10.png": {
 			"frame": {
 				"x": 54,
 				"y": 2,
@@ -360,29 +360,9 @@
 				"h": 48
 			}
 		},
-		"forest_path_12.2.png": {
-			"frame": {
-				"x": 106,
-				"y": 106,
-				"w": 48,
-				"h": 48
-			},
-			"rotated": false,
-			"trimmed": false,
-			"spriteSourceSize": {
-				"x": 0,
-				"y": 0,
-				"w": 48,
-				"h": 48
-			},
-			"sourceSize": {
-				"w": 48,
-				"h": 48
-			}
-		},
 		"forest_path_14.png": {
 			"frame": {
-				"x": 158,
+				"x": 106,
 				"y": 106,
 				"w": 48,
 				"h": 48
@@ -402,7 +382,7 @@
 		},
 		"forest_path_14.2.png": {
 			"frame": {
-				"x": 210,
+				"x": 158,
 				"y": 106,
 				"w": 48,
 				"h": 48
@@ -422,7 +402,7 @@
 		},
 		"forest_path_15.png": {
 			"frame": {
-				"x": 262,
+				"x": 210,
 				"y": 106,
 				"w": 48,
 				"h": 48
@@ -442,27 +422,7 @@
 		},
 		"forest_path_15.2.png": {
 			"frame": {
-				"x": 314,
-				"y": 106,
-				"w": 48,
-				"h": 48
-			},
-			"rotated": false,
-			"trimmed": false,
-			"spriteSourceSize": {
-				"x": 0,
-				"y": 0,
-				"w": 48,
-				"h": 48
-			},
-			"sourceSize": {
-				"w": 48,
-				"h": 48
-			}
-		},
-		"forest_path_3.png": {
-			"frame": {
-				"x": 366,
+				"x": 262,
 				"y": 106,
 				"w": 48,
 				"h": 48
@@ -482,8 +442,8 @@
 		},
 		"forest_path_5.png": {
 			"frame": {
-				"x": 2,
-				"y": 158,
+				"x": 314,
+				"y": 106,
 				"w": 48,
 				"h": 48
 			},
@@ -502,8 +462,8 @@
 		},
 		"forest_path_5.2.png": {
 			"frame": {
-				"x": 54,
-				"y": 158,
+				"x": 366,
+				"y": 106,
 				"w": 48,
 				"h": 48
 			},
@@ -522,7 +482,7 @@
 		},
 		"forest_path_5.3.png": {
 			"frame": {
-				"x": 106,
+				"x": 2,
 				"y": 158,
 				"w": 48,
 				"h": 48
@@ -542,7 +502,27 @@
 		},
 		"forest_path_6.png": {
 			"frame": {
-				"x": 158,
+				"x": 54,
+				"y": 158,
+				"w": 48,
+				"h": 48
+			},
+			"rotated": false,
+			"trimmed": false,
+			"spriteSourceSize": {
+				"x": 0,
+				"y": 0,
+				"w": 48,
+				"h": 48
+			},
+			"sourceSize": {
+				"w": 48,
+				"h": 48
+			}
+		},
+		"forest_path_6.2.png": {
+			"frame": {
+				"x": 106,
 				"y": 158,
 				"w": 48,
 				"h": 48
@@ -562,7 +542,7 @@
 		},
 		"forest_path_7.png": {
 			"frame": {
-				"x": 210,
+				"x": 158,
 				"y": 158,
 				"w": 48,
 				"h": 48
@@ -581,6 +561,26 @@
 			}
 		},
 		"forest_path_9.png": {
+			"frame": {
+				"x": 210,
+				"y": 158,
+				"w": 48,
+				"h": 48
+			},
+			"rotated": false,
+			"trimmed": false,
+			"spriteSourceSize": {
+				"x": 0,
+				"y": 0,
+				"w": 48,
+				"h": 48
+			},
+			"sourceSize": {
+				"w": 48,
+				"h": 48
+			}
+		},
+		"forest_path_9.2.png": {
 			"frame": {
 				"x": 262,
 				"y": 158,
@@ -800,7 +800,7 @@
 				"h": 48
 			}
 		},
-		"rail_13.png": {
+		"rail_7.png": {
 			"frame": {
 				"x": 2,
 				"y": 262,
@@ -920,7 +920,7 @@
 				"h": 48
 			}
 		},
-		"rail_7.png": {
+		"rail_13.png": {
 			"frame": {
 				"x": 314,
 				"y": 262,
