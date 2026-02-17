@@ -10,12 +10,7 @@ and hot reload support.
 
 # 🎬 Demo
 
-```{=html}
-<!-- GIF -->
-```
-![Simulation Demo](docs/demo.gif)
-
-*(GIF)*
+![Simulation Demo](https://github.com/SirAlabar/OOP-Piscine/releases/download/v1.0/train_simulator.gif)
 
 ------------------------------------------------------------------------
 
