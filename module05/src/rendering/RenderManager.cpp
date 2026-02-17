@@ -1,6 +1,7 @@
 #include "rendering/RenderManager.hpp"
 #include "simulation/SimulationManager.hpp"
 #include "rendering/CameraManager.hpp"
+#include "utils/IsometricUtils.hpp"
 #include "core/Graph.hpp"
 #include "core/Node.hpp"
 #include "core/Rail.hpp"
@@ -10,7 +11,8 @@
 #include <iomanip>
 
 RenderManager::RenderManager()
-	: _worldSeed(42),
+	: _eventsAtlasLoaded(false),
+	  _worldSeed(0),
 	  _fontLoaded(false)
 {
 	loadFont();
@@ -42,12 +44,19 @@ void RenderManager::loadFont()
 	{
 		return;
 	}
-	
+
 	_fontLoaded = _labelFont.loadFromFile("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf");
 	if (!_fontLoaded)
 	{
 		_fontLoaded = _labelFont.loadFromFile("/System/Library/Fonts/Helvetica.ttc");
 	}
+}
+
+bool RenderManager::loadEventsAtlas(const std::string& texturePath,
+                                    const std::string& jsonPath)
+{
+	_eventsAtlasLoaded = _eventsAtlas.loadFromFiles(texturePath, jsonPath);
+	return _eventsAtlasLoaded;
 }
 
 void RenderManager::rebuildLookupCaches()
@@ -57,7 +66,7 @@ void RenderManager::rebuildLookupCaches()
 	{
 		_railBitmaskCache[std::make_pair(tile.gridX, tile.gridY)] = tile.bitmask;
 	}
-	
+
 	_stationMapCache.clear();
 	for (const StationTile& tile : _stationTiles)
 	{
@@ -68,7 +77,7 @@ void RenderManager::rebuildLookupCaches()
 void RenderManager::buildRailBitmasks(World& world)
 {
 	_railTiles.clear();
-	
+
 	for (int y = 0; y < world.getHeight(); ++y)
 	{
 		for (int x = 0; x < world.getWidth(); ++x)
@@ -76,12 +85,12 @@ void RenderManager::buildRailBitmasks(World& world)
 			if (world.isRailOccupied(x, y))
 			{
 				uint8_t bitmask = world.getRailMask(x, y);
-				
+
 				if (bitmask == 0)
 				{
 					bitmask = 5;
 				}
-				
+
 				RailTile tile;
 				tile.gridX = x;
 				tile.gridY = y;
@@ -96,49 +105,49 @@ void RenderManager::buildRailBitmasks(World& world)
 void RenderManager::buildStationTiles(const Graph* graph, World& world)
 {
 	_stationTiles.clear();
-	
+
 	if (!graph)
 	{
 		return;
 	}
-	
+
 	for (const Node* node : graph->getNodes())
 	{
 		if (!node || node->getType() != NodeType::CITY)
 		{
 			continue;
 		}
-		
+
 		if (_nodeWorldPositions.count(node) == 0)
 		{
 			continue;
 		}
-		
+
 		sf::Vector2f worldPos = _nodeWorldPositions.at(node);
 		int worldX = static_cast<int>(worldPos.x);
 		int worldY = static_cast<int>(worldPos.y);
-		
+
 		if (!world.isInBounds(worldX, worldY))
 		{
 			continue;
 		}
-		
+
 		world.markStationOccupied(worldX, worldY);
-		
+
 		// Use explicit rail connections instead of proximity
-        int bitmask = world.getRailMask(worldX, worldY);
+		int bitmask = world.getRailMask(worldX, worldY);
 
-        if (bitmask == 0)
-        {
-            bitmask = 5;
-        }
+		if (bitmask == 0)
+		{
+			bitmask = 5;
+		}
 
-        // Remap corners to T-junctions for stations
-        if (bitmask == 3)  bitmask = 7;   // N+E → N+E+S
-        if (bitmask == 6)  bitmask = 14;  // E+S → E+S+W
-        if (bitmask == 9)  bitmask = 11;  // N+W → N+S+W
-        if (bitmask == 12) bitmask = 13;  // S+W → N+E+W
-		
+		// Remap corners to T-junctions for stations
+		if (bitmask == 3)  bitmask = 7;   // N+E → N+E+S
+		if (bitmask == 6)  bitmask = 14;  // E+S → E+S+W
+		if (bitmask == 9)  bitmask = 11;  // N+W → N+S+W
+		if (bitmask == 12) bitmask = 13;  // S+W → N+E+W
+
 		StationTile stationTile;
 		stationTile.gridX = worldX;
 		stationTile.gridY = worldY;
@@ -154,59 +163,60 @@ void RenderManager::render(sf::RenderWindow& window, const SpriteAtlas& atlas,
                             const World& world)
 {
 	window.clear(sf::Color(18, 18, 24));
-	
+
 	// Render world layers (bottom to top)
 	renderWorld(window, atlas, camera, world);
+	renderEvents(window, camera, simulation);
 	renderTrains(window, atlas, simulation, camera);
 	renderDayNightOverlay(window, simulation);
-	
+
 	// UI LAYER - Draw time and speed at top center
-    if (_fontLoaded)
-    {
-        // _currentTime is in SECONDS, convert to minutes for display
-        double currentTimeSeconds = simulation.getCurrentTime();
-        int totalMinutes = static_cast<int>(currentTimeSeconds / SimConfig::SECONDS_PER_MINUTE);
-        int cycleMinutes = totalMinutes % SimConfig::MINUTES_PER_DAY;  // Minutes in a day
-        int hours = cycleMinutes / 60;
-        int minutes = cycleMinutes % 60;
-        
-        std::ostringstream timeStream;
-        timeStream << std::setfill('0') << std::setw(2) << hours 
-                << "h" << std::setw(2) << minutes;
-        
-        sf::Text timeLabel;
-        timeLabel.setFont(_labelFont);
-        timeLabel.setString(timeStream.str());
-        timeLabel.setCharacterSize(24);
-        timeLabel.setFillColor(sf::Color::White);
-        timeLabel.setOutlineColor(sf::Color::Black);
-        timeLabel.setOutlineThickness(2.0f);
-        
-        sf::FloatRect bounds = timeLabel.getLocalBounds();
-        timeLabel.setOrigin(bounds.width / 2.0f, 0);
-        timeLabel.setPosition(window.getSize().x / 2.0f, 10.0f);
-        
-        window.draw(timeLabel);
-        
-        // Draw speed indicator below clock
-        std::ostringstream speedStream;
-        speedStream << std::fixed << std::setprecision(1) << simulation.getSimulationSpeed() << "x";
-        
-        sf::Text speedLabel;
-        speedLabel.setFont(_labelFont);
-        speedLabel.setString(speedStream.str());
-        speedLabel.setCharacterSize(18);
-        speedLabel.setFillColor(sf::Color(150, 255, 150));  // Light green
-        speedLabel.setOutlineColor(sf::Color::Black);
-        speedLabel.setOutlineThickness(1.5f);
-        
-        sf::FloatRect speedBounds = speedLabel.getLocalBounds();
-        speedLabel.setOrigin(speedBounds.width / 2.0f, 0);
-        speedLabel.setPosition(window.getSize().x / 2.0f, 40.0f);
-        
-        window.draw(speedLabel);
-    }
-	
+	if (_fontLoaded)
+	{
+		// _currentTime is in SECONDS, convert to minutes for display
+		double currentTimeSeconds = simulation.getCurrentTime();
+		int totalMinutes = static_cast<int>(currentTimeSeconds / SimConfig::SECONDS_PER_MINUTE);
+		int cycleMinutes = totalMinutes % SimConfig::MINUTES_PER_DAY;  // Minutes in a day
+		int hours = cycleMinutes / 60;
+		int minutes = cycleMinutes % 60;
+
+		std::ostringstream timeStream;
+		timeStream << std::setfill('0') << std::setw(2) << hours
+		        << "h" << std::setw(2) << minutes;
+
+		sf::Text timeLabel;
+		timeLabel.setFont(_labelFont);
+		timeLabel.setString(timeStream.str());
+		timeLabel.setCharacterSize(24);
+		timeLabel.setFillColor(sf::Color::White);
+		timeLabel.setOutlineColor(sf::Color::Black);
+		timeLabel.setOutlineThickness(2.0f);
+
+		sf::FloatRect bounds = timeLabel.getLocalBounds();
+		timeLabel.setOrigin(bounds.width / 2.0f, 0);
+		timeLabel.setPosition(window.getSize().x / 2.0f, 10.0f);
+
+		window.draw(timeLabel);
+
+		// Draw speed indicator below clock
+		std::ostringstream speedStream;
+		speedStream << std::fixed << std::setprecision(1) << simulation.getSimulationSpeed() << "x";
+
+		sf::Text speedLabel;
+		speedLabel.setFont(_labelFont);
+		speedLabel.setString(speedStream.str());
+		speedLabel.setCharacterSize(18);
+		speedLabel.setFillColor(sf::Color(150, 255, 150));  // Light green
+		speedLabel.setOutlineColor(sf::Color::Black);
+		speedLabel.setOutlineThickness(1.5f);
+
+		sf::FloatRect speedBounds = speedLabel.getLocalBounds();
+		speedLabel.setOrigin(speedBounds.width / 2.0f, 0);
+		speedLabel.setPosition(window.getSize().x / 2.0f, 40.0f);
+
+		window.draw(speedLabel);
+	}
+
 	window.display();
 }
 
@@ -221,14 +231,14 @@ void RenderManager::renderWorld(sf::RenderWindow& window, const SpriteAtlas& atl
 		{
 			sf::Vector2f worldPos(static_cast<float>(x), static_cast<float>(y));
 			sf::Vector2f screenPos = projectIsometric(worldPos, camera);
-			
+
 			std::pair<int, int> pos = std::make_pair(x, y);
-			
+
 			// Priority 1: Station (highest priority)
 			if (_stationMapCache.count(pos) != 0)
 			{
 				const StationTile& station = _stationMapCache.at(pos);
-				
+
 				// Render station sprite
 				std::string stationSprite = "station_" + std::to_string(station.bitmask) + ".png";
 				if (!atlas.hasFrame(stationSprite))
@@ -236,7 +246,7 @@ void RenderManager::renderWorld(sf::RenderWindow& window, const SpriteAtlas& atl
 					stationSprite = "station_5.png";
 				}
 				_railRenderer.drawTileScaled(window, atlas, stationSprite, screenPos, zoom);
-				
+
 				// Render city label (using cached font)
 				if (_fontLoaded && station.node)
 				{
@@ -247,17 +257,17 @@ void RenderManager::renderWorld(sf::RenderWindow& window, const SpriteAtlas& atl
 					label.setFillColor(sf::Color(255, 255, 0)); // Yellow
 					label.setOutlineColor(sf::Color::Black);
 					label.setOutlineThickness(1.0f * zoom);
-					
+
 					sf::FloatRect bounds = label.getLocalBounds();
 					label.setOrigin(bounds.width / 2.0f, bounds.height / 2.0f);
 					label.setPosition(screenPos.x, screenPos.y - 30.0f * zoom);
-					
+
 					window.draw(label);
 				}
-				
+
 				continue; // Station rendered, skip to next tile
 			}
-			
+
 			// Priority 2: Rail
 			if (_railBitmaskCache.count(pos) != 0)
 			{
@@ -270,15 +280,15 @@ void RenderManager::renderWorld(sf::RenderWindow& window, const SpriteAtlas& atl
 				_railRenderer.drawTileScaled(window, atlas, railSprite, screenPos, zoom);
 				continue; // Rail rendered, skip to next tile
 			}
-			
+
 			// Priority 3: Terrain (lowest priority)
 			std::string spriteName = world.getCachedSprite(x, y);
-			
+
 			if (!atlas.hasFrame(spriteName))
 			{
 				spriteName = "grass_01.png";
 			}
-			
+
 			_railRenderer.drawTileScaled(window, atlas, spriteName, screenPos, zoom);
 		}
 	}
@@ -288,18 +298,18 @@ void RenderManager::renderTrains(sf::RenderWindow& window, const SpriteAtlas& at
                                  const SimulationManager& simulation, const CameraManager& camera)
 {
 	float zoom = camera.getCurrentZoom();
-	
+
 	for (const Train* train : simulation.getTrains())
 	{
 		if (!train || !train->getCurrentRail())
 		{
 			continue;
 		}
-		
+
 		bool movingRight = true;
 		sf::Vector2f trainPos = computeTrainPosition(train, camera, movingRight);
 		_trainRenderer.draw(window, atlas, train, trainPos, movingRight, zoom);
-		
+
 		if (_fontLoaded)
 		{
 			sf::Text label;
@@ -309,46 +319,53 @@ void RenderManager::renderTrains(sf::RenderWindow& window, const SpriteAtlas& at
 			label.setFillColor(sf::Color(255, 0, 0));
 			label.setOutlineColor(sf::Color::Black);
 			label.setOutlineThickness(1.0f * zoom);
-			
+
 			sf::FloatRect bounds = label.getLocalBounds();
 			label.setOrigin(bounds.width / 2.0f, bounds.height / 2.0f);
 			label.setPosition(trainPos.x, trainPos.y - 20.0f * zoom);
-			
+
 			window.draw(label);
 		}
 	}
 }
 
+void RenderManager::renderEvents(sf::RenderWindow& window,
+                                  const CameraManager& camera,
+                                  const SimulationManager& simulation)
+{
+	if (!_eventsAtlasLoaded)
+	{
+		return;
+	}
+
+	const float timeSeconds = static_cast<float>(simulation.getCurrentTime());
+
+	_eventRenderer.draw(window, _eventsAtlas, camera,
+	                    _nodeWorldPositions, _railPaths,
+	                    timeSeconds);
+}
+
 void RenderManager::renderDayNightOverlay(sf::RenderWindow& window, const SimulationManager& simulation)
 {
 	float intensity = calculateDayNightIntensity(simulation.getCurrentTime());
-	
+
 	if (intensity > 0.05f)
 	{
 		sf::RectangleShape overlay(sf::Vector2f(
 			static_cast<float>(window.getSize().x),
 			static_cast<float>(window.getSize().y)
 		));
-		
+
 		sf::Uint8 alpha = static_cast<sf::Uint8>(intensity * 200.0f);
 		overlay.setFillColor(sf::Color(20, 30, 60, alpha));
-		
+
 		window.draw(overlay);
 	}
 }
 
 sf::Vector2f RenderManager::projectIsometric(const sf::Vector2f& worldPoint, const CameraManager& camera) const
 {
-	const float zoom = camera.getCurrentZoom();
-	const sf::Vector2f offset = camera.getOffset();
-	
-	const float baseTileWidth = 48.0f;
-	const float baseTileHeight = 24.0f;
-	
-	const float isoX = (worldPoint.x - worldPoint.y) * (baseTileWidth / 2.0f) * zoom;
-	const float isoY = (worldPoint.x + worldPoint.y) * (baseTileHeight / 2.0f) * zoom;
-	
-	return sf::Vector2f(isoX + offset.x, isoY + offset.y);
+	return IsometricUtils::project(worldPoint, camera);
 }
 
 sf::Vector2f RenderManager::computeTrainPosition(const Train* train, const CameraManager& camera, bool& movingRight) const
@@ -359,16 +376,16 @@ sf::Vector2f RenderManager::computeTrainPosition(const Train* train, const Camer
 		movingRight = true;
 		return camera.getOffset();
 	}
-	
+
 	const Node* fromNode = segment->from;
 	const Node* toNode = segment->to;
-	
+
 	if (_nodeWorldPositions.count(fromNode) == 0 || _nodeWorldPositions.count(toNode) == 0)
 	{
 		movingRight = true;
 		return camera.getOffset();
 	}
-	
+
 	// Check if we have a stored L-path for this rail
 	const Rail* rail = segment->rail;
 	if (_railPaths.count(rail) == 0)
@@ -376,23 +393,23 @@ sf::Vector2f RenderManager::computeTrainPosition(const Train* train, const Camer
 		// Fallback: straight line interpolation
 		const sf::Vector2f start = _nodeWorldPositions.at(fromNode);
 		const sf::Vector2f end = _nodeWorldPositions.at(toNode);
-		
+
 		double railLengthMeters = rail->getLength() * 1000.0;
 		double t = (railLengthMeters > 0.0) ? (train->getPosition() / railLengthMeters) : 0.0;
 		t = std::max(0.0, std::min(1.0, t));
-		
+
 		const sf::Vector2f world(
 			start.x + static_cast<float>((end.x - start.x) * t),
 			start.y + static_cast<float>((end.y - start.y) * t)
 		);
-		
+
 		movingRight = true;
 		return projectIsometric(world, camera);
 	}
-	
+
 	// Use stored L-path
 	const RailPath& path = _railPaths.at(rail);
-	
+
 	// Determine direction based on travel direction
 	sf::Vector2f pathStart, pathCorner, pathEnd;
 	if (fromNode == rail->getNodeA())
@@ -409,35 +426,35 @@ sf::Vector2f RenderManager::computeTrainPosition(const Train* train, const Camer
 		pathCorner = path.corner;
 		pathEnd = path.start;
 	}
-	
+
 	// Calculate segment lengths
 	float dx1 = pathCorner.x - pathStart.x;
 	float dy1 = pathCorner.y - pathStart.y;
 	float segment1Length = std::sqrt(dx1 * dx1 + dy1 * dy1);
-	
+
 	float dx2 = pathEnd.x - pathCorner.x;
 	float dy2 = pathEnd.y - pathCorner.y;
 	float segment2Length = std::sqrt(dx2 * dx2 + dy2 * dy2);
-	
+
 	float totalLength = segment1Length + segment2Length;
-	
+
 	// Calculate train progress (0.0 to 1.0)
 	double railLengthMeters = rail->getLength() * 1000.0;
 	double t = (railLengthMeters > 0.0) ? (train->getPosition() / railLengthMeters) : 0.0;
 	t = std::max(0.0, std::min(1.0, t));
-	
+
 	// Convert progress to distance along path
 	float distanceAlongPath = static_cast<float>(t) * totalLength;
-	
+
 	sf::Vector2f worldPos;
-	
+
 	if (distanceAlongPath <= segment1Length)
 	{
 		// Train is on first segment (start -> corner)
 		float segmentT = (segment1Length > 0.0f) ? (distanceAlongPath / segment1Length) : 0.0f;
 		worldPos.x = pathStart.x + (pathCorner.x - pathStart.x) * segmentT;
 		worldPos.y = pathStart.y + (pathCorner.y - pathStart.y) * segmentT;
-		
+
 		// Determine orientation
 		movingRight = (std::abs(dx1) > std::abs(dy1));
 	}
@@ -447,23 +464,23 @@ sf::Vector2f RenderManager::computeTrainPosition(const Train* train, const Camer
 		float segmentT = (segment2Length > 0.0f) ? ((distanceAlongPath - segment1Length) / segment2Length) : 0.0f;
 		worldPos.x = pathCorner.x + (pathEnd.x - pathCorner.x) * segmentT;
 		worldPos.y = pathCorner.y + (pathEnd.y - pathCorner.y) * segmentT;
-		
+
 		// Determine orientation
 		movingRight = (std::abs(dx2) > std::abs(dy2));
 	}
-	
+
 	return projectIsometric(worldPos, camera);
 }
 
 int RenderManager::computeRailBitmask(const World& world, int x, int y) const
 {
 	int mask = world.getRailMask(x, y);
-	
+
 	if (mask == 0)
 	{
 		mask = 5;
 	}
-	
+
 	return mask;
 }
 
@@ -476,10 +493,10 @@ float RenderManager::calculateDayNightIntensity(double currentTime) const
 {
 	// currentTime is in SECONDS, convert to normalized day cycle
 	double normalizedTime = std::fmod(currentTime, SimConfig::SECONDS_PER_DAY) / SimConfig::SECONDS_PER_DAY;
-	
+
 	float lightFactor = std::sin(normalizedTime * 2.0 * 3.14159265359 - 3.14159265359 / 2.0) * 0.5f + 0.5f;
-	
+
 	float darkness = 1.0f - lightFactor;
-	
+
 	return darkness;
 }

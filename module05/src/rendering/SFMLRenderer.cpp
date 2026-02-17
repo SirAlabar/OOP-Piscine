@@ -21,6 +21,12 @@ SFMLRenderer::SFMLRenderer()
 		throw std::runtime_error("Failed to load assets atlas");
 	}
 
+    if (!_renderManager.loadEventsAtlas("assets/events.png",
+                                        "assets/events.json"))
+    {
+        throw std::runtime_error("Failed to load events atlas");
+    }
+
 	_cameraManager.setZoomLimits(0.5f, 3.0f);
 }
 
