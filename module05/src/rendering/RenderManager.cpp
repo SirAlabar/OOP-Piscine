@@ -297,6 +297,8 @@ void RenderManager::renderWorld(sf::RenderWindow& window, const SpriteAtlas& atl
 void RenderManager::renderTrains(sf::RenderWindow& window, const SpriteAtlas& atlas,
                                  const SimulationManager& simulation, const CameraManager& camera)
 {
+    std::shared_lock lock(simulation.getMutex());
+
 	float zoom = camera.getCurrentZoom();
 
 	for (const Train* train : simulation.getTrains())

@@ -15,23 +15,25 @@ Time::Time(int hours, int minutes) : _hours(hours), _minutes(minutes)
 // Parse "HHhMM" format (e.g., "14h10")
 Time::Time(const std::string& timeStr) : _hours(0), _minutes(0)
 {
-	std::istringstream iss(timeStr);
-	char delimiter;
-	
-	if (iss >> _hours >> delimiter >> _minutes && delimiter == 'h')
-	{
-		// Successfully parsed "14h10" format
-	}
-	else
-	{
-		// Parse failed, keep defaults (0, 0)
-		_hours = 0;
-		_minutes = 0;
-	}
+    std::istringstream iss(timeStr);
+    char delimiter;
+
+    if (!(iss >> _hours >> delimiter >> _minutes) || delimiter != 'h')
+    {
+        _hours   = 0;
+        _minutes = 0;
+    }
+}
+
+// Static factory: construct from a raw seconds value (simulation clock)
+Time Time::fromSeconds(double seconds)
+{
+    int totalMinutes = static_cast<int>(seconds) / 60;
+    return Time(totalMinutes / 60, totalMinutes % 60);
 }
 
 // Getters
-int Time::getHours() const
+int Time::getHours()   const
 {
 	return _hours;
 }
@@ -41,25 +43,24 @@ int Time::getMinutes() const
 	return _minutes;
 }
 
-// Convert to total minutes (for comparison/arithmetic)
 int Time::toMinutes() const
 {
-	return _hours * 60 + _minutes;
+    return _hours * 60 + _minutes;
 }
 
 // Format as "HHhMM"
 std::string Time::toString() const
 {
-	std::ostringstream oss;
-	oss << std::setfill('0') << std::setw(2) << _hours << "h";
-	oss << std::setfill('0') << std::setw(2) << _minutes;
-	return oss.str();
+    std::ostringstream oss;
+    oss << std::setfill('0') << std::setw(2) << _hours   << "h"
+        << std::setfill('0') << std::setw(2) << _minutes;
+    return oss.str();
 }
 
 // Validation
 bool Time::isValid() const
 {
-	return _hours >= 0 && _hours < 24 && _minutes >= 0 && _minutes < 60;
+    return _hours >= 0 && _hours < 24 && _minutes >= 0 && _minutes < 60;
 }
 
 // Comparison operators
@@ -73,9 +74,9 @@ bool Time::operator!=(const Time& other) const
 	return !(*this == other);
 }
 
-bool Time::operator<(const Time& other) const
+bool Time::operator<(const Time& other)  const
 {
-	return toMinutes() < other.toMinutes();
+	return toMinutes() <  other.toMinutes();
 }
 
 bool Time::operator<=(const Time& other) const
@@ -83,9 +84,9 @@ bool Time::operator<=(const Time& other) const
 	return toMinutes() <= other.toMinutes();
 }
 
-bool Time::operator>(const Time& other) const
+bool Time::operator>(const Time& other)  const
 {
-	return toMinutes() > other.toMinutes();
+	return toMinutes() >  other.toMinutes();
 }
 
 bool Time::operator>=(const Time& other) const
@@ -96,17 +97,17 @@ bool Time::operator>=(const Time& other) const
 // Add durations
 Time Time::operator+(const Time& other) const
 {
-	int totalMinutes = toMinutes() + other.toMinutes();
-	return Time(totalMinutes / 60, totalMinutes % 60);
+    int total = toMinutes() + other.toMinutes();
+    return Time(total / 60, total % 60);
 }
 
-// Subtract durations
+// Subtract durations (clamp to zero)
 Time Time::operator-(const Time& other) const
 {
-	int totalMinutes = toMinutes() - other.toMinutes();
-	if (totalMinutes < 0)
+    int total = toMinutes() - other.toMinutes();
+    if (total < 0)
 	{
-		totalMinutes = 0;
+		total = 0;
 	}
-	return Time(totalMinutes / 60, totalMinutes % 60);
+    return Time(total / 60, total % 60);
 }

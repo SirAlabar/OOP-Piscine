@@ -11,68 +11,62 @@ class Train;
 // Event types for factory and conflict checking
 enum class EventType
 {
-	STATION_DELAY,
-	TRACK_MAINTENANCE,
-	SIGNAL_FAILURE,
-	WEATHER
+    STATION_DELAY,
+    TRACK_MAINTENANCE,
+    SIGNAL_FAILURE,
+    WEATHER
 };
 
 // Visual data for future isometric rendering
 struct VisualData
 {
-	Node*       centerNode;      // Positioning anchor
-	double      radius;          // Area of effect (km) - 0 for point events
-	std::string iconType;        // "storm", "maintenance", "signal", "delay"
-	float       animationSpeed;  // Speed multiplier for particle effects
+    Node*       centerNode;
+    double      radius;
+    std::string iconType;
+    float       animationSpeed;
 
-	VisualData()
-		: centerNode(nullptr), radius(0.0), iconType(""), animationSpeed(1.0f)
-	{
-	}
+    VisualData()
+        : centerNode(nullptr), radius(0.0), iconType(""), animationSpeed(1.0f)
+    {
+    }
 };
 
 // Abstract base class for all events
 class Event
 {
 protected:
-	EventType   _type;
-	Time        _startTime;
-	Time        _duration;      // How long event lasts
-	bool        _isActive;      // Currently affecting simulation
-	VisualData  _visualData;    // For isometric rendering
+    EventType   _type;
+    Time        _startTime;
+    Time        _duration;
+    bool        _isActive;
+    VisualData  _visualData;
 
 public:
-	Event(EventType type, const Time& startTime, const Time& duration);
-	virtual ~Event() = default;
+    Event(EventType type, const Time& startTime, const Time& duration);
+    virtual ~Event() = default;
 
-	// Event lifecycle
-	virtual void activate() = 0;      // Apply event effects
-	virtual void deactivate() = 0;    // Remove event effects
-	
-	// Check if event should be active at given time
-	bool shouldBeActive(const Time& currentTime) const;
-	
-	// Update event state based on current time
-	void update(const Time& currentTime);
+    virtual void activate()   = 0;
+    virtual void deactivate() = 0;
 
-	// Getters
-	EventType getType() const;
-	Time getStartTime() const;
-	Time getDuration() const;
-	Time getEndTime() const;
-	bool isActive() const;
-	const VisualData& getVisualData() const;
-	
-	// Event description for logging
-	virtual std::string getDescription() const = 0;
+    bool shouldBeActive(const Time& currentTime) const;
+    void update(const Time& currentTime);
 
-	// Type checking helpers
-	virtual bool affectsNode(Node* node) const = 0;
-	virtual bool affectsRail(Rail* rail) const = 0;
-	virtual bool affectsTrain(Train* train) const = 0;
-	
-	// Check if event is applicable to train at current position/state
-	virtual bool isApplicableToTrain(Train* train) const = 0;
+    EventType         getType()        const;
+    Time              getStartTime()   const;
+    Time              getDuration()    const;
+    Time              getEndTime()     const;
+    bool              isActive()       const;
+    const VisualData& getVisualData()  const;
+
+    virtual std::string getDescription()                   const = 0;
+    virtual bool        affectsNode(Node* node)            const = 0;
+    virtual bool        affectsRail(Rail* rail)            const = 0;
+    virtual bool        affectsTrain(Train* train)         const = 0;
+    virtual bool        isApplicableToTrain(Train* train)  const = 0;
+
+    // Convert an EventType enum to its human-readable display string.
+    // Centralises the mapping so no caller needs a local switch.
+    static std::string typeToString(EventType type);
 };
 
 #endif

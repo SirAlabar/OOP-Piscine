@@ -16,359 +16,670 @@
 #include "core/Graph.hpp"
 #include "core/Node.hpp"
 #include "core/Rail.hpp"
-#include <ctime>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <thread>
+#include "utils/FileWatcher.hpp"
+#include "utils/FileSystemUtils.hpp"
+#include "patterns/commands/CommandManager.hpp"
+#include "patterns/commands/ReloadCommand.hpp"
 #include "rendering/SFMLRenderer.hpp"
+#include <ctime>
+#include <fstream>
+#include <iterator>
+#include <mutex>
+#include <thread>
 
-
-Application::Application(int argc, char* argv[]) 
-	: _cli(argc, argv),
-	  _consoleWriter(new ConsoleOutputWriter())
+Application::Application(int argc, char* argv[])
+    : _cli(argc, argv),
+      _consoleWriter(new ConsoleOutputWriter())
 {
 }
 
 Application::~Application()
 {
-	delete _consoleWriter;
+    delete _consoleWriter;
 }
 
-
-
-int Application::run()
+std::string Application::_readFile(const std::string& path)
 {
-	if (_cli.shouldShowHelp())
-	{
-		_cli.printHelp();
-		return 0;
-	}
+    std::ifstream f(path, std::ios::in | std::ios::binary);
+    if (!f.is_open()) { return ""; }
+    return std::string(std::istreambuf_iterator<char>(f),
+                       std::istreambuf_iterator<char>());
+}
 
-	if (!_cli.hasValidArguments())
-	{
-		_consoleWriter->writeError("Invalid number of arguments");
-		_cli.printUsage("railway_sim");
-		return 1;
-	}
-	
-	// Validate flag values
-	std::string flagError;
-	if (!_cli.validateFlags(flagError))
-	{
-		_consoleWriter->writeError(flagError);
-		_consoleWriter->writeError("Use --help for valid options");
-		return 1;
-	}
+bool Application::_buildSimulation(
+    const std::string&              netFile,
+    const std::string&              trainFile,
+    Graph*&                         outGraph,
+    std::vector<Train*>&            outTrains,
+    std::vector<FileOutputWriter*>& outWriters,
+    int                             seedOverride)
+{
+    try
+    {
+        // Parse network
+        _consoleWriter->writeProgress("Parsing network file...");
+        RailNetworkParser networkParser(netFile);
+        outGraph = networkParser.parse();
 
-	std::string networkFile = _cli.getNetworkFile();
-	std::string trainFile = _cli.getTrainFile();
+        _consoleWriter->writeGraphDetails(outGraph->getNodes(), outGraph->getRails());
+        _consoleWriter->writeNetworkSummary(outGraph->getNodeCount(), outGraph->getRailCount());
 
-	try
-	{
-		FileParser::validateFile(networkFile);
-		FileParser::validateFile(trainFile);
-	}
-	catch (const std::exception& e)
-	{
-		_consoleWriter->writeError(e.what());
-		return 1;
-	}
+        // Parse train configurations
+        _consoleWriter->writeProgress("Parsing train file...");
+        TrainConfigParser        trainParser(trainFile);
+        std::vector<TrainConfig> trainConfigs = trainParser.parse();
 
-	_consoleWriter->writeStartupHeader();
-	_consoleWriter->writeConfiguration("Network file", networkFile);
-	_consoleWriter->writeConfiguration("Train file", trainFile);
-	_consoleWriter->writeConfiguration("Output directory", "output/");
-	_consoleWriter->writeConfiguration("Pathfinding", _cli.getPathfinding());
-	
-	if (_cli.hasRender())
-	{
-		_consoleWriter->writeConfiguration("Rendering", "enabled (SFML)");
-	}
-	if (_cli.hasHotReload())
-	{
-		_consoleWriter->writeConfiguration("Hot-reload", "enabled");
-	}
-	if (_cli.hasMonteCarloRuns())
-	{
-		std::string runs = std::to_string(_cli.getMonteCarloRuns()) + " runs";
-		_consoleWriter->writeConfiguration("Monte Carlo", runs);
-	}
+        _consoleWriter->writeProgress(std::to_string(trainConfigs.size()) + " trains parsed");
 
-	// Monte Carlo mode - run multiple simulations and exit
-	if (_cli.hasMonteCarloRuns())
-	{
-		try
-		{
-			// Ensure output directory exists (same pattern as FileOutputWriter)
-			#ifdef _WIN32
-				_mkdir("output");
-			#else
-				mkdir("output", 0755);
-			#endif
-			
-			MonteCarloRunner runner(networkFile, trainFile, 
-			                        _cli.getSeed(), 
-			                        _cli.getMonteCarloRuns(),
-			                        _cli.getPathfinding());
-			
-			runner.runAll();
-			runner.writeCSV("output/monte_carlo_results.csv");
-			
-			return 0;
-		}
-		catch (const std::exception& e)
-		{
-			_consoleWriter->writeError(e.what());
-			return 1;
-		}
-	}
+        // Select pathfinding strategy
+        _consoleWriter->writeProgress("Creating trains and finding paths...");
 
-	Graph* graph = nullptr;
-	std::vector<TrainConfig> trainConfigs;
-	std::vector<Train*> trains;
-	std::vector<FileOutputWriter*> writers;
+        DijkstraStrategy      dijkstra;
+        AStarStrategy         astar;
+        IPathfindingStrategy* strategy = nullptr;
 
-	try
-	{
-		// Parse network
-		_consoleWriter->writeProgress("Parsing network file...");
-		RailNetworkParser networkParser(networkFile);
-		graph = networkParser.parse();
+        if (_cli.getPathfinding() == "astar")
+        {
+            strategy = &astar;
+            _consoleWriter->writeProgress("Using A* pathfinding");
+        }
+        else
+        {
+            strategy = &dijkstra;
+            _consoleWriter->writeProgress("Using Dijkstra pathfinding");
+        }
 
-		_consoleWriter->writeGraphDetails(graph->getNodes(), graph->getRails());
-		_consoleWriter->writeNetworkSummary(graph->getNodeCount(), graph->getRailCount());
+        static IdleState idleState;
 
-		// Parse train configurations
-		_consoleWriter->writeProgress("Parsing train file...");
-		TrainConfigParser trainParser(trainFile);
-		trainConfigs = trainParser.parse();
-		
-		std::string trainCount = std::to_string(trainConfigs.size()) + " trains parsed";
-		_consoleWriter->writeProgress(trainCount);
+        for (const auto& config : trainConfigs)
+        {
+            Train* train = TrainFactory::create(config, outGraph);
+            if (!train)
+            {
+                _consoleWriter->writeError("Failed to create train: " + config.name);
+                continue;
+            }
 
-		// Create trains and find paths
-		_consoleWriter->writeProgress("Creating trains and finding paths...");
-		
-		// Select pathfinding strategy based on CLI flag
-		IPathfindingStrategy* strategy = nullptr;
-		DijkstraStrategy dijkstra;
-		AStarStrategy astar;
-		
-		std::string pathfindingAlgo = _cli.getPathfinding();
-		if (pathfindingAlgo == "astar")
-		{
-			strategy = &astar;
-			_consoleWriter->writeProgress("Using A* pathfinding");
-		}
-		else
-		{
-			strategy = &dijkstra;
-			_consoleWriter->writeProgress("Using Dijkstra pathfinding");
-		}
-		
-		static IdleState idleState;
+            Node* startNode = outGraph->getNode(config.departureStation);
+            Node* endNode   = outGraph->getNode(config.arrivalStation);
 
-		for (const auto& config : trainConfigs)
-		{
-			// Create train
-			Train* train = TrainFactory::create(config, graph);
-			if (!train)
-			{
-				_consoleWriter->writeError("Failed to create train: " + config.name);
-				continue;
-			}
+            if (!startNode || !endNode)
+            {
+                _consoleWriter->writeError("Invalid stations for train " + config.name);
+                delete train;
+                continue;
+            }
 
-			// Find path
-			Node* startNode = graph->getNode(config.departureStation);
-			Node* endNode = graph->getNode(config.arrivalStation);
+            auto path = strategy->findPath(outGraph, startNode, endNode);
+            if (path.empty())
+            {
+                _consoleWriter->writeError(
+                    "No path found for train " + config.name +
+                    " from " + config.departureStation +
+                    " to "   + config.arrivalStation);
+                delete train;
+                continue;
+            }
 
-			if (!startNode || !endNode)
-			{
-				_consoleWriter->writeError("Invalid stations for train " + config.name);
-				delete train;
-				continue;
-			}
+            train->setPath(path);
+            _consoleWriter->writePathDebug(train);
+            train->setState(&idleState);
+            outTrains.push_back(train);
 
-			auto path = strategy->findPath(graph, startNode, endNode);
+            _consoleWriter->writeTrainCreated(
+                train->getName(), train->getID(),
+                config.departureStation, config.arrivalStation,
+                static_cast<int>(path.size()));
+        }
 
-			if (path.empty())
-			{
-				std::string msg = "No path found for train " + config.name + 
-				                  " from " + config.departureStation + 
-				                  " to " + config.arrivalStation;
-				_consoleWriter->writeError(msg);
-				delete train;
-				continue;
-			}
+        if (outTrains.empty())
+        {
+            _consoleWriter->writeError("No valid trains created.");
+            delete outGraph;
+            outGraph = nullptr;
+            return false;
+        }
 
-			train->setPath(path);
-			_consoleWriter->writePathDebug(train);
-			train->setState(&idleState);
-			trains.push_back(train);
+        // Create output writers
+        _consoleWriter->writeProgress("Creating output files...");
 
-			_consoleWriter->writeTrainCreated(train->getName(), train->getID(),
-			                                   config.departureStation, 
-			                                   config.arrivalStation,
-			                                   static_cast<int>(path.size()));
-		}
+        for (Train* train : outTrains)
+        {
+            FileOutputWriter* writer = new FileOutputWriter(train);
+            writer->open();
 
-		// Create output writers
-		_consoleWriter->writeProgress("Creating output files...");
-		
-		for (Train* train : trains)
-		{
-			FileOutputWriter* writer = new FileOutputWriter(train);
-			writer->open();
-			
-			// Calculate estimated travel time
-			double estimatedTimeMinutes = 0.0;
-			for (const PathSegment& segment : train->getPath())
-			{
-				double segmentTimeHours = segment.rail->getLength() / segment.rail->getSpeedLimit();
-				estimatedTimeMinutes += segmentTimeHours * 60.0;
-			}
-			
-			writer->writeHeader(estimatedTimeMinutes);
-			writer->writePathInfo();  // Write path information
-			writers.push_back(writer);
-			
-			std::string msg = "Created: output/" + train->getName() + "_" + 
-			                  train->getDepartureTime().toString() + ".result" +
-			                  " (estimated: " + std::to_string(static_cast<int>(estimatedTimeMinutes)) + " min)";
-			_consoleWriter->writeProgress(msg);
-		}
+            double estMinutes = 0.0;
+            for (const PathSegment& seg : train->getPath())
+            {
+                estMinutes += (seg.rail->getLength() / seg.rail->getSpeedLimit()) * 60.0;
+            }
 
-		// Initialize simulation
-		_consoleWriter->writeProgress("Initializing simulation...");
-		SimulationManager& sim = SimulationManager::getInstance();
-		sim.reset();
-		
-		// Connect console output (Dependency Inversion - pass interface)
-		sim.setSimulationWriter(_consoleWriter);
-		
-		// Set seed for event generation
-		unsigned int seed;
-		if (_cli.hasSeed())
-		{
-			// Deterministic mode: use specified seed
-			seed = _cli.getSeed();
-			sim.setEventSeed(seed);
-			_consoleWriter->writeConfiguration("Seed", std::to_string(seed) + " (deterministic)");
-		}
-		else
-		{
-			// Random mode: use time-based seed and log it for reproducibility
-			seed = static_cast<unsigned int>(std::time(nullptr));
-			sim.setEventSeed(seed);
-			std::string seedMsg = std::to_string(seed) + " (random - use --seed=" + 
-			                      std::to_string(seed) + " to reproduce)";
-			_consoleWriter->writeConfiguration("Seed", seedMsg);
-		}
-		
-		sim.setNetwork(graph);
+            writer->writeHeader(estMinutes);
+            writer->writePathInfo();
+            outWriters.push_back(writer);
 
-		// Register output writers with SimulationManager
-		for (size_t i = 0; i < trains.size(); ++i)
-		{
-			sim.registerOutputWriter(trains[i], writers[i]);
-		}
+            _consoleWriter->writeProgress(
+                "Created: output/" + train->getName() + "_" +
+                train->getDepartureTime().toString() + ".result" +
+                " (estimated: " + std::to_string(static_cast<int>(estMinutes)) + " min)");
+        }
 
-		for (Train* train : trains)
-		{
-			sim.addTrain(train);
-		}
+        // Configure SimulationManager
+        _consoleWriter->writeProgress("Initializing simulation...");
 
-		// Enable round-trip mode if requested
-		if (_cli.hasRoundTrip() || _cli.hasRender())
-		{
-			sim.setRoundTripMode(true);
-			_consoleWriter->writeConfiguration("Round-trip mode", "enabled (trains reverse at destination)");
-		}
+        SimulationManager& sim = SimulationManager::getInstance();
+        sim.reset();
+        sim.setSimulationWriter(_consoleWriter);
 
-		_consoleWriter->writeSimulationStart();
-        for (Train* train : trains)
+        unsigned int seed;
+        if (seedOverride >= 0)
+        {
+            seed = static_cast<unsigned int>(seedOverride);
+            sim.setEventSeed(seed);
+            _consoleWriter->writeConfiguration("Seed",
+                std::to_string(seed) + " (from replay recording)");
+        }
+        else if (_cli.hasSeed())
+        {
+            seed = _cli.getSeed();
+            sim.setEventSeed(seed);
+            _consoleWriter->writeConfiguration("Seed",
+                std::to_string(seed) + " (deterministic)");
+        }
+        else
+        {
+            seed = static_cast<unsigned int>(std::time(nullptr));
+            sim.setEventSeed(seed);
+            _consoleWriter->writeConfiguration("Seed",
+                std::to_string(seed) +
+                " (random - use --seed=" + std::to_string(seed) + " to reproduce)");
+        }
+
+        sim.setNetwork(outGraph);
+
+        for (std::size_t i = 0; i < outTrains.size(); ++i)
+        {
+            sim.registerOutputWriter(outTrains[i], outWriters[i]);
+        }
+
+        for (Train* train : outTrains)
+        {
+            sim.addTrain(train);
+        }
+
+        if (_cli.hasRoundTrip() || _cli.hasRender() || _cli.hasReplay())
+        {
+            sim.setRoundTripMode(true);
+            _consoleWriter->writeConfiguration("Round-trip mode", "enabled");
+        }
+
+        _consoleWriter->writeSimulationStart();
+        for (Train* train : outTrains)
         {
             _consoleWriter->writeTrainSchedule(train->getName(), train->getDepartureTime());
         }
 
-		// Run simulation
-		if (_cli.hasRender())
-		{
-			// Render mode: simulation runs in background thread
-			SFMLRenderer renderer;
-			
-			// Start simulation thread (runs sim.run() independently)
-			std::thread simulationThread([&sim]() {
-				sim.run(1e9, true);  // Run indefinitely in RENDER mode
-			});
-			
-			// Main thread runs renderer (SFML requires main thread)
-			renderer.run(sim);  // Blocks here, just renders
-			
-			// When window closes, stop simulation and wait for thread
-			sim.stop();
-			simulationThread.join();
-		}
-		else
-		{
-			// Console mode: run simulation at full speed
-			double maxTime = 106400.0;  // ~29.5 hours in seconds
-			if (_cli.hasRoundTrip())
-			{
-				maxTime = 172800.0;  // 48 hours in seconds
-			}
-			sim.run(maxTime);  // Console mode (renderMode = false by default)
-		}
+        return true;
+    }
+    catch (const std::exception& e)
+    {
+        _consoleWriter->writeError(e.what());
 
-
-		// Write final snapshots
-		_consoleWriter->writeProgress("Writing final snapshots...");
-		for (FileOutputWriter* writer : writers)
+        for (FileOutputWriter* w : outWriters) 
 		{
-			writer->writeSnapshot(sim.getCurrentTime());
-			writer->close();
+			delete w;
 		}
-
-		_consoleWriter->writeSimulationComplete();
-		for (const Train* train : trains)
+        outWriters.clear();
+        for (Train* t : outTrains)
 		{
-			std::string filename = "output/" + train->getName() + "_" + 
-			                       train->getDepartureTime().toString() + ".result";
-			_consoleWriter->writeOutputFileListing(filename);
+			delete t;
 		}
+        outTrains.clear();
+        delete outGraph;
+        outGraph = nullptr;
+        return false;
+    }
+}
 
-		// Cleanup
-		for (FileOutputWriter* writer : writers)
-		{
-			delete writer;
-		}
-		
-		for (Train* train : trains)
-		{
-			delete train;
-		}
+void Application::_teardownSimulation(
+    Graph*&                         graph,
+    std::vector<Train*>&            trains,
+    std::vector<FileOutputWriter*>& writers)
+{
+    SimulationManager::getInstance().reset();
 
-		delete graph;
-	}
-	catch (const std::exception& e)
+    for (FileOutputWriter* w : writers) 
 	{
-		_consoleWriter->writeError(e.what());
+		w->close(); delete w;
+	}
+    writers.clear();
+    for (Train* t : trains)
+	{
+		delete t;
+	}
+    trains.clear();
+    delete graph;
+    graph = nullptr;
+}
 
-		// Cleanup on error
-		for (FileOutputWriter* writer : writers)
-		{
-			delete writer;
-		}
-		
-		for (Train* train : trains)
-		{
-			delete train;
-		}
-		
-		delete graph;
+int Application::run()
+{
+    if (_cli.shouldShowHelp())
+    {
+        _cli.printHelp();
+        return 0;
+    }
 
-		return 1;
+    if (!_cli.hasValidArguments())
+    {
+        _consoleWriter->writeError("Invalid number of arguments");
+        _cli.printUsage("railway_sim");
+        return 1;
+    }
+
+    std::string flagError;
+    if (!_cli.validateFlags(flagError))
+    {
+        _consoleWriter->writeError(flagError);
+        _consoleWriter->writeError("Use --help for valid options");
+        return 1;
+    }
+
+    std::string networkFile = _cli.getNetworkFile();
+    std::string trainFile   = _cli.getTrainFile();
+
+    try
+    {
+        FileParser::validateFile(networkFile);
+        FileParser::validateFile(trainFile);
+    }
+    catch (const std::exception& e)
+    {
+        _consoleWriter->writeError(e.what());
+        return 1;
+    }
+
+    _consoleWriter->writeStartupHeader();
+    _consoleWriter->writeConfiguration("Network file",     networkFile);
+    _consoleWriter->writeConfiguration("Train file",       trainFile);
+    _consoleWriter->writeConfiguration("Output directory", "output/");
+    _consoleWriter->writeConfiguration("Pathfinding",      _cli.getPathfinding());
+
+	if (_cli.hasRender())
+	{
+		_consoleWriter->writeConfiguration("Rendering", "enabled (SFML)");
 	}
 
-	return 0;
+	if (_cli.hasHotReload())
+	{
+		_consoleWriter->writeConfiguration("Hot-reload", "enabled");
+	}
+
+	if (_cli.hasRecord())
+	{
+		_consoleWriter->writeConfiguration("Recording", "enabled → output/replay.json");
+	}
+
+	if (_cli.hasReplay())
+	{
+		_consoleWriter->writeConfiguration("Replay file", _cli.getReplayFile());
+	}
+
+	if (_cli.hasMonteCarloRuns())
+	{
+		_consoleWriter->writeConfiguration(
+			"Monte Carlo",
+			std::to_string(_cli.getMonteCarloRuns()) + " runs"
+		);
+	}
+
+    // Monte Carlo mode
+    if (_cli.hasMonteCarloRuns())
+    {
+        try
+        {
+            FileSystemUtils::ensureOutputDirectoryExists();
+
+            MonteCarloRunner runner(
+                networkFile, trainFile,
+                _cli.getSeed(), _cli.getMonteCarloRuns(), _cli.getPathfinding());
+
+            runner.runAll();
+            runner.writeCSV("output/monte_carlo_results.csv");
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            _consoleWriter->writeError(e.what());
+            return 1;
+        }
+    }
+
+    // Replay mode
+    if (_cli.hasReplay())
+    {
+        CommandManager    cmdMgr;
+        RecordingMetadata meta;
+
+        if (!cmdMgr.loadFromFile(_cli.getReplayFile(), meta))
+        {
+            _consoleWriter->writeError("Failed to load replay file: " + _cli.getReplayFile());
+            return 1;
+        }
+
+        cmdMgr.startReplay();
+
+        _consoleWriter->writeProgress(
+            "Loaded " + std::to_string(cmdMgr.commandCount()) +
+            " commands from " + _cli.getReplayFile());
+
+        Graph*                         graph = nullptr;
+        std::vector<Train*>            trains;
+        std::vector<FileOutputWriter*> writers;
+
+        if (!_buildSimulation(meta.networkFile, meta.trainFile, graph, trains, writers,
+                              static_cast<int>(meta.seed)))
+        {
+            return 1;
+        }
+
+        SimulationManager& sim = SimulationManager::getInstance();
+        sim.setCommandManager(&cmdMgr);
+
+        if (_cli.hasRender())
+        {
+            SFMLRenderer renderer;
+            std::thread  simThread([&sim]() { sim.run(1e9, true, true); });
+
+            renderer.run(sim);
+
+            sim.stop();
+            simThread.join();
+        }
+        else
+        {
+            sim.run(1e9, false, true);
+        }
+
+        _consoleWriter->writeProgress("Writing final snapshots...");
+        for (FileOutputWriter* w : writers) { w->writeSnapshot(sim.getCurrentTime()); }
+
+        _teardownSimulation(graph, trains, writers);
+        _consoleWriter->writeSimulationComplete();
+        return 0;
+    }
+
+    // Render + Hot-reload + (optional) Record
+    if (_cli.hasRender() && _cli.hasHotReload())
+    {
+        Graph*                         graph = nullptr;
+        std::vector<Train*>            trains;
+        std::vector<FileOutputWriter*> writers;
+        SimulationManager&             sim   = SimulationManager::getInstance();
+        SFMLRenderer                   renderer;
+
+        CommandManager* cmdMgr = nullptr;
+        if (_cli.hasRecord())
+        {
+            cmdMgr = new CommandManager();
+            cmdMgr->startRecording();
+        }
+
+        if (!_buildSimulation(networkFile, trainFile, graph, trains, writers))
+        {
+            delete cmdMgr;
+            return 1;
+        }
+        if (cmdMgr)
+		{
+			sim.setCommandManager(cmdMgr);
+		}
+
+        std::thread simThread([&sim]() { sim.run(1e9, true); });
+        std::mutex  reloadMutex;
+
+        auto rebuildCallback = [&](const std::string& net, const std::string& train) -> bool
+        {
+            sim.stop();
+            if (simThread.joinable())
+			{
+				simThread.join();
+			}
+            _teardownSimulation(graph, trains, writers);
+
+            if (_buildSimulation(net, train, graph, trains, writers))
+            {
+                if (cmdMgr)
+				{
+					sim.setCommandManager(cmdMgr);
+				}
+                simThread = std::thread([&sim](){sim.run(1e9, true);});
+                return true;
+            }
+            return false;
+        };
+
+        FileWatcher watcher(
+            {networkFile, trainFile},
+            [&](const std::string& changedFile)
+            {
+                std::lock_guard<std::mutex> lock(reloadMutex);
+
+                _consoleWriter->writeProgress("Hot-reload: change detected in " + changedFile);
+
+                std::string oldNetContent   = _readFile(networkFile);
+                std::string oldTrainContent = _readFile(trainFile);
+
+                try
+                {
+                    FileParser::validateFile(networkFile);
+                    FileParser::validateFile(trainFile);
+
+                    {
+                        RailNetworkParser testNet(networkFile);
+                        Graph*            testGraph = testNet.parse();
+                        if (!testGraph)
+                        {
+                            _consoleWriter->writeError(
+                                "Hot-reload: invalid network file — keeping current simulation.");
+                            return;
+                        }
+                        delete testGraph;
+                    }
+                    {
+                        TrainConfigParser        testTrain(trainFile);
+                        std::vector<TrainConfig> testConfigs = testTrain.parse();
+                        if (testConfigs.empty())
+                        {
+                            _consoleWriter->writeError(
+                                "Hot-reload: train file produced no valid trains — keeping current simulation.");
+                            return;
+                        }
+                    }
+                }
+                catch (const std::exception& e)
+                {
+                    _consoleWriter->writeError(
+                        std::string("Hot-reload: validation failed (") + e.what() +
+                        ") — keeping current simulation.");
+                    return;
+                }
+
+                _consoleWriter->writeProgress("Hot-reload: files valid, restarting simulation...");
+
+                double reloadTime = sim.getCurrentTime();
+
+                if (!rebuildCallback(networkFile, trainFile))
+                {
+                    _consoleWriter->writeError("Hot-reload: failed to rebuild simulation.");
+                    return;
+                }
+
+                if (cmdMgr && cmdMgr->isRecording())
+                {
+                    cmdMgr->record(new ReloadCommand(
+                        reloadTime,
+                        oldNetContent, oldTrainContent,
+                        networkFile,   trainFile,
+                        rebuildCallback));
+                }
+
+                _consoleWriter->writeProgress("Hot-reload: simulation restarted successfully.");
+            }
+        );
+
+        watcher.start();
+        renderer.run(sim);
+        watcher.stop();
+
+        sim.stop();
+        if (simThread.joinable())
+		{
+			simThread.join();
+		}
+
+        _consoleWriter->writeProgress("Writing final snapshots...");
+        for (FileOutputWriter* w : writers)
+		{
+			w->writeSnapshot(sim.getCurrentTime());
+		}
+
+        if (cmdMgr)
+        {
+            FileSystemUtils::ensureOutputDirectoryExists();
+
+            RecordingMetadata meta;
+            meta.networkFile = networkFile;
+            meta.trainFile   = trainFile;
+            meta.seed        = sim.getSeed();
+
+            cmdMgr->saveToFile("output/replay.json", meta);
+            _consoleWriter->writeProgress(
+                "Recording saved: output/replay.json (" +
+                std::to_string(cmdMgr->commandCount()) + " commands)");
+        }
+
+        _teardownSimulation(graph, trains, writers);
+        _consoleWriter->writeSimulationComplete();
+        delete cmdMgr;
+        return 0;
+    }
+
+    // ── Render mode (no hot-reload) ────────────────────────────────────────
+    if (_cli.hasRender())
+    {
+        Graph*                         graph = nullptr;
+        std::vector<Train*>            trains;
+        std::vector<FileOutputWriter*> writers;
+        SimulationManager&             sim   = SimulationManager::getInstance();
+        SFMLRenderer                   renderer;
+
+        CommandManager* cmdMgr = nullptr;
+        if (_cli.hasRecord())
+        {
+            cmdMgr = new CommandManager();
+            cmdMgr->startRecording();
+        }
+
+        if (!_buildSimulation(networkFile, trainFile, graph, trains, writers))
+        {
+            delete cmdMgr;
+            return 1;
+        }
+
+        if (cmdMgr) { sim.setCommandManager(cmdMgr); }
+
+        std::thread simThread([&sim]() { sim.run(1e9, true); });
+
+        renderer.run(sim);
+
+        sim.stop();
+        simThread.join();
+
+        _consoleWriter->writeProgress("Writing final snapshots...");
+        for (FileOutputWriter* w : writers) { w->writeSnapshot(sim.getCurrentTime()); }
+
+        if (cmdMgr)
+        {
+            FileSystemUtils::ensureOutputDirectoryExists();
+
+            RecordingMetadata meta;
+            meta.networkFile = networkFile;
+            meta.trainFile   = trainFile;
+            meta.seed        = sim.getSeed();
+
+            cmdMgr->saveToFile("output/replay.json", meta);
+            _consoleWriter->writeProgress(
+                "Recording saved: output/replay.json (" +
+                std::to_string(cmdMgr->commandCount()) + " commands)");
+        }
+
+        _teardownSimulation(graph, trains, writers);
+        _consoleWriter->writeSimulationComplete();
+        delete cmdMgr;
+        return 0;
+    }
+
+    // ── Console mode ───────────────────────────────────────────────────────
+    {
+        Graph*                         graph = nullptr;
+        std::vector<Train*>            trains;
+        std::vector<FileOutputWriter*> writers;
+        SimulationManager&             sim   = SimulationManager::getInstance();
+
+        CommandManager* cmdMgr = nullptr;
+        if (_cli.hasRecord())
+        {
+            cmdMgr = new CommandManager();
+            cmdMgr->startRecording();
+        }
+
+        if (!_buildSimulation(networkFile, trainFile, graph, trains, writers))
+        {
+            delete cmdMgr;
+            return 1;
+        }
+
+        if (cmdMgr)
+		{
+			sim.setCommandManager(cmdMgr);
+		}
+
+        double maxTime = _cli.hasRoundTrip() ? 172800.0 : 106400.0;
+        sim.run(maxTime);
+
+        _consoleWriter->writeProgress("Writing final snapshots...");
+        for (FileOutputWriter* w : writers)
+		{
+			w->writeSnapshot(sim.getCurrentTime());
+		}
+
+        _consoleWriter->writeSimulationComplete();
+        for (const Train* train : trains)
+        {
+            _consoleWriter->writeOutputFileListing(
+                "output/" + train->getName() + "_" +
+                train->getDepartureTime().toString() + ".result");
+        }
+
+        if (cmdMgr)
+        {
+            FileSystemUtils::ensureOutputDirectoryExists();
+
+            RecordingMetadata meta;
+            meta.networkFile = networkFile;
+            meta.trainFile   = trainFile;
+            meta.seed        = sim.getSeed();
+
+            cmdMgr->saveToFile("output/replay.json", meta);
+            _consoleWriter->writeProgress(
+                "Recording saved: output/replay.json (" +
+                std::to_string(cmdMgr->commandCount()) + " commands)");
+        }
+
+        _teardownSimulation(graph, trains, writers);
+        delete cmdMgr;
+    }
+
+    return 0;
 }

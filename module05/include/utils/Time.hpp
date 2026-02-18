@@ -7,34 +7,38 @@
 class Time
 {
 private:
-	int _hours;
-	int _minutes;
+    int _hours;
+    int _minutes;
 
 public:
-	Time();
-	Time(int hours, int minutes);
-	Time(const std::string& timeStr);  // Parse "HHhMM" format
-	Time(const Time&) = default;
-	Time& operator=(const Time&) = default;
-	~Time() = default;
+    Time();
+    Time(int hours, int minutes);
+    Time(const std::string& timeStr);  // Parse "HHhMM" format
+    Time(const Time&)            = default;
+    Time& operator=(const Time&) = default;
+    ~Time()                      = default;
 
-	int getHours() const;
-	int getMinutes() const;
-	int toMinutes() const;  // Convert to total minutes for comparison
-	std::string toString() const;  // Format as "HHhMM"
-	bool isValid() const;  // Hours: 0-23, Minutes: 0-59
+    int         getHours()   const;
+    int         getMinutes() const;
+    int         toMinutes()  const;   // Convert to total minutes for comparison
+    std::string toString()   const;   // Format as "HHhMM"
+    bool        isValid()    const;   // Hours: 0-23, Minutes: 0-59
 
-	// Comparison operators
-	bool operator==(const Time& other) const;
-	bool operator!=(const Time& other) const;
-	bool operator<(const Time& other) const;
-	bool operator<=(const Time& other) const;
-	bool operator>(const Time& other) const;
-	bool operator>=(const Time& other) const;
+    // Construct a Time from a raw seconds value (e.g. simulation clock).
+    // Avoids repeating the seconds→hours/minutes conversion everywhere.
+    static Time fromSeconds(double seconds);
 
-	// Arithmetic
-	Time operator+(const Time& other) const;  // Add durations
-	Time operator-(const Time& other) const;  // Subtract durations
+    // Comparison operators
+    bool operator==(const Time& other) const;
+    bool operator!=(const Time& other) const;
+    bool operator<(const Time& other)  const;
+    bool operator<=(const Time& other) const;
+    bool operator>(const Time& other)  const;
+    bool operator>=(const Time& other) const;
+
+    // Arithmetic
+    Time operator+(const Time& other) const;
+    Time operator-(const Time& other) const;
 };
 
 #endif
