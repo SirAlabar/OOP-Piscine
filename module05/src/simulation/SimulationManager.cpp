@@ -111,18 +111,25 @@ void SimulationManager::addTrain(Train* train)
     _trains.push_back(train);
 }
 
-
-bool SimulationManager::hasValidState(const Train* train) const
-{
-    return train && train->getCurrentState();
-}
-
 bool SimulationManager::isTrainActive(const Train* train) const
 {
     return train
         && train->getCurrentState()
         && !train->isFinished()
         && train->getCurrentState() != _context->states().idle();
+}
+
+bool SimulationManager::hasAnyActiveTrain() const
+{
+    for (Train* train : _trains)
+    {
+        if (isTrainActive(train))
+        {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 void SimulationManager::setTimestep(double timestep)
@@ -151,6 +158,32 @@ void SimulationManager::setRoundTripMode(bool enabled)
     _roundTripEnabled = enabled;
 }
 
+void SimulationManager::refreshSimulationState()
+{
+    // Collision system update
+    _collisionSystem->refreshRailOccupancy(_trains, _network);
+    // Context refresh
+    _context->refreshAllRiskData();
+}
+
+
+void SimulationManager::recordCommand(ICommand* cmd)
+{
+    if (!cmd)
+    {
+        return;
+    }
+
+    if (_commandManager && _commandManager->isRecording())
+    {
+        _commandManager->record(cmd);
+    }
+    else
+    {
+        delete cmd;
+    }
+}
+
 void SimulationManager::registerOutputWriter(Train* train, FileOutputWriter* writer)
 {
     if (train && writer)
@@ -172,19 +205,19 @@ void SimulationManager::setCommandManager(CommandManager* mgr)
 // Simulation control
 void SimulationManager::start()
 {
+    std::unique_lock<std::shared_mutex> lock(_dataMutex);
+
     _running             = true;
     _lastSnapshotMinute  = -1;
     _lastDashboardMinute = -1;
 
-    if (!_network || !_context) { return; }
+    if (!_network || !_context)
+    {
+        return;
+    }
 
     registerObservers();
-    checkDepartures();
-    _collisionSystem->refreshRailOccupancy(_trains, _network);
-    _context->refreshAllRiskData();
-    handleStateTransitions();
-    _context->refreshAllRiskData();
-    writeSnapshots();
+    refreshSimulationState();
 }
 
 void SimulationManager::stop()
@@ -195,62 +228,46 @@ void SimulationManager::stop()
 
 void SimulationManager::step()
 {
-    std::shared_lock lock(_dataMutex);
+    std::unique_lock lock(_dataMutex);
 
     if (!_network || !_context)
-	{
-		return;
-	}
-
-    checkDepartures();
-    _collisionSystem->refreshRailOccupancy(_trains, _network);
-    _context->refreshAllRiskData();
-    handleStateTransitions();
-    _context->refreshAllRiskData();
-    updateTrainStates(_timestep);
-    updateEvents();
-    _currentTime += _timestep;
-    writeSnapshots();
-
-    int  currentMinute      = static_cast<int>(_currentTime / SimConfig::SECONDS_PER_MINUTE);
-    bool shouldShowDashboard =
-        (currentMinute % 5 == 0 &&
-         currentMinute != _lastDashboardMinute &&
-         currentMinute > 0);
-
-    if (shouldShowDashboard && _simulationWriter)
     {
-        int activeTrains    = 0;
-        int completedTrains = 0;
-
-        for (Train* train : _trains)
-        {
-            if (!train)
-			{
-				continue;
-			}
-            if      (train->isFinished())
-			{
-				++completedTrains;
-			}
-            else if (train->getCurrentState() &&
-                     train->getCurrentState()->getName() != "Idle")
-			{
-				++activeTrains;
-			}
-        }
-
-        if (activeTrains > 0 || completedTrains > 0)
-        {
-            _lastDashboardMinute = currentMinute;
-            int activeEvents     = static_cast<int>(EventManager::getInstance().getActiveEvents().size());
-            _simulationWriter->writeDashboard(getCurrentTimeFormatted(), activeTrains,
-                                               static_cast<int>(_trains.size()),
-                                               completedTrains, activeEvents);
-        }
+        return;
     }
+
+    tick(false, true);
 }
 
+void SimulationManager::tick(bool replayMode, bool advanceTime)
+{
+    // Departures
+    checkDepartures();
+	// Collision system update and context refresh
+	refreshSimulationState();
+    // Replay or normal transitions
+    if (replayMode && _commandManager)
+    {
+        applyReplayCommands();
+    }
+    else
+    {
+        handleStateTransitions();
+    }
+    // Refresh after transitions
+    _context->refreshAllRiskData();
+    // Movement
+    updateTrainStates(_timestep);
+    // Events
+    updateEvents();
+    // Advance time only if requested
+    if (advanceTime)
+    {
+        _currentTime += _timestep;
+    }
+    // Output
+    writeSnapshots();
+    updateDashboard();
+}
 
 // Simulation loop entry point
 void SimulationManager::run(double maxTime, bool renderMode, bool replayMode)
@@ -321,35 +338,7 @@ void SimulationManager::simulationTick(bool replayMode)
 {
     std::unique_lock<std::shared_mutex> lock(_dataMutex);
 
-    // Departures
-    checkDepartures();
-    // Collision system update
-    _collisionSystem->refreshRailOccupancy(_trains, _network);
-    // Context refresh
-    _context->refreshAllRiskData();
-
-    // Replay or normal state transitions
-    if (replayMode && _commandManager)
-    {
-        applyReplayCommands();
-    }
-    else
-    {
-        handleStateTransitions();
-    }
-
-    // Refresh after transitions
-    _context->refreshAllRiskData();
-    // Movement and physics update
-    updateTrainStates(_timestep);
-    // Events update and generation
-    updateEvents();
-    // Advance simulation time
-    _currentTime += _timestep;
-    // Snapshot writing
-    writeSnapshots();
-    // Dashboard update
-    updateDashboard();
+    tick(replayMode, true);
 }
 
 // Apply recorded replay commands for current timestep
@@ -569,8 +558,7 @@ void SimulationManager::updateTrainStates(double dt)
 
         train->update(dt);
 
-        if (train->getCurrentState() &&
-            train->getCurrentState()->getName() == "Stopped")
+		if (train->getCurrentState() == _context->states().stopped())
         {
             bool expired = _context->decrementStopDuration(train, dt);
             if (expired)
@@ -603,12 +591,12 @@ void SimulationManager::updateTrainStates(double dt)
         MovementSystem::resolveProgress(train, _context);
         std::size_t newRailIndex  = train->getCurrentRailIndex();
 
-        if (newRailIndex != prevRailIndex &&
-            _commandManager && _commandManager->isRecording())
-        {
-            _commandManager->record(
-                new TrainAdvanceRailCommand(_currentTime, train->getName(), newRailIndex));
-        }
+		if (newRailIndex != prevRailIndex)
+		{
+			recordCommand(new TrainAdvanceRailCommand(_currentTime,
+											train->getName(),
+											newRailIndex));
+		}
     }
 }
 
@@ -618,7 +606,7 @@ void SimulationManager::checkDepartures()
 
     for (Train* train : _trains)
     {
-		if (!hasValidState(train) || train->isFinished())
+		if (!train || !train->getCurrentState() || train->isFinished())
 		{
 			continue;
 		}
@@ -641,11 +629,7 @@ void SimulationManager::checkDepartures()
                     {
 						train->setState(_context->states().accelerating());
                         // Record departure
-                        if (_commandManager && _commandManager->isRecording())
-                        {
-                            _commandManager->record(
-                                new TrainDepartureCommand(_currentTime, train->getName()));
-                        }
+						recordCommand(new TrainDepartureCommand(_currentTime, train->getName()));
                     }
                 }
             }
@@ -670,14 +654,11 @@ void SimulationManager::handleStateTransitions()
             train->setState(newState);
 
             // Record state change
-            if (_commandManager && _commandManager->isRecording())
-            {
-                _commandManager->record(
-                    new TrainStateChangeCommand(_currentTime,
-                                                train->getName(),
-                                                prevStateName,
-                                                newState->getName()));
-            }
+			recordCommand(new TrainStateChangeCommand(_currentTime,
+                                train->getName(),
+                                prevStateName,
+                                newState->getName()));
+
         }
     }
 }
@@ -702,24 +683,24 @@ void SimulationManager::writeSnapshots()
 			continue;
 		}
 
-        std::string currentStateName = train->getCurrentState()->getName();
+        ITrainState* currentState = train->getCurrentState();
         bool        stateChanged     = false;
 
         auto prevIt = _previousStates.find(train);
         if (prevIt != _previousStates.end())
         {
-            stateChanged = (prevIt->second != currentStateName);
+            stateChanged = (prevIt->second != currentState);
         }
         else
         {
-            _previousStates[train] = currentStateName;
+            _previousStates[train] = currentState;
             stateChanged           = true;
         }
 
         if (stateChanged || periodicWrite)
         {
             writer->writeSnapshot(_currentTime);
-            _previousStates[train] = currentStateName;
+            _previousStates[train] = currentState;
         }
     }
 }
@@ -763,81 +744,71 @@ void SimulationManager::registerObservers()
 void SimulationManager::updateEvents()
 {
     if (!_eventFactory)
-	{
-		return;
-	}
+    {
+        return;
+    }
 
     EventManager& eventManager = EventManager::getInstance();
-
     std::vector<Event*> previousActive = eventManager.getActiveEvents();
-
     Time currentTimeFormatted = getCurrentTimeFormatted();
     eventManager.update(currentTimeFormatted);
-
     std::vector<Event*> currentActive = eventManager.getActiveEvents();
 
     for (Event* event : currentActive)
     {
         bool isNew = true;
+
         for (Event* prev : previousActive)
         {
             if (prev == event)
-			{
-				isNew = false; break;
-			}
+            {
+                isNew = false;
+                break;
+            }
+        }
+        if (!isNew)
+        {
+            continue;
         }
 
-        if (!isNew)
-		{
-			continue;
-		}
-        // Map event type to display string
         std::string eventTypeStr = Event::typeToString(event->getType());
-
         logEventForAffectedTrains(event, "ACTIVATED");
 
-        // Record event activation
-        if (_commandManager && _commandManager->isRecording())
-        {
-            _commandManager->record(
-                new SimEventCommand(_currentTime, eventTypeStr, event->getDescription()));
-        }
+		recordCommand(new SimEventCommand(
+				_currentTime,
+				eventTypeStr,
+				event->getDescription()
+			)
+		);
 
-        if (_simulationWriter)
+        if (_simulationWriter && hasAnyActiveTrain())
         {
-            bool hasActiveTrains = false;
-            for (Train* train : _trains)
-            {
-				if (isTrainActive(train))
-                {
-                    hasActiveTrains = true;
-                    break;
-                }
-            }
-
-            if (hasActiveTrains)
-            {
-                _simulationWriter->writeEventActivated(getCurrentTimeFormatted(),
-                                                        eventTypeStr,
-                                                        event->getDescription());
-            }
+            _simulationWriter->writeEventActivated(
+                getCurrentTimeFormatted(),
+                eventTypeStr,
+                event->getDescription()
+            );
         }
     }
 
-    double timeSinceLastGeneration = _currentTime - _lastEventGenerationTime;
+    double timeSinceLastGeneration =
+        _currentTime - _lastEventGenerationTime;
+
     if (timeSinceLastGeneration >= 60.0)
     {
         std::vector<Event*> newEvents =
-            _eventFactory->tryGenerateEvents(currentTimeFormatted, 60.0);
+            _eventFactory->tryGenerateEvents(
+                currentTimeFormatted,
+                60.0
+            );
 
         for (Event* event : newEvents)
         {
             if (event)
-			{
-				eventManager.scheduleEvent(event);
-			}
+            {
+                eventManager.scheduleEvent(event);
+            }
         }
-
         _lastEventGenerationTime = _currentTime;
     }
 }

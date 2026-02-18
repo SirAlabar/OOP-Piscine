@@ -7,6 +7,8 @@
 #include "patterns/strategies/AStarStrategy.hpp"
 #include "patterns/observers/EventManager.hpp"
 #include "patterns/factories/EventFactory.hpp"
+#include "simulation/SimulationContext.hpp"
+#include "patterns/states/ITrainState.hpp"
 #include "simulation/SimulationManager.hpp"
 #include "core/Train.hpp"
 #include "core/Graph.hpp"
@@ -214,18 +216,25 @@ SimulationMetrics MonteCarloRunner::runSingleSimulation(unsigned int seed)
 	}
 	
 	// Track state transitions and metrics
-	std::map<Train*, std::string> previousStates;
+	std::map<Train*, ITrainState*> previousStates;
 	for (Train* train : trains)
-	{
-		previousStates[train] = "Idle";
-	}
+    {
+        previousStates[train] = train->getCurrentState();
+    }
 	
 	std::map<Train*, double> departureTime;  // Track when each train departs
 	std::map<Train*, double> arrivalTime;    // Track when each train arrives
 	
 	// Run simulation
 	sim.start();
-	double maxTime = 86400.0;  // 24 hours max for Monte Carlo
+    SimulationContext* context = sim.getContext();
+    if (!context)
+    {
+        throw std::runtime_error("SimulationContext is null in MonteCarloRunner");
+    }
+    StateRegistry& states = context->states();
+
+	double maxTime = SimConfig::SECONDS_PER_DAY;  // 24 hours max for Monte Carlo
 	
 	while (sim.isRunning() && sim.getCurrentTime() < maxTime)
 	{
@@ -234,27 +243,32 @@ SimulationMetrics MonteCarloRunner::runSingleSimulation(unsigned int seed)
 		{
 			if (train && train->getCurrentState())
 			{
-				std::string currentState = train->getCurrentState()->getName();
-				std::string& prevState = previousStates[train];
-				
-				if (currentState != prevState)
-				{
-					stats.recordStateTransition(train, prevState, currentState);
-					
-					// Track departure (Idle -> Accelerating)
-					if (prevState == "Idle" && currentState != "Idle")
-					{
-						departureTime[train] = sim.getCurrentTime();
-					}
-					
-					// Track collision avoidance (any -> Waiting or Emergency)
-					if (currentState == "Waiting" || currentState == "Emergency")
-					{
-						stats.recordCollisionAvoidance();
-					}
-					
-					prevState = currentState;
-				}
+                ITrainState* currentState = train->getCurrentState();
+                ITrainState*& prevState = previousStates[train];
+
+                if (currentState != prevState)
+                {
+                    std::string prevName = prevState ? prevState->getName() : "";
+                    std::string currentName = currentState ? currentState->getName() : "";
+
+                    stats.recordStateTransition(train, prevName, currentName);
+
+                    // Track departure (Idle -> Accelerating or other active state)
+                    if (prevState == states.idle()
+                        && currentState != states.idle())
+                    {
+                        departureTime[train] = sim.getCurrentTime();
+                    }
+
+                    // Track collision avoidance states
+                    if (currentState == states.waiting()
+                        || currentState == states.emergency())
+                    {
+                        stats.recordCollisionAvoidance();
+                    }
+
+                    prevState = currentState;
+                }
 			}
 		}
 		

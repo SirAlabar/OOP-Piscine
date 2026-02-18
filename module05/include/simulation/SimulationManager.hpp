@@ -35,6 +35,8 @@ class EventFactory;
 class Event;
 class StatsCollector;
 class CommandManager;
+class ICommand;
+class ITrainState;  
 
 class SimulationManager
 {
@@ -64,12 +66,13 @@ private:
 
     IOutputWriter*                   _simulationWriter;
     std::map<Train*, FileOutputWriter*> _outputWriters;
-    std::map<Train*, std::string>       _previousStates;
+    std::map<Train*, ITrainState*> _previousStates;
     int _lastSnapshotMinute;
     int _lastDashboardMinute;
 
     CommandManager* _commandManager;  // Not owned; injected by Application
 
+	void tick(bool replayMode, bool advanceTime);
     void updateTrainStates(double dt);
     void checkDepartures();
     void handleStateTransitions();
@@ -77,6 +80,7 @@ private:
     void cleanupOutputWriters();
     void updateEvents();
     void registerObservers();
+	void refreshSimulationState();
     void logEventForAffectedTrains(Event* event, const std::string& action);
 	void runConsoleLoop(double maxTime, bool replayMode);
     void runRenderLoop(double maxTime, bool replayMode);
@@ -86,6 +90,8 @@ private:
 	void updateDashboard();
 	bool hasValidState(const Train* train) const;
 	bool isTrainActive(const Train* train) const;
+    bool hasAnyActiveTrain() const;
+	void recordCommand(ICommand* cmd);
 
 public:
     static SimulationManager& getInstance()
@@ -110,7 +116,6 @@ public:
     void registerOutputWriter(Train* train, FileOutputWriter* writer);
     void setStatsCollector(StatsCollector* stats);
 
-    // ── Command Pattern ──────────────────────────────────────────────────
     // Inject CommandManager before calling run().  Pass nullptr to disable.
     void setCommandManager(CommandManager* mgr);
 
