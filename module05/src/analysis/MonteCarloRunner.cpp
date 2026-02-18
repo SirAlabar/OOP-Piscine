@@ -5,7 +5,6 @@
 #include "patterns/factories/TrainFactory.hpp"
 #include "patterns/strategies/DijkstraStrategy.hpp"
 #include "patterns/strategies/AStarStrategy.hpp"
-#include "patterns/states/IdleState.hpp"
 #include "patterns/observers/EventManager.hpp"
 #include "patterns/factories/EventFactory.hpp"
 #include "simulation/SimulationManager.hpp"
@@ -163,8 +162,7 @@ SimulationMetrics MonteCarloRunner::runSingleSimulation(unsigned int seed)
 	
 	// Create trains and find paths
 	std::vector<Train*> trains;
-	static IdleState idleState;
-	
+
 	for (const auto& config : trainConfigs)
 	{
 		Train* train = TrainFactory::create(config, graph);
@@ -190,7 +188,6 @@ SimulationMetrics MonteCarloRunner::runSingleSimulation(unsigned int seed)
 		}
 		
 		train->setPath(path);
-		train->setState(&idleState);
 		trains.push_back(train);
 		
 		// Calculate estimated time and register with stats

@@ -84,6 +84,8 @@ private:
     void applyReplayCommands();
 	bool shouldStopEarly(bool replayMode);
 	void updateDashboard();
+	bool hasValidState(const Train* train) const;
+	bool isTrainActive(const Train* train) const;
 
 public:
     static SimulationManager& getInstance()

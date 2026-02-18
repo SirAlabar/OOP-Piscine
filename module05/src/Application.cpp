@@ -9,7 +9,6 @@
 #include "patterns/strategies/IPathfindingStrategy.hpp"
 #include "patterns/strategies/DijkstraStrategy.hpp"
 #include "patterns/strategies/AStarStrategy.hpp"
-#include "patterns/states/IdleState.hpp"
 #include "simulation/SimulationManager.hpp"
 #include "analysis/MonteCarloRunner.hpp"
 #include "core/Train.hpp"
@@ -89,8 +88,6 @@ bool Application::_buildSimulation(
             _consoleWriter->writeProgress("Using Dijkstra pathfinding");
         }
 
-        static IdleState idleState;
-
         for (const auto& config : trainConfigs)
         {
             Train* train = TrainFactory::create(config, outGraph);
@@ -123,7 +120,7 @@ bool Application::_buildSimulation(
 
             train->setPath(path);
             _consoleWriter->writePathDebug(train);
-            train->setState(&idleState);
+            // train->setState(&idleState);
             outTrains.push_back(train);
 
             _consoleWriter->writeTrainCreated(

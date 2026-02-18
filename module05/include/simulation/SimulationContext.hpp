@@ -1,6 +1,7 @@
 #ifndef SIMULATIONCONTEXT_HPP
 #define SIMULATIONCONTEXT_HPP
 
+#include "patterns/states/StateRegistry.hpp"
 #include <map>
 #include <vector>
 
@@ -9,7 +10,6 @@ class Graph;
 class Node;
 class CollisionAvoidance;
 class TrafficController;
-class StateRegistry;
 struct RiskData;
 
 class SimulationContext
@@ -20,7 +20,7 @@ private:
 	TrafficController* _trafficController;
 	const std::vector<Train*>* _trains;
 	// State Management
-	StateRegistry* _states;
+	StateRegistry _states;
 	// Cached Risk Data
 	std::map<Train*, RiskData> _riskMap;  // Refreshed once per frame
 	std::map<Train*, double> _stopDurations;
@@ -53,6 +53,7 @@ public:
 	// State Registry Access =====
 
 	StateRegistry& states();
+	const StateRegistry& states() const;
 	
 	// TrafficController Access
 	TrafficController* getTrafficController() const;

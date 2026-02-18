@@ -97,15 +97,33 @@ void SimulationManager::setNetwork(Graph* network)
 void SimulationManager::addTrain(Train* train)
 {
     if (!train) 
-	{
-		return;
-	}
+    {
+        return;
+    }
 
     std::unique_lock lock(_dataMutex);
+
+    if (_context)
+    {
+        train->setState(_context->states().idle());
+    }
 
     _trains.push_back(train);
 }
 
+
+bool SimulationManager::hasValidState(const Train* train) const
+{
+    return train && train->getCurrentState();
+}
+
+bool SimulationManager::isTrainActive(const Train* train) const
+{
+    return train
+        && train->getCurrentState()
+        && !train->isFinished()
+        && train->getCurrentState() != _context->states().idle();
+}
 
 void SimulationManager::setTimestep(double timestep)
 {
@@ -412,11 +430,10 @@ void SimulationManager::updateDashboard()
         {
             completedTrains++;
         }
-        else if (train->getCurrentState()
-              && train->getCurrentState()->getName() != "Idle")
-        {
-            activeTrains++;
-        }
+		else if (isTrainActive(train))
+		{
+			activeTrains++;
+		}
     }
 
     if (activeTrains == 0 && completedTrains == 0)
@@ -574,9 +591,7 @@ void SimulationManager::updateTrainStates(double dt)
                     }
 
                     train->setDepartureTime(Time(nextDeparture / 60, nextDeparture % 60));
-
-                    static IdleState idleState;
-                    train->setState(&idleState);
+					train->setState(_context->states().idle());
                 }
             }
         }
@@ -603,16 +618,11 @@ void SimulationManager::checkDepartures()
 
     for (Train* train : _trains)
     {
-        if (!train || !train->getCurrentState())
+		if (!hasValidState(train) || train->isFinished())
 		{
 			continue;
 		}
-        if (train->isFinished())
-		{
-			continue;
-		}
-
-        if (train->getCurrentState()->getName() == "Idle")
+        if (train->getCurrentState() == _context->states().idle())
         {
             if (currentTimeFormatted >= train->getDepartureTime())
             {
@@ -629,9 +639,7 @@ void SimulationManager::checkDepartures()
 
                     if (decision == TrafficController::GRANT)
                     {
-                        static AcceleratingState accelState;
-                        train->setState(&accelState);
-
+						train->setState(_context->states().accelerating());
                         // Record departure
                         if (_commandManager && _commandManager->isRecording())
                         {
@@ -649,11 +657,7 @@ void SimulationManager::handleStateTransitions()
 {
     for (Train* train : _trains)
     {
-        if (!train || !train->getCurrentState())
-		{
-			continue;
-		}
-        if (train->isFinished())
+		if (!isTrainActive(train))
 		{
 			continue;
 		}
@@ -693,11 +697,7 @@ void SimulationManager::writeSnapshots()
         Train*           train  = pair.first;
         FileOutputWriter* writer = pair.second;
 
-        if (!train || !writer)
-		{
-			continue;
-		}
-        if (train->getCurrentState()->getName() == "Idle")
+		if (!writer || !isTrainActive(train))
 		{
 			continue;
 		}
@@ -808,9 +808,7 @@ void SimulationManager::updateEvents()
             bool hasActiveTrains = false;
             for (Train* train : _trains)
             {
-                if (train && !train->isFinished() &&
-                    train->getCurrentState() &&
-                    train->getCurrentState()->getName() != "Idle")
+				if (isTrainActive(train))
                 {
                     hasActiveTrains = true;
                     break;
@@ -855,13 +853,7 @@ void SimulationManager::logEventForAffectedTrains(Event* event, const std::strin
 
 	for (Train* train : _trains)
 	{
-		if (!train)
-		{
-			continue;
-		}
-
-		if (!train->getCurrentState() ||
-			train->getCurrentState()->getName() == "Idle")
+		if (!isTrainActive(train))
 		{
 			continue;
 		}

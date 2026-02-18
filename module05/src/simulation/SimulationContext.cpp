@@ -18,14 +18,11 @@ SimulationContext::SimulationContext(
 	  _collisionSystem(collisionSystem),
 	  _trafficController(trafficController),
 	  _trains(trains),
-	  _states(new StateRegistry())
+	  _states()
 {
 }
 
-SimulationContext::~SimulationContext()
-{
-	delete _states;
-}
+SimulationContext::~SimulationContext() = default;
 
 const RiskData& SimulationContext::getRisk(const Train* train) const
 {
@@ -111,7 +108,12 @@ Node* SimulationContext::getCurrentArrivalNode(const Train* train) const
 
 StateRegistry& SimulationContext::states()
 {
-	return *_states;
+    return _states;
+}
+
+const StateRegistry& SimulationContext::states() const
+{
+    return _states;
 }
 
 TrafficController* SimulationContext::getTrafficController() const
