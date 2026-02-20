@@ -23,8 +23,6 @@
 #include <ctime>
 #include <fstream>
 #include <iterator>
-#include <mutex>
-#include <thread>
 
 Application::Application(int argc, char* argv[])
     : _cli(argc, argv),
@@ -40,7 +38,10 @@ Application::~Application()
 std::string Application::_readFile(const std::string& path)
 {
     std::ifstream f(path, std::ios::in | std::ios::binary);
-    if (!f.is_open()) { return ""; }
+    if (!f.is_open())
+	{
+		return "";
+	}
     return std::string(std::istreambuf_iterator<char>(f),
                        std::istreambuf_iterator<char>());
 }
@@ -247,7 +248,8 @@ void Application::_teardownSimulation(
 
     for (FileOutputWriter* w : writers) 
 	{
-		w->close(); delete w;
+		w->close();
+		delete w;
 	}
     writers.clear();
     for (Train* t : trains)
@@ -386,12 +388,7 @@ int Application::run()
         if (_cli.hasRender())
         {
             SFMLRenderer renderer;
-            std::thread  simThread([&sim]() { sim.run(1e9, true, true); });
-
-            renderer.run(sim);
-
-            sim.stop();
-            simThread.join();
+            sim.run(1e9, true, true, &renderer);
         }
         else
         {
@@ -432,25 +429,21 @@ int Application::run()
 			sim.setCommandManager(cmdMgr);
 		}
 
-        std::thread simThread([&sim]() { sim.run(1e9, true); });
-        std::mutex  reloadMutex;
+        const int hotReloadSeed = static_cast<int>(sim.getSeed());
 
         auto rebuildCallback = [&](const std::string& net, const std::string& train) -> bool
         {
-            sim.stop();
-            if (simThread.joinable())
-			{
-				simThread.join();
-			}
             _teardownSimulation(graph, trains, writers);
 
-            if (_buildSimulation(net, train, graph, trains, writers))
+            if (_buildSimulation(net, train, graph, trains, writers, hotReloadSeed))
             {
                 if (cmdMgr)
 				{
 					sim.setCommandManager(cmdMgr);
 				}
-                simThread = std::thread([&sim](){sim.run(1e9, true);});
+                renderer.shutdown();
+                renderer.initialize(sim);
+                sim.start();
                 return true;
             }
             return false;
@@ -460,8 +453,6 @@ int Application::run()
             {networkFile, trainFile},
             [&](const std::string& changedFile)
             {
-                std::lock_guard<std::mutex> lock(reloadMutex);
-
                 _consoleWriter->writeProgress("Hot-reload: change detected in " + changedFile);
 
                 std::string oldNetContent   = _readFile(networkFile);
@@ -526,14 +517,8 @@ int Application::run()
         );
 
         watcher.start();
-        renderer.run(sim);
+        sim.run(1e9, true, false, &renderer, [&watcher]() { watcher.poll(); });
         watcher.stop();
-
-        sim.stop();
-        if (simThread.joinable())
-		{
-			simThread.join();
-		}
 
         _consoleWriter->writeProgress("Writing final snapshots...");
         for (FileOutputWriter* w : writers)
@@ -562,7 +547,7 @@ int Application::run()
         return 0;
     }
 
-    // ── Render mode (no hot-reload) ────────────────────────────────────────
+    // Render mode (no hot-reload)
     if (_cli.hasRender())
     {
         Graph*                         graph = nullptr;
@@ -586,12 +571,7 @@ int Application::run()
 
         if (cmdMgr) { sim.setCommandManager(cmdMgr); }
 
-        std::thread simThread([&sim]() { sim.run(1e9, true); });
-
-        renderer.run(sim);
-
-        sim.stop();
-        simThread.join();
+        sim.run(1e9, true, false, &renderer);
 
         _consoleWriter->writeProgress("Writing final snapshots...");
         for (FileOutputWriter* w : writers) { w->writeSnapshot(sim.getCurrentTime()); }
@@ -617,7 +597,7 @@ int Application::run()
         return 0;
     }
 
-    // ── Console mode ───────────────────────────────────────────────────────
+    // Console mode
     {
         Graph*                         graph = nullptr;
         std::vector<Train*>            trains;

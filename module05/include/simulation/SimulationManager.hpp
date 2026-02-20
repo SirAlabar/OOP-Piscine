@@ -4,8 +4,7 @@
 #include <vector>
 #include <map>
 #include "utils/Time.hpp"
-#include <shared_mutex>
-#include <mutex>
+#include <functional>
 
 // Simulation time configuration
 namespace SimConfig
@@ -46,7 +45,6 @@ public:
 private:
     SimulationManager();
 
-	mutable std::shared_mutex _dataMutex;
 
 	Graph*              _network;
     TrainList           _trains;
@@ -82,8 +80,6 @@ private:
     void registerObservers();
 	void refreshSimulationState();
     void logEventForAffectedTrains(Event* event, const std::string& action);
-	void runConsoleLoop(double maxTime, bool replayMode);
-    void runRenderLoop(double maxTime, bool replayMode);
 	void simulationTick(bool replayMode);
     void applyReplayCommands();
 	bool shouldStopEarly(bool replayMode);
@@ -126,9 +122,13 @@ public:
     void stop();
     void step();
 
-    // renderMode = true  → real-time loop with sleep (SFML thread)
+    // renderMode = true  → real-time loop with renderer integrated in the same loop
     // replayMode = true  → skip autonomous state transitions; apply recorded commands
-    void run(double maxTime, bool renderMode = false, bool replayMode = false);
+    void run(double maxTime,
+             bool renderMode = false,
+             bool replayMode = false,
+             class IRenderer* renderer = nullptr,
+             const std::function<void()>& loopHook = std::function<void()>());
 
     double          getCurrentTime()          const;
     Time            getCurrentTimeFormatted() const;
@@ -141,7 +141,6 @@ public:
     void   setSimulationSpeed(double speed);
 
     SimulationContext* getContext() const { return _context; }
-	std::shared_mutex& getMutex() const { return _dataMutex; }
 
     void reset();
 };

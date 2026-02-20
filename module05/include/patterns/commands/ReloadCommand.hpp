@@ -12,7 +12,7 @@ class ReloadCommand : public ICommand
 {
 public:
     // rebuildFn: called with (netFilePath, trainFilePath); returns true on success.
-    // The caller (Application) is responsible for stopping the sim thread before rebuild.
+    // The caller (Application) is responsible for rebuilding simulation state safely.
     using RebuildFn = std::function<bool(const std::string& netFile,
                                          const std::string& trainFile)>;
 

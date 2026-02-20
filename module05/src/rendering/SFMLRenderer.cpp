@@ -12,7 +12,8 @@ SFMLRenderer::SFMLRenderer()
 	  _world(nullptr),
 	  _worldGenerator(nullptr),
 	  _networkCenterX(0),
-	  _networkCenterY(0)
+	  _networkCenterY(0),
+      _initialized(false)
 {
 	_window.setFramerateLimit(60);
 
@@ -32,55 +33,81 @@ SFMLRenderer::SFMLRenderer()
 
 SFMLRenderer::~SFMLRenderer()
 {
-	delete _world;
-	delete _worldGenerator;
+	resetWorldState();
 }
 
-void SFMLRenderer::run(SimulationManager& simulation)
+void SFMLRenderer::initialize(SimulationManager& simulation)
 {
-	initializeWorld(simulation);
-
-	sf::Clock clock;
-	while (_window.isOpen())
+	if (_initialized)
 	{
-		double realDt = clock.restart().asSeconds();
-
-		InputState input = _inputManager.processEvents(_window, realDt);
-
-		if (input.closeRequested)
-		{
-			_window.close();
-			break;
-		}
-
-		if (input.zoomDelta != 0.0f)
-		{
-			_cameraManager.addZoomDelta(input.zoomDelta);
-		}
-
-		if (input.dragActive)
-		{
-			_cameraManager.moveOffset(sf::Vector2f(
-				static_cast<float>(input.dragDelta.x),
-				static_cast<float>(input.dragDelta.y)
-			));
-		}
-
-		if (input.panX != 0.0f || input.panY != 0.0f)
-		{
-			_cameraManager.moveOffset(sf::Vector2f(input.panX, input.panY));
-		}
-
-		if (input.speedMultiplier != 1.0)
-		{
-			double currentSpeed = simulation.getSimulationSpeed();
-			simulation.setSimulationSpeed(currentSpeed * input.speedMultiplier);
-		}
-
-		_cameraManager.update(realDt);
-
-		render(simulation);
+		return;
 	}
+	resetWorldState();
+	initializeWorld(simulation);
+	_clock.restart();
+	_initialized = true;
+}
+
+bool SFMLRenderer::processFrame(SimulationManager& simulation)
+{
+	if (!_initialized)
+	{
+		initialize(simulation);
+	}
+
+	double realDt = _clock.restart().asSeconds();
+	InputState input = _inputManager.processEvents(_window, realDt);
+
+	if (input.closeRequested || !_window.isOpen())
+	{
+		return false;
+	}
+
+	if (input.zoomDelta != 0.0f)
+	{
+		_cameraManager.addZoomDelta(input.zoomDelta);
+	}
+
+	if (input.dragActive)
+	{
+		_cameraManager.moveOffset(sf::Vector2f(
+			static_cast<float>(input.dragDelta.x),
+			static_cast<float>(input.dragDelta.y)
+		));
+	}
+
+	if (input.panX != 0.0f || input.panY != 0.0f)
+	{
+		_cameraManager.moveOffset(sf::Vector2f(input.panX, input.panY));
+	}
+
+	if (input.speedMultiplier != 1.0)
+	{
+		double currentSpeed = simulation.getSimulationSpeed();
+		simulation.setSimulationSpeed(currentSpeed * input.speedMultiplier);
+	}
+
+	_cameraManager.update(realDt);
+	render(simulation);
+	return true;
+}
+
+void SFMLRenderer::shutdown()
+{
+	_initialized = false;
+	resetWorldState();
+}
+
+void SFMLRenderer::resetWorldState()
+{
+	delete _world;
+	_world = nullptr;
+
+	delete _worldGenerator;
+	_worldGenerator = nullptr;
+
+	_nodeGridPositions.clear();
+	_occupiedTiles.clear();
 }
 
 void SFMLRenderer::initializeWorld(SimulationManager& simulation)

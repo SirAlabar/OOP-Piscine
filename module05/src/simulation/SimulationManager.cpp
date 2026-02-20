@@ -23,8 +23,8 @@
 #include "patterns/commands/TrainDepartureCommand.hpp"
 #include "patterns/commands/TrainAdvanceRailCommand.hpp"
 #include "patterns/commands/SimEventCommand.hpp"
-#include <thread>
 #include <chrono>
+#include "rendering/IRenderer.hpp"
 
 SimulationManager::SimulationManager()
     : _network(nullptr),
@@ -60,8 +60,6 @@ SimulationManager::~SimulationManager()
 // Initialization
 void SimulationManager::setNetwork(Graph* network)
 {
-    std::unique_lock lock(_dataMutex);
-
     _network = network;
 
     if (_context)
@@ -100,8 +98,6 @@ void SimulationManager::addTrain(Train* train)
     {
         return;
     }
-
-    std::unique_lock lock(_dataMutex);
 
     if (_context)
     {
@@ -205,8 +201,6 @@ void SimulationManager::setCommandManager(CommandManager* mgr)
 // Simulation control
 void SimulationManager::start()
 {
-    std::unique_lock<std::shared_mutex> lock(_dataMutex);
-
     _running             = true;
     _lastSnapshotMinute  = -1;
     _lastDashboardMinute = -1;
@@ -228,8 +222,6 @@ void SimulationManager::stop()
 
 void SimulationManager::step()
 {
-    std::unique_lock lock(_dataMutex);
-
     if (!_network || !_context)
     {
         return;
@@ -270,74 +262,70 @@ void SimulationManager::tick(bool replayMode, bool advanceTime)
 }
 
 // Simulation loop entry point
-void SimulationManager::run(double maxTime, bool renderMode, bool replayMode)
-{
-    start();
-
-    if (renderMode)
-    {
-        runRenderLoop(maxTime, replayMode);
-    }
-    else
-    {
-        runConsoleLoop(maxTime, replayMode);
-    }
-}
-
-void SimulationManager::runConsoleLoop(double maxTime, bool replayMode)
-{
-    while (_running && _currentTime < maxTime)
-    {
-        simulationTick(replayMode);
-
-        if (shouldStopEarly(replayMode))
-        {
-            stop();
-        }
-    }
-}
-
-// Render loop (real-time pacing with speed multiplier)
-void SimulationManager::runRenderLoop(double maxTime, bool replayMode)
+void SimulationManager::run(double maxTime,
+                            bool renderMode,
+                            bool replayMode,
+                            IRenderer* renderer,
+                            const std::function<void()>& loopHook)
 {
     using clock = std::chrono::steady_clock;
 
-    auto previous = clock::now();
+    start();
 
+    if (renderMode && renderer)
+    {
+        renderer->initialize(*this);
+    }
+
+    auto previous = clock::now();
     double accumulator = 0.0;
 
     while (_running && _currentTime < maxTime)
     {
-        auto now = clock::now();
-
-        std::chrono::duration<double> elapsed = now - previous;
-
-        previous = now;
-
-        accumulator += elapsed.count()
-                     * _simulationSpeed
-                     * SimConfig::SECONDS_PER_MINUTE;
-
-        while (accumulator >= _timestep)
+        if (loopHook)
         {
-            simulationTick(replayMode);
-
-            accumulator -= _timestep;
+            loopHook();
         }
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        if (renderMode)
+        {
+            if (!renderer || !renderer->processFrame(*this))
+            {
+                stop();
+                break;
+            }
+
+            auto now = clock::now();
+            std::chrono::duration<double> elapsed = now - previous;
+            previous = now;
+
+            accumulator += elapsed.count() * _simulationSpeed * SimConfig::SECONDS_PER_MINUTE;
+
+            while (accumulator >= _timestep && _running)
+            {
+                simulationTick(replayMode);
+                accumulator -= _timestep;
+            }
+        }
+        else
+        {
+            simulationTick(replayMode);
+        }
 
         if (shouldStopEarly(replayMode))
         {
             stop();
         }
+    }
+
+    if (renderer)
+    {
+        renderer->shutdown();
     }
 }
 
 void SimulationManager::simulationTick(bool replayMode)
 {
-    std::unique_lock<std::shared_mutex> lock(_dataMutex);
-
     tick(replayMode, true);
 }
 
@@ -463,26 +451,24 @@ Time SimulationManager::getCurrentTimeFormatted() const
 
 const SimulationManager::TrainList& SimulationManager::getTrains() const
 { 
-	std::shared_lock lock(_dataMutex);
 	return _trains; 
 }
-const Graph*                        SimulationManager::getNetwork()  const
+const Graph* SimulationManager::getNetwork() const
 { 
-	std::shared_lock lock(_dataMutex);
 	return _network; 
 }
 
-bool                                SimulationManager::isRunning()   const
+bool SimulationManager::isRunning() const
 {
 	return _running;
 }
 
-unsigned int                        SimulationManager::getSeed()     const
+unsigned int SimulationManager::getSeed() const
 {
 	return _eventSeed;
 }
 
-double                              SimulationManager::getSimulationSpeed() const
+double SimulationManager::getSimulationSpeed() const
 {
 	return _simulationSpeed;
 }
@@ -494,8 +480,6 @@ void SimulationManager::setSimulationSpeed(double speed)
 
 Train* SimulationManager::findTrain(const std::string& name) const
 {
-    std::shared_lock lock(_dataMutex);
-
     for (Train* train : _trains)
     {
         if (train && train->getName() == name)
@@ -508,8 +492,6 @@ Train* SimulationManager::findTrain(const std::string& name) const
 
 void SimulationManager::reset()
 {
-    std::unique_lock lock(_dataMutex);
-
     cleanupOutputWriters();
     _trains.clear();
     _previousStates.clear();

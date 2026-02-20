@@ -34,12 +34,16 @@ private:
 	
 	int _networkCenterX;
 	int _networkCenterY;
+	sf::Clock _clock;
+	bool _initialized;
 
 public:
 	SFMLRenderer();
 	~SFMLRenderer() override;
 
-	void run(SimulationManager& simulation) override;
+	void initialize(SimulationManager& simulation) override;
+	bool processFrame(SimulationManager& simulation) override;
+	void shutdown() override;
 
 private:
 	void initializeWorld(SimulationManager& simulation);
@@ -48,6 +52,7 @@ private:
 	void generateWorld(const Graph* graph);
 	void render(const SimulationManager& simulation);
 	
+	void resetWorldState();
 	sf::Vector2i gridToWorldOffset(int gx, int gy) const;
 };
 
