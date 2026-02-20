@@ -190,6 +190,7 @@ void SimulationManager::registerOutputWriter(Train* train, FileOutputWriter* wri
 {
     if (train && writer)
     {
+        writer->setOccupancyMap(&_collisionSystem->getOccupancyMap());
         _outputWriters[train] = writer;
     }
 }

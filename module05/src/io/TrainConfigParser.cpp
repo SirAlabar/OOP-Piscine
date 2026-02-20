@@ -66,10 +66,34 @@ TrainConfig TrainConfigParser::parseLine(const std::string& line)
 
     try
     {
-        config.mass          = std::stod(tokens[1]);
-        config.frictionCoef  = std::stod(tokens[2]);
-        config.maxAccelForce = std::stod(tokens[3]);
-        config.maxBrakeForce = std::stod(tokens[4]);
+        std::size_t pos = 0;
+
+        config.mass          = std::stod(tokens[1], &pos);
+        if (pos != tokens[1].size())
+        {
+            throw std::runtime_error("Invalid numeric value: '" + tokens[1] + "'");
+        }
+
+        pos = 0;
+        config.frictionCoef  = std::stod(tokens[2], &pos);
+        if (pos != tokens[2].size())
+        {
+            throw std::runtime_error("Invalid numeric value: '" + tokens[2] + "'");
+        }
+
+        pos = 0;
+        config.maxAccelForce = std::stod(tokens[3], &pos);
+        if (pos != tokens[3].size())
+        {
+            throw std::runtime_error("Invalid numeric value: '" + tokens[3] + "'");
+        }
+
+        pos = 0;
+        config.maxBrakeForce = std::stod(tokens[4], &pos);
+        if (pos != tokens[4].size())
+        {
+            throw std::runtime_error("Invalid numeric value: '" + tokens[4] + "'");
+        }
     }
     catch (...)
     {

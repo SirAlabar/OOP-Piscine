@@ -1,7 +1,6 @@
 #include <gtest/gtest.h>
 #include "core/Node.hpp"
 #include "core/Rail.hpp"
-#include "core/Train.hpp"
 
 TEST(RailTest, DefaultConstructor)
 {
@@ -24,69 +23,6 @@ TEST(RailTest, ParameterizedConstructor)
     EXPECT_EQ(r.getLength(), 10.0);
     EXPECT_EQ(r.getSpeedLimit(), 100.0);
     EXPECT_TRUE(r.isValid());
-}
-
-TEST(RailTest, MultiTrainTrackingInitiallyEmpty)
-{
-    Node a("CityA");
-    Node b("CityB");
-    Rail r(&a, &b, 10.0, 100.0);
-    
-    EXPECT_FALSE(r.hasTrains());
-    EXPECT_TRUE(r.getTrainsOnRail().empty());
-}
-
-TEST(RailTest, AddAndRemoveTrain)
-{
-    Node a("CityA");
-    Node b("CityB");
-    Train t;
-    Rail r(&a, &b, 10.0, 100.0);
-    
-    r.addTrain(&t);
-    EXPECT_TRUE(r.hasTrains());
-    EXPECT_EQ(r.getTrainsOnRail().size(), 1);
-    EXPECT_EQ(r.getTrainsOnRail()[0], &t);
-    
-    r.removeTrain(&t);
-    EXPECT_FALSE(r.hasTrains());
-    EXPECT_TRUE(r.getTrainsOnRail().empty());
-}
-
-TEST(RailTest, MultipleTrainsOnSameRail)
-{
-    Node a("CityA");
-    Node b("CityB");
-    Train t1, t2, t3;
-    Rail r(&a, &b, 10.0, 100.0);
-    
-    r.addTrain(&t1);
-    r.addTrain(&t2);
-    r.addTrain(&t3);
-    
-    EXPECT_EQ(r.getTrainsOnRail().size(), 3);
-    EXPECT_TRUE(r.hasTrains());
-}
-
-TEST(RailTest, RemoveSpecificTrain)
-{
-    Node a("CityA");
-    Node b("CityB");
-    Train t1, t2, t3;
-    Rail r(&a, &b, 10.0, 100.0);
-    
-    r.addTrain(&t1);
-    r.addTrain(&t2);
-    r.addTrain(&t3);
-    
-    r.removeTrain(&t2);
-    
-    EXPECT_EQ(r.getTrainsOnRail().size(), 2);
-    
-    const auto& trains = r.getTrainsOnRail();
-    EXPECT_TRUE(std::find(trains.begin(), trains.end(), &t1) != trains.end());
-    EXPECT_TRUE(std::find(trains.begin(), trains.end(), &t2) == trains.end());
-    EXPECT_TRUE(std::find(trains.begin(), trains.end(), &t3) != trains.end());
 }
 
 TEST(RailTest, GetOtherNodeFromA)

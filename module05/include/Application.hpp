@@ -68,7 +68,7 @@ private:
     void            _printConfiguration(const std::string& netFile, const std::string& trainFile) const;
     CommandManager* _setupCommandManager() const;
     void            _flushFinalSnapshots(const std::vector<FileOutputWriter*>& writers, double currentTime) const;
-    void            _saveRecording(CommandManager* cmdMgr, const std::string& netFile, const std::string& trainFile, unsigned int seed) const;
+    void            _saveRecording(CommandManager* cmdMgr, const std::string& netFile, const std::string& trainFile, unsigned int seed, double stopTime) const;
     unsigned int    _resolveSeed(int seedOverride) const;
     static double   _estimateJourneyMinutes(const Train* train);
     static std::string _readFile(const std::string& path);

@@ -3,6 +3,7 @@
 
 #include "core/Train.hpp"
 #include "core/Rail.hpp"
+#include "simulation/OccupancyMap.hpp"
 #include "utils/Time.hpp"
 #include <string>
 #include <fstream>
@@ -34,29 +35,24 @@ public:
 	// Close file
 	void close();
 
+    // Inject a read-only view of the current rail occupancy.
+    // Called by SimulationManager after registerOutputWriter().
+    // Pass nullptr to disable multi-train visualization (default).
+    void setOccupancyMap(const OccupancyMap* occupancy);
+
 private:
-	Train* _train;
-	std::ofstream _file;
-	std::string _filename;
-	double _totalPathDistance;  // Total journey distance in kilometers
-	bool _finalSnapshotWritten;  // Track if final destination snapshot has been written
+	Train*              _train;
+	std::ofstream       _file;
+	std::string         _filename;
+	double              _totalPathDistance;
+	bool                _finalSnapshotWritten;
+    const OccupancyMap* _occupancy;  // Non-owning; may be nullptr.
 
-	// Generate filename: TrainName_DepartureTime.result
 	std::string generateFilename() const;
-	
-	// Calculate total distance of train's path
-	double calculateTotalPathDistance() const;
-
-	// Get status string from current state
+	double      calculateTotalPathDistance() const;
 	std::string getStatusString() const;
-
-	// Calculate remaining distance to final destination
-	double calculateRemainingDistance() const;
-
-	// Generate ASCII rail visualization
+	double      calculateRemainingDistance() const;
 	std::string generateRailVisualization() const;
-
-	// Format time as HHhMM
 	std::string formatTime(double seconds) const;
 };
 

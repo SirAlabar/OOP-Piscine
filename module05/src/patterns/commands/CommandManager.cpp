@@ -1,18 +1,21 @@
 #include "patterns/commands/CommandManager.hpp"
 #include "patterns/commands/ICommand.hpp"
-#include "patterns/commands/TrainStateChangeCommand.hpp"
 #include "patterns/commands/TrainDepartureCommand.hpp"
+#include "patterns/commands/TrainStateChangeCommand.hpp"
 #include "patterns/commands/TrainAdvanceRailCommand.hpp"
 #include "patterns/commands/SimEventCommand.hpp"
-#include "patterns/commands/ReloadCommand.hpp"
 #include "utils/StringUtils.hpp"
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
 
+// =============================================================================
+// Construction
+// =============================================================================
+
 CommandManager::CommandManager()
-    : _mode(Mode::IDLE),
-      _replayIndex(0)
+    : _recording(false),
+      _replaying(false)
 {
 }
 
@@ -24,61 +27,131 @@ CommandManager::~CommandManager()
     }
 }
 
-// Record
+// =============================================================================
+// Recording
+// =============================================================================
+
 void CommandManager::startRecording()
 {
-    _mode        = Mode::RECORD;
-    _replayIndex = 0;
+    _recording = true;
+    _replaying = false;
+}
 
-    for (ICommand* cmd : _commands)
-    {
-        delete cmd;
-    }
-    _commands.clear();
+bool CommandManager::isRecording() const
+{
+    return _recording;
 }
 
 void CommandManager::record(ICommand* cmd)
 {
-    if (_mode != Mode::RECORD || !cmd)
+    if (!cmd)
     {
-        delete cmd;
         return;
     }
 
+    cmd->execute();
     _commands.push_back(cmd);
 }
 
-void CommandManager::saveToFile(const std::string& path, const RecordingMetadata& meta) const
+// =============================================================================
+// Replay
+// =============================================================================
+
+void CommandManager::startReplay()
+{
+    _recording = false;
+    _replaying = true;
+}
+
+bool CommandManager::isReplaying() const
+{
+    return _replaying;
+}
+
+std::vector<ICommand*> CommandManager::getCommandsForTime(
+    double startTime,
+    double endTime) const
+{
+    std::vector<ICommand*> result;
+
+    for (ICommand* cmd : _commands)
+    {
+        if (!cmd)
+        {
+            continue;
+        }
+
+        double t = cmd->getTimestamp();
+
+        if (t >= startTime && t < endTime)
+        {
+            result.push_back(cmd);
+        }
+    }
+
+    return result;
+}
+
+// =============================================================================
+// Query
+// =============================================================================
+
+std::size_t CommandManager::commandCount() const
+{
+    return _commands.size();
+}
+
+// =============================================================================
+// Persistence — save
+// =============================================================================
+
+bool CommandManager::saveToFile(
+    const std::string&      path,
+    const RecordingMetadata& meta) const
 {
     std::ofstream f(path);
     if (!f.is_open())
     {
-        throw std::runtime_error("CommandManager: cannot open file for writing: " + path);
+        return false;
     }
 
     f << "{\n";
-    f << "  \"version\": 1,\n";
-    f << "  \"network_file\": \"" << StringUtils::escapeJson(meta.networkFile) << "\",\n";
-    f << "  \"train_file\": \""   << StringUtils::escapeJson(meta.trainFile)   << "\",\n";
-    f << "  \"seed\": "           << meta.seed                                 << ",\n";
-    f << "  \"commands\": [\n";
+    f << "\"network_file\":\"" << StringUtils::escapeJson(meta.networkFile) << "\",\n";
+    f << "\"train_file\":\""   << StringUtils::escapeJson(meta.trainFile)   << "\",\n";
+    f << "\"seed\":"           << meta.seed                                  << ",\n";
+    f << "\"stop_time\":"      << meta.stopTime                              << ",\n";
+    f << "\"commands\":[\n";
 
     for (std::size_t i = 0; i < _commands.size(); ++i)
     {
-        f << "    " << _commands[i]->serialize();
-        if (i + 1 < _commands.size())
-        { 
-            f << ","; 
+        if (!_commands[i])
+        {
+            continue;
         }
+
+        f << _commands[i]->serialize();
+
+        if (i + 1 < _commands.size())
+        {
+            f << ",";
+        }
+
         f << "\n";
     }
 
-    f << "  ]\n";
+    f << "]\n";
     f << "}\n";
+
+    return f.good();
 }
 
-// Replay
-bool CommandManager::loadFromFile(const std::string& path, RecordingMetadata& outMeta)
+// =============================================================================
+// Persistence — load
+// =============================================================================
+
+bool CommandManager::loadFromFile(
+    const std::string& path,
+    RecordingMetadata& outMeta)
 {
     std::ifstream f(path);
     if (!f.is_open())
@@ -86,256 +159,237 @@ bool CommandManager::loadFromFile(const std::string& path, RecordingMetadata& ou
         return false;
     }
 
-    for (ICommand* cmd : _commands)
+    // Read entire file into a string.
+    std::string content(
+        (std::istreambuf_iterator<char>(f)),
+        std::istreambuf_iterator<char>());
+
+    // Extract metadata.
+    outMeta.networkFile = StringUtils::unescapeJson(extractString(content, "network_file"));
+    outMeta.trainFile   = StringUtils::unescapeJson(extractString(content, "train_file"));
+
+    long long seed      = extractInt(content, "seed");
+    outMeta.seed        = (seed >= 0) ? static_cast<unsigned int>(seed) : 0u;
+
+    outMeta.stopTime    = extractDouble(content, "stop_time");
+
+    // Find the commands array.
+    std::size_t arrayStart = content.find("\"commands\":[");
+    if (arrayStart == std::string::npos)
     {
-        delete cmd;
-    }
-    _commands.clear();
-    _replayIndex = 0;
-    outMeta      = RecordingMetadata{};
-
-    std::string line;
-    bool        inCommands = false;
-
-    while (std::getline(f, line))
-    {
-        std::string t = StringUtils::trim(line);
-
-        if (t.empty() || t == "{" || t == "}" || t == "]" || t == "]," )
-        {
-            continue;
-        }
-
-        if (t.find("\"commands\"") != std::string::npos)
-        {
-            inCommands = true;
-            continue;
-        }
-
-        if (!inCommands)
-        {
-            // Parse top-level metadata key: value lines
-            KVMap kv = parseJsonObject("{" + t + "}");
-            for (const auto& pair : kv)
-            {
-                if      (pair.first == "network_file")
-                {
-                    outMeta.networkFile = StringUtils::unescapeJson(pair.second);
-                }
-                else if (pair.first == "train_file")
-                {
-                    outMeta.trainFile   = StringUtils::unescapeJson(pair.second);
-                }
-                else if (pair.first == "seed")
-                {
-                    std::istringstream ss(pair.second);
-                    ss >> outMeta.seed;
-                }
-            }
-        }
-        else
-        {
-            if (!t.empty() && t.back() == ',')
-            {
-                t.pop_back();
-            }
-            if (t.front() != '{' || t.back() != '}')
-            {
-                continue;
-            }
-
-            KVMap     kv  = parseJsonObject(t);
-            ICommand* cmd = createCommandFromKV(kv);
-            if (cmd)
-            { 
-                _commands.push_back(cmd);
-            }
-        }
+        return false;
     }
 
-    _mode = Mode::IDLE;
-    return true;
-}
-
-void CommandManager::startReplay()
-{
-    _mode        = Mode::REPLAY;
-    _replayIndex = 0;
-}
-
-std::vector<ICommand*> CommandManager::getCommandsForTime(double tFrom, double tTo)
-{
-    std::vector<ICommand*> result;
-
-    if (_mode != Mode::REPLAY)
+    arrayStart = content.find('[', arrayStart);
+    if (arrayStart == std::string::npos)
     {
-        return result;
+        return false;
     }
 
-    while (_replayIndex < _commands.size())
-    {
-        double t = _commands[_replayIndex]->getTimestamp();
+    // Walk through JSON objects in the array.
+    std::size_t pos = arrayStart + 1;
 
-        if (t >= tFrom && t < tTo)
+    while (pos < content.size())
+    {
+        // Skip whitespace and commas between objects.
+        while (pos < content.size()
+               && (content[pos] == ' ' || content[pos] == '\n'
+                   || content[pos] == '\r' || content[pos] == ','
+                   || content[pos] == '\t'))
         {
-            result.push_back(_commands[_replayIndex]);
-            ++_replayIndex;
+            ++pos;
         }
-        else if (t >= tTo)
+
+        if (pos >= content.size() || content[pos] == ']')
         {
             break;
         }
-        else
+
+        if (content[pos] != '{')
         {
-            ++_replayIndex;
+            break;
         }
-    }
 
-    return result;
-}
+        // Find matching closing brace.
+        int    depth    = 0;
+        std::size_t end = pos;
 
-CommandManager::Mode CommandManager::getMode() const
-{
-    return _mode;
-}
-
-bool CommandManager::isRecording() const
-{
-    return _mode == Mode::RECORD;
-}
-
-bool CommandManager::isReplaying() const
-{
-    return _mode == Mode::REPLAY;
-}
-
-std::size_t CommandManager::commandCount() const
-{
-    return _commands.size();
-}
-
-
-// JSON helpers  (use StringUtils for string ops; only parsing logic lives here)
-CommandManager::KVMap CommandManager::parseJsonObject(const std::string& line)
-{
-    KVMap result;
-
-    std::size_t bOpen  = line.find('{');
-    std::size_t bClose = line.rfind('}');
-
-    if (bOpen == std::string::npos || bClose == std::string::npos || bOpen >= bClose)
-    {
-        return result;
-    }
-
-    std::string inner = line.substr(bOpen + 1, bClose - bOpen - 1);
-
-    // Split by comma, respecting quoted strings
-    std::vector<std::string> tokens;
-    {
-        bool        inQuote = false;
-        std::size_t start   = 0;
-
-        for (std::size_t i = 0; i < inner.size(); ++i)
+        while (end < content.size())
         {
-            if (inner[i] == '"' && (i == 0 || inner[i - 1] != '\\'))
+            if (content[end] == '{')
             {
-                inQuote = !inQuote;
+                ++depth;
             }
-            else if (inner[i] == ',' && !inQuote)
+            else if (content[end] == '}')
             {
-                tokens.push_back(StringUtils::trim(inner.substr(start, i - start)));
-                start = i + 1;
+                --depth;
+
+                if (depth == 0)
+                {
+                    ++end;
+                    break;
+                }
             }
+
+            ++end;
         }
 
-        if (start < inner.size())
+        std::string json = content.substr(pos, end - pos);
+        ICommand*   cmd  = deserializeCommand(json);
+
+        if (cmd)
         {
-            tokens.push_back(StringUtils::trim(inner.substr(start)));
+            _commands.push_back(cmd);
         }
+
+        pos = end;
     }
 
-    for (const std::string& token : tokens)
-    {
-        std::size_t colon = token.find(':');
-        if (colon == std::string::npos)
-        {
-            continue;
-        }
-
-        std::string rawKey   = StringUtils::trim(token.substr(0, colon));
-        std::string rawValue = StringUtils::trim(token.substr(colon + 1));
-
-        // Unquote key
-        if (rawKey.size() >= 2 && rawKey.front() == '"' && rawKey.back() == '"')
-        {
-            rawKey = rawKey.substr(1, rawKey.size() - 2);
-        }
-
-        // Unquote value (strings only)
-        if (rawValue.size() >= 2 && rawValue.front() == '"' && rawValue.back() == '"')
-        {
-            rawValue = rawValue.substr(1, rawValue.size() - 2);
-        }
-
-        result.push_back({rawKey, rawValue});
-    }
-
-    return result;
+    return true;
 }
 
-ICommand* CommandManager::createCommandFromKV(const KVMap& kv)
-{
-    auto get = [&](const std::string& key) -> std::string
-    {
-        for (const auto& pair : kv)
-        {
-            if (pair.first == key)
-            {
-                return pair.second;
-            }
-        }
-        return "";
-    };
+// =============================================================================
+// Deserialization — one command object from JSON
+// =============================================================================
 
-    std::string type = get("type");
-    double      t    = 0.0;
+ICommand* CommandManager::deserializeCommand(const std::string& json)
+{
+    std::string type = extractString(json, "type");
+    double      t    = extractDouble(json, "t");
+
+    if (type == "DEPARTURE")
     {
-        std::istringstream ss(get("t"));
-        ss >> t;
+        std::string train = extractString(json, "train");
+        return new TrainDepartureCommand(t, train);
     }
 
     if (type == "STATE_CHANGE")
     {
-        return new TrainStateChangeCommand(t, get("train"), get("from"), get("to"));
-    }
-
-    if (type == "DEPARTURE")
-    {
-        return new TrainDepartureCommand(t, get("train"));
+        std::string train = extractString(json, "train");
+        std::string from  = extractString(json, "from");
+        std::string to    = extractString(json, "to");
+        return new TrainStateChangeCommand(t, train, from, to);
     }
 
     if (type == "ADVANCE_RAIL")
     {
-        std::size_t idx = 0;
+        std::string train     = extractString(json, "train");
+        long long   railIndex = extractInt(json, "rail_index");
+        if (railIndex < 0)
         {
-            std::istringstream ss(get("rail_index"));
-            ss >> idx;
+            return nullptr;
         }
-        return new TrainAdvanceRailCommand(t, get("train"), idx);
+        return new TrainAdvanceRailCommand(
+            t, train, static_cast<std::size_t>(railIndex));
     }
 
     if (type == "EVENT")
     {
-        return new SimEventCommand(t,
-            StringUtils::unescapeJson(get("event_type")),
-            StringUtils::unescapeJson(get("desc")));
+        std::string eventType = StringUtils::unescapeJson(extractString(json, "event_type"));
+        std::string desc      = StringUtils::unescapeJson(extractString(json, "desc"));
+        return new SimEventCommand(t, eventType, desc);
     }
 
-    if (type == "RELOAD")
-    {
-        return new ReloadCommand(t, "", "", get("net_file"), get("train_file"), nullptr);
-    }
-
+    // "RELOAD" and unknown types are intentionally skipped.
     return nullptr;
+}
+
+// =============================================================================
+// Minimal JSON helpers
+// =============================================================================
+
+// Extract the value of a string field: "key":"value"
+std::string CommandManager::extractString(
+    const std::string& json,
+    const std::string& key)
+{
+    std::string needle = "\"" + key + "\":\"";
+    std::size_t pos    = json.find(needle);
+
+    if (pos == std::string::npos)
+    {
+        return "";
+    }
+
+    pos += needle.size();
+
+    std::string result;
+
+    while (pos < json.size() && json[pos] != '"')
+    {
+        if (json[pos] == '\\' && pos + 1 < json.size())
+        {
+            result += json[pos];
+            result += json[pos + 1];
+            pos += 2;
+        }
+        else
+        {
+            result += json[pos];
+            ++pos;
+        }
+    }
+
+    return result;
+}
+
+// Extract the value of a numeric (floating-point) field: "key":value
+double CommandManager::extractDouble(
+    const std::string& json,
+    const std::string& key)
+{
+    std::string needle = "\"" + key + "\":";
+    std::size_t pos    = json.find(needle);
+
+    if (pos == std::string::npos)
+    {
+        return 0.0;
+    }
+
+    pos += needle.size();
+
+    // Skip whitespace.
+    while (pos < json.size() && json[pos] == ' ')
+    {
+        ++pos;
+    }
+
+    try
+    {
+        return std::stod(json.substr(pos));
+    }
+    catch (...)
+    {
+        return 0.0;
+    }
+}
+
+// Extract the value of an integer field: "key":value
+long long CommandManager::extractInt(
+    const std::string& json,
+    const std::string& key)
+{
+    std::string needle = "\"" + key + "\":";
+    std::size_t pos    = json.find(needle);
+
+    if (pos == std::string::npos)
+    {
+        return -1;
+    }
+
+    pos += needle.size();
+
+    while (pos < json.size() && json[pos] == ' ')
+    {
+        ++pos;
+    }
+
+    try
+    {
+        return std::stoll(json.substr(pos));
+    }
+    catch (...)
+    {
+        return -1;
+    }
 }

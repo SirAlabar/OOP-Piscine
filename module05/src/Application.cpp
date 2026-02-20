@@ -104,7 +104,8 @@ void Application::_saveRecording(
     CommandManager*    cmdMgr,
     const std::string& netFile,
     const std::string& trainFile,
-    unsigned int       seed) const
+    unsigned int       seed,
+    double             stopTime) const
 {
     if (!cmdMgr)
     {
@@ -117,6 +118,7 @@ void Application::_saveRecording(
     meta.networkFile = netFile;
     meta.trainFile   = trainFile;
     meta.seed        = seed;
+    meta.stopTime    = stopTime;
 
     cmdMgr->saveToFile("output/replay.json", meta);
     _consoleWriter->writeProgress(
@@ -408,27 +410,75 @@ bool Application::_validateFilesForReload(
         FileParser::validateFile(netFile);
         FileParser::validateFile(trainFile);
 
+        // --- Parse network ---
+        RailNetworkParser testNet(netFile);
+        Graph*            testGraph = testNet.parse();
+
+        // parse() throws on error; if it somehow returns null, treat as failure.
+        if (!testGraph)
         {
-            RailNetworkParser testNet(netFile);
-            Graph*            testGraph = testNet.parse();
-            if (!testGraph)
-            {
-                _consoleWriter->writeError(
-                    "Hot-reload: invalid network file — keeping current simulation.");
-                return false;
-            }
-            delete testGraph;
+            _consoleWriter->writeError(
+                "Hot-reload: invalid network file — keeping current simulation.");
+            return false;
         }
 
+        // --- Parse trains, validate physics + station existence + routability ---
+        // Mirrors _buildTrains: skip each invalid config, succeed if at least one
+        // valid + routable train exists.  This ensures _buildSimulation will not
+        // tear down the live simulation only to fail and leave nothing running.
+        TrainConfigParser        testTrain(trainFile);
+        std::vector<TrainConfig> testConfigs = testTrain.parse();
+
+        if (testConfigs.empty())
         {
-            TrainConfigParser        testTrain(trainFile);
-            std::vector<TrainConfig> testConfigs = testTrain.parse();
-            if (testConfigs.empty())
+            delete testGraph;
+            _consoleWriter->writeError(
+                "Hot-reload: train file is empty — keeping current simulation.");
+            return false;
+        }
+
+        // Use Dijkstra for the dry-run regardless of the CLI flag;
+        // we only need a yes/no reachability answer here.
+        DijkstraStrategy dryStrategy;
+        bool             anyRoutable = false;
+
+        for (const TrainConfig& config : testConfigs)
+        {
+            ValidationResult vr = TrainValidator::validate(config, testGraph);
+
+            if (!vr.valid)
             {
                 _consoleWriter->writeError(
-                    "Hot-reload: train file produced no valid trains — keeping current simulation.");
-                return false;
+                    "Hot-reload: train '" + config.name + "' skipped: " + vr.error);
+                continue;
             }
+
+            Node* src = testGraph->getNode(config.departureStation);
+            Node* dst = testGraph->getNode(config.arrivalStation);
+
+            auto path = dryStrategy.findPath(testGraph, src, dst);
+
+            if (path.empty())
+            {
+                _consoleWriter->writeError(
+                    "Hot-reload: no path for train '" + config.name +
+                    "' from " + config.departureStation +
+                    " to " + config.arrivalStation + " — skipped.");
+                continue;
+            }
+
+            anyRoutable = true;
+            break;  // One routable train is enough to allow the reload.
+        }
+
+        delete testGraph;
+
+        if (!anyRoutable)
+        {
+            _consoleWriter->writeError(
+                "Hot-reload: no train can reach its destination in the new network"
+                " — keeping current simulation.");
+            return false;
         }
     }
     catch (const std::exception& e)
@@ -515,14 +565,16 @@ int Application::_runReplay(
     SimulationManager& sim = SimulationManager::getInstance();
     sim.setCommandManager(&cmdMgr);
 
+    const double maxTime = (meta.stopTime > 0.0) ? meta.stopTime : 1e9;
+
     if (_cli.hasRender())
     {
         SFMLRenderer renderer;
-        sim.run(1e9, true, true, &renderer);
+        sim.run(maxTime, true, true, &renderer);
     }
     else
     {
-        sim.run(1e9, false, true);
+        sim.run(maxTime, false, true);
     }
 
     _flushFinalSnapshots(bundle.writers, sim.getCurrentTime());
@@ -603,7 +655,7 @@ int Application::_runHotReload(
     watcher.stop();
 
     _flushFinalSnapshots(bundle.writers, sim.getCurrentTime());
-    _saveRecording(cmdMgr, netFile, trainFile, sim.getSeed());
+    _saveRecording(cmdMgr, netFile, trainFile, sim.getSeed(), sim.getCurrentTime());
     _teardownSimulation(bundle);
     _consoleWriter->writeSimulationComplete();
     delete cmdMgr;
@@ -633,7 +685,7 @@ int Application::_runRender(
     sim.run(1e9, true, false, &renderer);
 
     _flushFinalSnapshots(bundle.writers, sim.getCurrentTime());
-    _saveRecording(cmdMgr, netFile, trainFile, sim.getSeed());
+    _saveRecording(cmdMgr, netFile, trainFile, sim.getSeed(), sim.getCurrentTime());
     _teardownSimulation(bundle);
     _consoleWriter->writeSimulationComplete();
     delete cmdMgr;
@@ -672,7 +724,7 @@ int Application::_runConsole(
             train->getDepartureTime().toString() + ".result");
     }
 
-    _saveRecording(cmdMgr, netFile, trainFile, sim.getSeed());
+    _saveRecording(cmdMgr, netFile, trainFile, sim.getSeed(), sim.getCurrentTime());
     _teardownSimulation(bundle);
     delete cmdMgr;
     return 0;

@@ -1,6 +1,7 @@
 #ifndef COLLISIONAVOIDANCE_HPP
 #define COLLISIONAVOIDANCE_HPP
 
+#include "simulation/OccupancyMap.hpp"
 #include <vector>
 #include <cstddef>
 
@@ -12,27 +13,35 @@ struct RiskData;
 class CollisionAvoidance
 {
 public:
-	CollisionAvoidance() = default;
-	~CollisionAvoidance() = default;
+    CollisionAvoidance()  = default;
+    ~CollisionAvoidance() = default;
 
-	void refreshRailOccupancy(const std::vector<Train*>& trains, const Graph* network);
-	RiskData assessRisk(const Train* train, const std::vector<Train*>& allTrains) const;
-	
+    // Rebuild occupancy from scratch every tick.
+    void refreshRailOccupancy(const std::vector<Train*>& trains, const Graph* network);
+
+    RiskData assessRisk(const Train* train, const std::vector<Train*>& allTrains) const;
+
+    // Read-only access to the current occupancy snapshot.
+    // Used by FileOutputWriter for multi-train rail visualization.
+    const OccupancyMap& getOccupancyMap() const;
+
 private:
-	// Internal helpers (all const, no side effects)
-	Train* findLeaderOnRoute(const Train* train, const std::vector<Train*>& allTrains) const;
-	double calculateGap(const Train* train, const Train* leader) const;
-	double calculateClosingSpeed(const Train* train, const Train* leader) const;
-	double calculateBrakingDistance(const Train* train) const;
-	double calculateSafeDistance(const Train* train) const;
-	double getCurrentSpeedLimit(const Train* train) const;
-	double getNextSpeedLimit(const Train* train) const;
+    OccupancyMap _occupancy;
 
-	// Route-aware helpers
-	double calculateAbsoluteRoutePosition(const Train* train) const;
-	// bool sharesRoute(const Train* train, const Train* other) const;
-    bool findRailIndexInPath(const Train* t, const Rail* rail, size_t startIndex, size_t& outIndex) const;
-    bool areTravelingSameDirection(const Train* train1, size_t idx1, const Train* train2, size_t idx2) const;
+    // Internal helpers (all const, no side effects on _occupancy)
+    Train* findLeaderOnRoute(const Train* train, const std::vector<Train*>& allTrains) const;
+    double calculateGap(const Train* train, const Train* leader) const;
+    double calculateClosingSpeed(const Train* train, const Train* leader) const;
+    double calculateBrakingDistance(const Train* train) const;
+    double calculateSafeDistance(const Train* train) const;
+    double getCurrentSpeedLimit(const Train* train) const;
+    double getNextSpeedLimit(const Train* train) const;
+
+    double calculateAbsoluteRoutePosition(const Train* train) const;
+    bool   findRailIndexInPath(const Train* t, const Rail* rail,
+                               std::size_t startIndex, std::size_t& outIndex) const;
+    bool   areTravelingSameDirection(const Train* train1, std::size_t idx1,
+                                     const Train* train2, std::size_t idx2) const;
 };
 
 #endif

@@ -1,4 +1,5 @@
 #include "io/FileOutputWriter.hpp"
+#include "simulation/OccupancyMap.hpp"
 #include "core/Node.hpp"
 #include "simulation/PhysicsSystem.hpp"
 #include "patterns/states/ITrainState.hpp"
@@ -11,7 +12,8 @@
 FileOutputWriter::FileOutputWriter(Train* train)
     : _train(train),
       _totalPathDistance(0.0),
-      _finalSnapshotWritten(false)
+      _finalSnapshotWritten(false),
+      _occupancy(nullptr)
 {
     FileSystemUtils::ensureOutputDirectoryExists();
     _filename          = generateFilename();
@@ -154,6 +156,11 @@ void FileOutputWriter::close()
     }
 }
 
+void FileOutputWriter::setOccupancyMap(const OccupancyMap* occupancy)
+{
+    _occupancy = occupancy;
+}
+
 std::string FileOutputWriter::getStatusString() const
 {
     if (_train->getCurrentState())
@@ -240,7 +247,10 @@ std::string FileOutputWriter::generateRailVisualization() const
 
     std::string vizStr = oss.str();
 
-    for (Train* otherTrain : currentRail->getTrainsOnRail())
+    const std::vector<Train*>& others =
+        _occupancy ? _occupancy->get(currentRail) : std::vector<Train*>{};
+
+    for (Train* otherTrain : others)
     {
         if (!otherTrain || otherTrain == _train)
 		{

@@ -1,78 +1,67 @@
 #ifndef COMMANDMANAGER_HPP
 #define COMMANDMANAGER_HPP
 
-#include <cstddef>
 #include <string>
 #include <vector>
 
 class ICommand;
 
-// Metadata stored at the top of every replay JSON file.
+// Metadata written to and read from a replay file.
 struct RecordingMetadata
 {
     std::string  networkFile;
     std::string  trainFile;
-    unsigned int seed = 0;
+    unsigned int seed     = 0;
+    double       stopTime = 0.0;  // sim time (seconds) when recording stopped
 };
 
-// Manages command recording, persistence, replay.
-//
-// RECORD mode  — SimulationManager calls record() at key events.
-//                Application calls saveToFile() on shutdown.
-//
-// REPLAY mode  — Application calls loadFromFile(); CommandManager owns
-//                the command list and serves them via getCommandsForTime().
+// Owns a list of ICommand objects.
+// In recording mode:  Application calls record() after each action.
+// In replay mode:     SimulationManager calls getCommandsForTime() each tick.
 class CommandManager
 {
 public:
-    enum class Mode { IDLE, RECORD, REPLAY };
-
     CommandManager();
     ~CommandManager();
 
     CommandManager(const CommandManager&)            = delete;
     CommandManager& operator=(const CommandManager&) = delete;
 
-    // ── Record ─────────────────────────────────────────────────────────────
+    // --- Recording ---
     void startRecording();
+    bool isRecording() const;
 
-    // Takes ownership of cmd.  Ignored if not in RECORD mode.
+    // Takes ownership of cmd and appends it to the log.
     void record(ICommand* cmd);
 
-    // Serialise all recorded commands to a JSON file.
-    void saveToFile(const std::string& path, const RecordingMetadata& meta) const;
+    // --- Replay ---
+    void startReplay();
+    bool isReplaying() const;
 
-    // ── Replay ─────────────────────────────────────────────────────────────
-    // Parse a previously saved JSON file.
-    // Populates outMeta with the recorded header data.
-    // Returns false and leaves the manager in IDLE if parsing fails.
+    // Returns (non-owning) pointers to commands whose timestamp falls in
+    // [startTime, endTime).  Caller must not delete the returned pointers.
+    std::vector<ICommand*> getCommandsForTime(double startTime, double endTime) const;
+
+    // --- Persistence ---
+    bool saveToFile(const std::string& path, const RecordingMetadata& meta) const;
     bool loadFromFile(const std::string& path, RecordingMetadata& outMeta);
 
-    void startReplay();
-
-    // Returns all commands whose timestamp t satisfies tFrom <= t < tTo.
-    // Advances the internal replay cursor; each command is returned exactly once.
-    std::vector<ICommand*> getCommandsForTime(double tFrom, double tTo);
-
-    // ── Queries ────────────────────────────────────────────────────────────
-    Mode        getMode()      const;
-    bool        isRecording()  const;
-    bool        isReplaying()  const;
+    // --- Query ---
     std::size_t commandCount() const;
 
 private:
-    Mode                   _mode;
     std::vector<ICommand*> _commands;
-    std::size_t            _replayIndex;
+    bool                   _recording;
+    bool                   _replaying;
 
-    // Parse a single JSON command object line into a key→value map.
-    // All values are returned as unquoted strings.
-    using KVMap = std::vector<std::pair<std::string, std::string>>;
-    static KVMap     parseJsonObject(const std::string& line);
+    // Reconstruct a single command object from its serialized JSON line.
+    // Returns nullptr when the type is unrecognised or the line is malformed.
+    static ICommand* deserializeCommand(const std::string& json);
 
-    // Factory: create a concrete ICommand from a parsed KVMap.
-    // Returns nullptr for unknown types.
-    static ICommand* createCommandFromKV(const KVMap& kv);
+    // Minimal JSON helpers — no external dependency.
+    static std::string extractString(const std::string& json, const std::string& key);
+    static double      extractDouble(const std::string& json, const std::string& key);
+    static long long   extractInt(const std::string& json, const std::string& key);
 };
 
 #endif

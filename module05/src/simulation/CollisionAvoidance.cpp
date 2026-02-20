@@ -1,4 +1,5 @@
 #include "simulation/CollisionAvoidance.hpp"
+#include "simulation/OccupancyMap.hpp"
 #include "simulation/RiskData.hpp"
 #include "core/Train.hpp"
 #include "core/Rail.hpp"
@@ -6,35 +7,29 @@
 #include "simulation/PhysicsSystem.hpp"
 #include <limits>
 
+const OccupancyMap& CollisionAvoidance::getOccupancyMap() const
+{
+    return _occupancy;
+}
+
 void CollisionAvoidance::refreshRailOccupancy(const std::vector<Train*>& trains, const Graph* network)
 {
-	if (!network)
-	{
-		return;
-	}
-	
-	// Clear all trains from all rails
-	for (Rail* rail : network->getRails())
-	{
-		if (rail)
-		{
-			// Create a copy of the trains list to avoid iterator invalidation
-			std::vector<Train*> trainsOnRail = rail->getTrainsOnRail();
-			for (Train* train : trainsOnRail)
-			{
-				rail->removeTrain(train);
-			}
-		}
-	}
-	
-	// Add each train to its current rail
-	for (Train* train : trains)
-	{
-		if (train && !train->isFinished() && train->getCurrentRail())
-		{
-			train->getCurrentRail()->addTrain(train);
-		}
-	}
+    if (!network)
+    {
+        return;
+    }
+
+    // Clear previous occupancy for all rails.
+    _occupancy.clearAll(network->getRails());
+
+    // Rebuild from current train positions.
+    for (Train* train : trains)
+    {
+        if (train && !train->isFinished() && train->getCurrentRail())
+        {
+            _occupancy.add(train->getCurrentRail(), train);
+        }
+    }
 }
 
 RiskData CollisionAvoidance::assessRisk(const Train* train, const std::vector<Train*>& allTrains) const
