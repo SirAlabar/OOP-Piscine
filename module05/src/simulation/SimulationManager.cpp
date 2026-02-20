@@ -1,4 +1,5 @@
 #include "simulation/SimulationManager.hpp"
+#include "simulation/SimulationConfig.hpp"
 #include "simulation/MovementSystem.hpp"
 #include "simulation/SimulationContext.hpp"
 #include "simulation/CollisionAvoidance.hpp"
@@ -11,7 +12,7 @@
 #include "patterns/states/AcceleratingState.hpp"
 #include "patterns/states/IdleState.hpp"
 #include "io/FileOutputWriter.hpp"
-#include "io/IOutputWriter.hpp"
+#include "io/ISimulationOutput.hpp"
 #include "patterns/observers/EventManager.hpp"
 #include "patterns/observers/TrainEventAdapter.hpp"
 #include "patterns/observers/RailEventAdapter.hpp"
@@ -150,7 +151,7 @@ void SimulationManager::setEventSeed(unsigned int seed)
     }
 }
 
-void SimulationManager::setSimulationWriter(IOutputWriter* writer)
+void SimulationManager::setSimulationWriter(ISimulationOutput* writer)
 {
     _simulationWriter = writer;
 }
@@ -190,7 +191,6 @@ void SimulationManager::registerOutputWriter(Train* train, FileOutputWriter* wri
 {
     if (train && writer)
     {
-        writer->setOccupancyMap(&_collisionSystem->getOccupancyMap());
         _outputWriters[train] = writer;
     }
 }
@@ -198,6 +198,14 @@ void SimulationManager::registerOutputWriter(Train* train, FileOutputWriter* wri
 void SimulationManager::setStatsCollector(StatsCollector* stats)
 {
     _statsCollector = stats;
+}
+
+void SimulationManager::configure(const SimulationConfig& config)
+{
+    setNetwork(config.network);
+    setEventSeed(config.seed);
+    setRoundTripMode(config.roundTrip);
+    setSimulationWriter(config.writer);
 }
 
 void SimulationManager::setCommandManager(CommandManager* mgr)
@@ -460,6 +468,12 @@ const SimulationManager::TrainList& SimulationManager::getTrains() const
 { 
 	return _trains; 
 }
+
+const std::vector<Event*>& SimulationManager::getActiveEvents() const
+{
+    return EventManager::getInstance().getActiveEvents();
+}
+
 const Graph* SimulationManager::getNetwork() const
 { 
 	return _network; 
@@ -579,11 +593,14 @@ void SimulationManager::updateTrainStates(double dt)
             }
         }
 
-        MovementSystem::checkSignalFailures(train, _context);
+        const std::vector<Event*>& activeEvents =
+            EventManager::getInstance().getActiveEvents();
+
+        MovementSystem::checkSignalFailures(train, _context, activeEvents);
 
         // Record rail advancement before resolveProgress changes the index
         std::size_t prevRailIndex = train->getCurrentRailIndex();
-        MovementSystem::resolveProgress(train, _context);
+        MovementSystem::resolveProgress(train, _context, activeEvents);
         std::size_t newRailIndex  = train->getCurrentRailIndex();
 
 		if (newRailIndex != prevRailIndex)

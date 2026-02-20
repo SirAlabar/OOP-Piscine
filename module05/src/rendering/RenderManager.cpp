@@ -40,17 +40,19 @@ void RenderManager::setWorldSeed(unsigned int seed)
 
 void RenderManager::loadFont()
 {
-	if (_fontLoaded)
-	{
-		return;
-	}
+    if (_fontLoaded)
+    {
+        return;
+    }
 
-	_fontLoaded = _labelFont.loadFromFile("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf");
-	if (!_fontLoaded)
-	{
-		_fontLoaded = _labelFont.loadFromFile("/System/Library/Fonts/Helvetica.ttc");
-	}
+    _fontLoaded = _labelFont.loadFromFile("assets/Minecraft.ttf");
+
+    if (!_fontLoaded)
+    {
+        throw std::runtime_error("Failed to load UI font: assets/Minecraft.ttf");
+    }
 }
+
 
 bool RenderManager::loadEventsAtlas(const std::string& texturePath,
                                     const std::string& jsonPath)
@@ -342,7 +344,8 @@ void RenderManager::renderEvents(sf::RenderWindow& window,
 
 	_eventRenderer.draw(window, _eventsAtlas, camera,
 	                    _nodeWorldPositions, _railPaths,
-	                    timeSeconds);
+	                    timeSeconds,
+	                    simulation.getActiveEvents());
 }
 
 void RenderManager::renderDayNightOverlay(sf::RenderWindow& window, const SimulationManager& simulation)

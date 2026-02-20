@@ -2,7 +2,6 @@
 #include "rendering/SpriteAtlas.hpp"
 #include "rendering/CameraManager.hpp"
 #include "utils/IsometricUtils.hpp"
-#include "patterns/observers/EventManager.hpp"
 #include "patterns/events/Event.hpp"
 #include "patterns/events/TrackMaintenanceEvent.hpp"
 #include "patterns/events/SignalFailureEvent.hpp"
@@ -23,12 +22,10 @@ void EventRenderer::draw(sf::RenderWindow&                          window,
                          const CameraManager&                       camera,
                          const std::map<const Node*, sf::Vector2f>& nodeWorldPositions,
                          const std::map<const Rail*, RailPath>&     railPaths,
-                         float                                      elapsedSeconds)
+                         float                                      elapsedSeconds,
+                         const std::vector<Event*>&                 activeEvents)
 {
 	const float zoom = camera.getCurrentZoom();
-
-	const std::vector<Event*>& activeEvents =
-		EventManager::getInstance().getActiveEvents();
 
 	for (const Event* event : activeEvents)
 	{

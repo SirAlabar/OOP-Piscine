@@ -2,14 +2,18 @@
 #define EVENTMANAGER_HPP
 
 #include "ISubject.hpp"
+#include "simulation/IEventScheduler.hpp"
 #include "patterns/events/Event.hpp"
 #include "utils/Time.hpp"
 #include <vector>
 
 class IObserver;
 
-// Singleton manager for events using Observer Pattern
-class EventManager : public ISubject
+// Singleton manager for events using Observer Pattern.
+// Implements both ISubject (observer registration + notification) and
+// IEventScheduler (event lifecycle management).
+// Downstream code should depend on IEventScheduler where possible.
+class EventManager : public ISubject, public IEventScheduler
 {
 private:
 	static EventManager* _instance;
@@ -38,26 +42,16 @@ public:
 	void detach(IObserver* observer) override;
 	void notify(Event* event) override;
 
-	// Event lifecycle management
-	void scheduleEvent(Event* event);
-	void update(const Time& currentTime);
-
-	// Query methods
-	const std::vector<Event*>& getActiveEvents() const;
-	const std::vector<Event*>& getScheduledEvents() const;
-	
-	// Count active events by type
-	int countActiveEventsByType(EventType type) const;
-
-	// Check if specific location has active event
-	bool hasActiveEventAt(Node* node) const;
-	bool hasActiveEventAt(Rail* rail) const;
-
-	// Get total events generated (for statistics)
-	int getTotalEventsGenerated() const;
-
-	// Clear all events (for testing/reset)
-	void clear();
+	// IEventScheduler implementation
+	void scheduleEvent(Event* event)                      override;
+	void update(const Time& currentTime)                  override;
+	const std::vector<Event*>& getActiveEvents()    const override;
+	const std::vector<Event*>& getScheduledEvents() const override;
+	int  countActiveEventsByType(EventType type)    const override;
+	bool hasActiveEventAt(Node* node)               const override;
+	bool hasActiveEventAt(Rail* rail)               const override;
+	int  getTotalEventsGenerated()                  const override;
+	void clear()                                          override;
 };
 
 #endif

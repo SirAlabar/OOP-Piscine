@@ -4,6 +4,7 @@
 #include <SFML/Graphics.hpp>
 #include <map>
 #include <string>
+#include <vector>
 
 class SpriteAtlas;
 class CameraManager;
@@ -18,16 +19,18 @@ class EventRenderer
 public:
 	EventRenderer() = default;
 
-	// Main entry point — reads active events from EventManager singleton internally
-	void draw(sf::RenderWindow&          window,
-	          const SpriteAtlas&         eventsAtlas,
-	          const CameraManager&       camera,
+	// Main entry point.
+	// activeEvents: supplied by the caller (from IEventScheduler::getActiveEvents()).
+	// No longer calls EventManager::getInstance() internally.
+	void draw(sf::RenderWindow&                          window,
+	          const SpriteAtlas&                         eventsAtlas,
+	          const CameraManager&                       camera,
 	          const std::map<const Node*, sf::Vector2f>& nodeWorldPositions,
 	          const std::map<const Rail*, RailPath>&     railPaths,
-	          float                      elapsedSeconds);
+	          float                                      elapsedSeconds,
+	          const std::vector<Event*>&                 activeEvents);
 
 private:
-	// --- Icon helpers ---
 	void drawEventIcon(sf::RenderWindow&      window,
 	                   const SpriteAtlas&     eventsAtlas,
 	                   const std::string&     frameName,
@@ -41,7 +44,6 @@ private:
 		const std::map<const Node*, sf::Vector2f>& nodeWorldPositions,
 		const std::map<const Rail*, RailPath>&     railPaths) const;
 
-	// --- Fog helpers (WEATHER only) ---
 	void drawFogOverlay(sf::RenderWindow&      window,
 	                    const Event*           event,
 	                    const CameraManager&   camera,

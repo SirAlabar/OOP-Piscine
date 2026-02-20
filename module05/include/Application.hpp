@@ -9,6 +9,7 @@
 #include <vector>
 
 class IOutputWriter;
+class ILogger;
 class Graph;
 class Train;
 class FileOutputWriter;

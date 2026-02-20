@@ -4,7 +4,6 @@
 #include "core/Rail.hpp"
 #include "core/Node.hpp"
 #include "patterns/events/Event.hpp"
-#include "patterns/observers/EventManager.hpp"
 #include "patterns/events/StationDelayEvent.hpp"
 #include "patterns/events/SignalFailureEvent.hpp"
 #include "patterns/states/StateRegistry.hpp"
@@ -12,8 +11,9 @@
 namespace
 {
     // Returns the first active event of the given EventType that is applicable
-    // to the train
-    template<typename T> T* findApplicableEvent(const std::vector<Event*>& events,
+    // to the train.
+    template<typename T>
+    T* findApplicableEvent(const std::vector<Event*>& events,
                            EventType                  type,
                            Train*                     train)
     {
@@ -30,14 +30,14 @@ namespace
     }
 }
 
-void MovementSystem::checkSignalFailures(Train* train, SimulationContext* ctx)
+void MovementSystem::checkSignalFailures(Train*                     train,
+                                         SimulationContext*         ctx,
+                                         const std::vector<Event*>& activeEvents)
 {
     if (!train || !ctx)
     {
         return;
     }
-
-    const auto& activeEvents = EventManager::getInstance().getActiveEvents();
 
     SignalFailureEvent* signalEvent =
         findApplicableEvent<SignalFailureEvent>(activeEvents,
@@ -50,7 +50,9 @@ void MovementSystem::checkSignalFailures(Train* train, SimulationContext* ctx)
     }
 }
 
-void MovementSystem::resolveProgress(Train* train, SimulationContext* ctx)
+void MovementSystem::resolveProgress(Train*                     train,
+                                     SimulationContext*         ctx,
+                                     const std::vector<Event*>& activeEvents)
 {
     if (!train || !ctx)
     {
@@ -73,7 +75,7 @@ void MovementSystem::resolveProgress(Train* train, SimulationContext* ctx)
     }
 
     Node* arrivalNode = ctx->getCurrentArrivalNode(train);
-    handleArrivalAtNode(train, ctx, arrivalNode);
+    handleArrivalAtNode(train, ctx, arrivalNode, activeEvents);
 }
 
 bool MovementSystem::hasReachedEndOfRail(const Train* train, SimulationContext* ctx)
@@ -97,9 +99,10 @@ void MovementSystem::advanceToNextSegment(Train* train)
     train->setPosition(0.0);
 }
 
-void MovementSystem::handleArrivalAtNode(Train*            train,
-                                         SimulationContext* ctx,
-                                         Node*             arrivalNode)
+void MovementSystem::handleArrivalAtNode(Train*                     train,
+                                         SimulationContext*         ctx,
+                                         Node*                      arrivalNode,
+                                         const std::vector<Event*>& activeEvents)
 {
     if (!train || !ctx)
     {
@@ -133,7 +136,6 @@ void MovementSystem::handleArrivalAtNode(Train*            train,
         double stopSeconds = train->getStopDuration().toMinutes() * 60.0;
 
         // Apply additional delay from an active StationDelayEvent, if present.
-        const auto& activeEvents = EventManager::getInstance().getActiveEvents();
         StationDelayEvent* stationEvent =
             findApplicableEvent<StationDelayEvent>(activeEvents,
                                                    EventType::STATION_DELAY,

@@ -4,7 +4,10 @@
 #include <vector>
 #include <map>
 #include "utils/Time.hpp"
+#include "simulation/SimulationConfig.hpp"
 #include <functional>
+
+class ISimulationOutput;
 
 // Simulation time configuration
 namespace SimConfig
@@ -27,7 +30,7 @@ class Graph;
 class CollisionAvoidance;
 class SimulationContext;
 class FileOutputWriter;
-class IOutputWriter;
+class ISimulationOutput;
 class TrafficController;
 class EventManager;
 class EventFactory;
@@ -63,7 +66,7 @@ private:
     unsigned int _eventSeed;
     double       _lastEventGenerationTime;
 
-    IOutputWriter*                   _simulationWriter;
+    ISimulationOutput*               _simulationWriter;
     std::map<Train*, FileOutputWriter*> _outputWriters;
     std::map<Train*, ITrainState*> _previousStates;
     int _lastSnapshotMinute;
@@ -111,9 +114,13 @@ public:
     void setTimestep(double timestep);
     void setEventSeed(unsigned int seed);
     void setRoundTripMode(bool enabled);
-    void setSimulationWriter(IOutputWriter* writer);
+    void setSimulationWriter(ISimulationOutput* writer);
     void registerOutputWriter(Train* train, FileOutputWriter* writer);
     void setStatsCollector(StatsCollector* stats);
+
+    // Configure network, seed, round-trip mode, and writer in one call.
+    // Must be called before addTrain() / registerOutputWriter() / run().
+    void configure(const SimulationConfig& config);
 
     // Inject CommandManager before calling run().  Pass nullptr to disable.
     void setCommandManager(CommandManager* mgr);
@@ -136,6 +143,10 @@ public:
     double          getCurrentTime()          const;
     Time            getCurrentTimeFormatted() const;
     const TrainList& getTrains()              const;
+
+    // Forwarding accessor so renderers can query active events without
+    // depending on EventManager directly.
+    const std::vector<Event*>& getActiveEvents() const;
     const Graph*    getNetwork()              const;
     bool            isRunning()               const;
     unsigned int    getSeed()                 const;

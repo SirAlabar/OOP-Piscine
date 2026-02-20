@@ -4,6 +4,8 @@
 #include "io/TrainConfigParser.hpp"
 #include "io/FileOutputWriter.hpp"
 #include "io/IOutputWriter.hpp"
+#include "io/ILogger.hpp"
+#include "io/ISimulationOutput.hpp"
 #include "io/ConsoleOutputWriter.hpp"
 #include "patterns/factories/TrainFactory.hpp"
 #include "patterns/factories/TrainValidator.hpp"
@@ -11,6 +13,7 @@
 #include "patterns/strategies/DijkstraStrategy.hpp"
 #include "patterns/strategies/AStarStrategy.hpp"
 #include "simulation/SimulationManager.hpp"
+#include "simulation/SimulationConfig.hpp"
 #include "analysis/MonteCarloRunner.hpp"
 #include "core/Train.hpp"
 #include "core/Graph.hpp"
@@ -295,9 +298,14 @@ void Application::_configureSimulation(SimulationBundle& bundle, int seedOverrid
 
     SimulationManager& sim = SimulationManager::getInstance();
     sim.reset();
-    sim.setSimulationWriter(_consoleWriter);
-    sim.setEventSeed(_resolveSeed(seedOverride));
-    sim.setNetwork(bundle.graph);
+
+    SimulationConfig config;
+    config.network   = bundle.graph;
+    config.seed      = _resolveSeed(seedOverride);
+    config.roundTrip = _shouldEnableRoundTrip();
+    config.writer    = _consoleWriter;
+
+    sim.configure(config);
 
     for (std::size_t i = 0; i < bundle.trains.size(); ++i)
     {
@@ -309,9 +317,8 @@ void Application::_configureSimulation(SimulationBundle& bundle, int seedOverrid
         sim.addTrain(train);
     }
 
-    if (_shouldEnableRoundTrip())
+    if (config.roundTrip)
     {
-        sim.setRoundTripMode(true);
         _consoleWriter->writeConfiguration("Round-trip mode", "enabled");
     }
 
