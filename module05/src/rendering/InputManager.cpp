@@ -16,7 +16,6 @@ InputState InputManager::processEvents(sf::RenderWindow& window, double deltaTim
     state.dragActive      = false;
     state.dragDelta       = sf::Vector2i(0, 0);
     state.speedMultiplier = 1.0;
-    state.undoRequested   = false;
 
     sf::Event event;
     while (window.pollEvent(event))
@@ -74,11 +73,6 @@ void InputManager::handleKeyPressed(const sf::Event& event, InputState& state)
     else if (event.key.code == sf::Keyboard::Subtract || event.key.code == sf::Keyboard::Hyphen)
     {
         state.speedMultiplier = 0.5;
-    }
-    // Hot-reload undo: Ctrl+Z
-    else if (event.key.code == sf::Keyboard::Z && event.key.control)
-    {
-        state.undoRequested = true;
     }
 }
 

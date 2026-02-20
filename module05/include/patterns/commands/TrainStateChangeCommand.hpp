@@ -15,7 +15,6 @@ public:
                             const std::string& toState);
 
     void        execute()                              override;
-    void        undo()                                 override;
     std::string serialize()                      const override;
     std::string getType()                        const override;
     double      getTimestamp()                   const override;

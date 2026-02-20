@@ -5,7 +5,7 @@
 #include <string>
 
 // Records a simulation event activation (weather, signal failure, etc.).
-// Replay: logs the event; rail/node effects are not replayed.
+// Replay: logs the event; rail/node effects are not re-applied.
 class SimEventCommand : public ICommand
 {
 public:
@@ -14,7 +14,6 @@ public:
                     const std::string& description);
 
     void        execute()                              override;
-    void        undo()                                 override;
     std::string serialize()                      const override;
     std::string getType()                        const override;
     double      getTimestamp()                   const override;

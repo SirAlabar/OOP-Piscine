@@ -12,7 +12,6 @@ struct InputState
     bool         dragActive;
     sf::Vector2i dragDelta;
     double       speedMultiplier;  // 2.0 = double, 0.5 = half, 1.0 = no change
-    bool         undoRequested;    // Ctrl+Z → hot-reload undo
 };
 
 class InputManager

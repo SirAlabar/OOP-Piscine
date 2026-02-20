@@ -6,6 +6,7 @@
 #include "io/IOutputWriter.hpp"
 #include "io/ConsoleOutputWriter.hpp"
 #include "patterns/factories/TrainFactory.hpp"
+#include "patterns/factories/TrainValidator.hpp"
 #include "patterns/strategies/IPathfindingStrategy.hpp"
 #include "patterns/strategies/DijkstraStrategy.hpp"
 #include "patterns/strategies/AStarStrategy.hpp"
@@ -212,6 +213,13 @@ std::vector<Train*> Application::_buildTrains(
 
     for (const auto& config : configs)
     {
+        ValidationResult vr = TrainValidator::validate(config, graph);
+        if (!vr.valid)
+        {
+            _consoleWriter->writeError(vr.error);
+            continue;
+        }
+
         Train* train = TrainFactory::create(config, graph);
         if (!train)
         {
@@ -221,13 +229,6 @@ std::vector<Train*> Application::_buildTrains(
 
         Node* startNode = graph->getNode(config.departureStation);
         Node* endNode   = graph->getNode(config.arrivalStation);
-
-        if (!startNode || !endNode)
-        {
-            _consoleWriter->writeError("Invalid stations for train " + config.name);
-            delete train;
-            continue;
-        }
 
         auto path = strategy->findPath(graph, startNode, endNode);
         if (path.empty())
@@ -259,13 +260,15 @@ std::vector<FileOutputWriter*> Application::_createOutputWriters(
 
     for (Train* train : trains)
     {
-        FileOutputWriter* writer      = new FileOutputWriter(train);
-        double            estMinutes  = _estimateJourneyMinutes(train);
+        double estMinutes = _estimateJourneyMinutes(train);
 
+        // unique_ptr guards the allocation until all fallible operations succeed.
+        // release() transfers ownership to the writers vector only on full success.
+        std::unique_ptr<FileOutputWriter> writer(new FileOutputWriter(train));
         writer->open();
         writer->writeHeader(estMinutes);
         writer->writePathInfo();
-        writers.push_back(writer);
+        writers.push_back(writer.release());
 
         _consoleWriter->writeProgress(
             "Created: output/" + train->getName() + "_" +
@@ -274,6 +277,14 @@ std::vector<FileOutputWriter*> Application::_createOutputWriters(
     }
 
     return writers;
+}
+
+// Render and replay modes require the simulation to loop back to origin so
+// the visual/playback lifecycle completes cleanly — it is not purely a
+// journey-domain decision. This method makes that policy explicit.
+bool Application::_shouldEnableRoundTrip() const
+{
+    return _cli.hasRoundTrip() || _cli.hasRender() || _cli.hasReplay();
 }
 
 void Application::_configureSimulation(SimulationBundle& bundle, int seedOverride)
@@ -296,7 +307,7 @@ void Application::_configureSimulation(SimulationBundle& bundle, int seedOverrid
         sim.addTrain(train);
     }
 
-    if (_cli.hasRoundTrip() || _cli.hasRender() || _cli.hasReplay())
+    if (_shouldEnableRoundTrip())
     {
         sim.setRoundTripMode(true);
         _consoleWriter->writeConfiguration("Round-trip mode", "enabled");

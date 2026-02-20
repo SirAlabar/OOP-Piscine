@@ -194,17 +194,6 @@ std::vector<ICommand*> CommandManager::getCommandsForTime(double tFrom, double t
     return result;
 }
 
-// Undo
-bool CommandManager::undoLast()
-{
-    if (_commands.empty())
-    {
-        return false;
-    }
-    _commands.back()->undo();
-    return true;
-}
-
 CommandManager::Mode CommandManager::getMode() const
 {
     return _mode;

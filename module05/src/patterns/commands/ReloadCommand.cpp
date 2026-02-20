@@ -23,26 +23,6 @@ void ReloadCommand::execute()
     // No-op: Application already performed the rebuild before recording this command.
 }
 
-void ReloadCommand::undo()
-{
-    // Write the saved pre-reload contents to temp files, then invoke the rebuild callback.
-    static const std::string TMP_NET   = "/tmp/railway_undo_network.txt";
-    static const std::string TMP_TRAIN = "/tmp/railway_undo_trains.txt";
-
-    if (writeTempFile(TMP_NET,   _oldNetContent).empty())
-    {
-        return;
-    }
-    if (writeTempFile(TMP_TRAIN, _oldTrainContent).empty())
-    {
-        return;
-    }
-    if (_rebuildFn)
-    {
-        _rebuildFn(TMP_NET, TMP_TRAIN);
-    }
-}
-
 std::string ReloadCommand::serialize() const
 {
     // Only record the file paths (not full contents) in the JSON log.

@@ -18,11 +18,6 @@ void TrainAdvanceRailCommand::execute()
     // No-op: advancement was already applied when recording.
 }
 
-void TrainAdvanceRailCommand::undo()
-{
-    // Rail advancement cannot be reversed in replay context.
-}
-
 std::string TrainAdvanceRailCommand::serialize() const
 {
     std::ostringstream ss;

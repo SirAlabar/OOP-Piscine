@@ -35,7 +35,8 @@ class Event;
 class StatsCollector;
 class CommandManager;
 class ICommand;
-class ITrainState;  
+class ITrainState;
+class IObserver;
 
 class SimulationManager
 {
@@ -69,6 +70,8 @@ private:
     int _lastDashboardMinute;
 
     CommandManager* _commandManager;  // Not owned; injected by Application
+
+    std::vector<IObserver*> _eventAdapters;  // Owned; created in registerObservers(), cleared in reset()
 
 	void tick(bool replayMode, bool advanceTime);
     void updateTrainStates(double dt);

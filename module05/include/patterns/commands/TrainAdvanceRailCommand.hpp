@@ -15,7 +15,6 @@ public:
                             std::size_t        railIndex);
 
     void        execute()                              override;
-    void        undo()                                 override;
     std::string serialize()                      const override;
     std::string getType()                        const override;
     double      getTimestamp()                   const override;

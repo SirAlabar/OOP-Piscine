@@ -15,7 +15,7 @@ struct RecordingMetadata
     unsigned int seed = 0;
 };
 
-// Manages command recording, persistence, replay, and undo.
+// Manages command recording, persistence, replay.
 //
 // RECORD mode  — SimulationManager calls record() at key events.
 //                Application calls saveToFile() on shutdown.
@@ -53,11 +53,6 @@ public:
     // Returns all commands whose timestamp t satisfies tFrom <= t < tTo.
     // Advances the internal replay cursor; each command is returned exactly once.
     std::vector<ICommand*> getCommandsForTime(double tFrom, double tTo);
-
-    // ── Undo ───────────────────────────────────────────────────────────────
-    // Calls undo() on the most recently recorded command.
-    // Returns false if there is nothing to undo.
-    bool undoLast();
 
     // ── Queries ────────────────────────────────────────────────────────────
     Mode        getMode()      const;

@@ -17,11 +17,6 @@ void SimEventCommand::execute()
     // No-op: event was already activated when recording.
 }
 
-void SimEventCommand::undo()
-{
-    // Event effects on rails/nodes are not reversible here.
-}
-
 std::string SimEventCommand::getType() const
 {
     return "EVENT";
@@ -36,10 +31,10 @@ std::string SimEventCommand::serialize() const
 {
     std::ostringstream ss;
     ss << std::fixed << std::setprecision(6);
-    ss << "{\"t\":"          << _timestamp
+    ss << "{\"t\":"           << _timestamp
        << ",\"type\":\"EVENT\""
-       << ",\"event_type\":\"" << StringUtils::escapeJson(_eventType)   << "\""
-       << ",\"desc\":\""       << StringUtils::escapeJson(_description)  << "\"}";
+       << ",\"event_type\":\"" << StringUtils::escapeJson(_eventType)  << "\""
+       << ",\"desc\":\""       << StringUtils::escapeJson(_description) << "\"}";
     return ss.str();
 }
 

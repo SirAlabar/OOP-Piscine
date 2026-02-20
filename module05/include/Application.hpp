@@ -61,6 +61,9 @@ private:
     bool _validateFilesForReload(const std::string& netFile, const std::string& trainFile) const;
     void _recordReloadCommand(CommandManager* cmdMgr, double reloadTime, const std::string& oldNet, const std::string& oldTrain, const std::string& netFile, const std::string& trainFile, const std::function<bool(const std::string&, const std::string&)>& rebuildCallback) const;
 
+    // --- Mode policy ---
+    bool _shouldEnableRoundTrip() const;
+
     // --- Phase 1 DRY helpers ---
     void            _printConfiguration(const std::string& netFile, const std::string& trainFile) const;
     CommandManager* _setupCommandManager() const;

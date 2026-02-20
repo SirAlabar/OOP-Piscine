@@ -22,16 +22,11 @@ void TrainStateChangeCommand::execute()
     // No-op: the transition was already applied by SimulationManager when recording.
 }
 
-void TrainStateChangeCommand::undo()
-{
-    // State undo is not supported - state machines are forward-only.
-}
-
 std::string TrainStateChangeCommand::serialize() const
 {
     std::ostringstream ss;
     ss << std::fixed << std::setprecision(6);
-    ss << "{\"t\":" << _timestamp
+    ss << "{\"t\":"     << _timestamp
        << ",\"type\":\"STATE_CHANGE\""
        << ",\"train\":\"" << _trainName << "\""
        << ",\"from\":\""  << _fromState << "\""
@@ -57,28 +52,51 @@ void TrainStateChangeCommand::applyReplay(SimulationManager* sim)
     }
 
     Train* train = sim->findTrain(_trainName);
+
     if (!train)
     {
         return;
     }
 
-    SimulationContext* ctx = sim->getContext();
-    if (!ctx)
+    SimulationContext* context = sim->getContext();
+
+    if (!context)
     {
         return;
     }
 
-    StateRegistry& reg = ctx->states();
+    StateRegistry& states = context->states();
 
     ITrainState* targetState = nullptr;
 
-    if      (_toState == "Idle")         { targetState = reg.idle();         }
-    else if (_toState == "Accelerating") { targetState = reg.accelerating(); }
-    else if (_toState == "Cruising")     { targetState = reg.cruising();     }
-    else if (_toState == "Waiting")      { targetState = reg.waiting();      }
-    else if (_toState == "Braking")      { targetState = reg.braking();      }
-    else if (_toState == "Stopped")      { targetState = reg.stopped();      }
-    else if (_toState == "Emergency")    { targetState = reg.emergency();    }
+    if (_toState == "Idle")
+    {
+        targetState = states.idle();
+    }
+    else if (_toState == "Accelerating")
+    {
+        targetState = states.accelerating();
+    }
+    else if (_toState == "Cruising")
+    {
+        targetState = states.cruising();
+    }
+    else if (_toState == "Waiting")
+    {
+        targetState = states.waiting();
+    }
+    else if (_toState == "Braking")
+    {
+        targetState = states.braking();
+    }
+    else if (_toState == "Stopped")
+    {
+        targetState = states.stopped();
+    }
+    else if (_toState == "Emergency")
+    {
+        targetState = states.emergency();
+    }
 
     if (targetState)
     {

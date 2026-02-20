@@ -6,7 +6,6 @@
 #include <string>
 
 // Records a hot-reload event.
-// undo() restores the simulation to the state before the reload by
 // writing the previous file contents to temp files and invoking the rebuild callback.
 class ReloadCommand : public ICommand
 {
@@ -27,9 +26,6 @@ public:
 
     // No-op: the reload was already carried out by Application.
     void execute() override;
-
-    // Write old contents to temp files and trigger a rebuild with them.
-    void undo() override;
 
     std::string serialize()                      const override;
     std::string getType()                        const override;

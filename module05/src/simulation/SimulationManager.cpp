@@ -13,6 +13,8 @@
 #include "io/FileOutputWriter.hpp"
 #include "io/IOutputWriter.hpp"
 #include "patterns/observers/EventManager.hpp"
+#include "patterns/observers/TrainEventAdapter.hpp"
+#include "patterns/observers/RailEventAdapter.hpp"
 #include "patterns/factories/EventFactory.hpp"
 #include "patterns/events/Event.hpp"
 #include "analysis/StatsCollector.hpp"
@@ -54,6 +56,10 @@ SimulationManager::~SimulationManager()
     delete _trafficController;
     delete _context;
     delete _eventFactory;
+    for (IObserver* adapter : _eventAdapters)
+    {
+        delete adapter;
+    }
     EventManager::destroy();
 }
 
@@ -505,6 +511,12 @@ void SimulationManager::reset()
 
     EventManager::getInstance().clear();
 
+    for (IObserver* adapter : _eventAdapters)
+    {
+        delete adapter;
+    }
+    _eventAdapters.clear();
+
     if (_context)
 	{
 		delete _context;
@@ -699,9 +711,11 @@ void SimulationManager::registerObservers()
     for (Train* train : _trains)
     {
         if (train)
-		{
-			eventManager.attach(train);
-		}
+        {
+            IObserver* adapter = new TrainEventAdapter(train);
+            _eventAdapters.push_back(adapter);
+            eventManager.attach(adapter);
+        }
     }
 
     if (_network)
@@ -709,16 +723,18 @@ void SimulationManager::registerObservers()
         for (Node* node : _network->getNodes())
         {
             if (node)
-			{
-				eventManager.attach(node);
-			}
+            {
+                eventManager.attach(node);
+            }
         }
         for (Rail* rail : _network->getRails())
         {
             if (rail)
-			{
-				eventManager.attach(rail);
-			}
+            {
+                IObserver* adapter = new RailEventAdapter(rail);
+                _eventAdapters.push_back(adapter);
+                eventManager.attach(adapter);
+            }
         }
     }
 }

@@ -18,16 +18,11 @@ void TrainDepartureCommand::execute()
     // No-op: departure was already applied when recording.
 }
 
-void TrainDepartureCommand::undo()
-{
-    // Departure cannot be reversed.
-}
-
 std::string TrainDepartureCommand::serialize() const
 {
     std::ostringstream ss;
     ss << std::fixed << std::setprecision(6);
-    ss << "{\"t\":" << _timestamp
+    ss << "{\"t\":"     << _timestamp
        << ",\"type\":\"DEPARTURE\""
        << ",\"train\":\"" << _trainName << "\"}";
     return ss.str();
@@ -49,11 +44,13 @@ void TrainDepartureCommand::applyReplay(SimulationManager* sim)
     {
         return;
     }
+
     Train* train = sim->findTrain(_trainName);
     if (!train)
     {
         return;
     }
+
     SimulationContext* ctx = sim->getContext();
     if (!ctx)
     {
