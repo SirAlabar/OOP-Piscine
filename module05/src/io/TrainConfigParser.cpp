@@ -6,36 +6,32 @@
 #include <set>
 
 TrainConfigParser::TrainConfigParser(const std::string& filepath)
-	: FileParser(filepath)
+    : FileParser(filepath)
 {
 }
 
 std::vector<TrainConfig> TrainConfigParser::parse()
 {
-	std::vector<TrainConfig> configs;
-	std::vector<std::string> lines = readLines();
-	int lineNumber = 0;
+    std::vector<TrainConfig> configs;
+    std::vector<std::string> lines = readLines();
 
-	for (const auto& line : lines)
-	{
-		lineNumber++;
-		try
-		{
-			TrainConfig config = parseLine(line);
-			configs.push_back(config);
-		}
-		catch (const std::exception& e)
-		{
-			throw std::runtime_error(
-				"Error at line " + std::to_string(lineNumber) + 
-				": " + e.what() + "\nContent: " + line
-			);
-		}
-	}
+    for (const auto& line : lines)
+    {
+        _lineNumber++;
+        try
+        {
+            TrainConfig config = parseLine(line);
+            configs.push_back(config);
+        }
+        catch (const std::exception& e)
+        {
+            throwLineError(e.what(), line);
+        }
+    }
 
     validateUniqueNames(configs);
 
-	return configs;
+    return configs;
 }
 
 void TrainConfigParser::validateUniqueNames(const std::vector<TrainConfig>& configs) const
@@ -46,7 +42,8 @@ void TrainConfigParser::validateUniqueNames(const std::vector<TrainConfig>& conf
     {
         if (!seenNames.insert(config.name).second)
         {
-            throw std::runtime_error("Duplicate train name detected: '" + config.name + "'");
+            throw std::runtime_error(
+                "Duplicate train name detected: '" + config.name + "'");
         }
     }
 }
@@ -59,7 +56,7 @@ TrainConfig TrainConfigParser::parseLine(const std::string& line)
     {
         throw std::runtime_error(
             "Invalid train format. Expected 9 fields: "
-            "<name> <mass> <friction> <accel> <brake> <departure> <arrival> <time> <duration>"
+            "<n> <mass> <friction> <accel> <brake> <departure> <arrival> <time> <duration>"
         );
     }
 
@@ -80,33 +77,44 @@ TrainConfig TrainConfigParser::parseLine(const std::string& line)
     }
 
     if (config.mass <= 0.0)
+    {
         throw std::runtime_error("Train mass must be positive");
+    }
 
     if (config.frictionCoef < 0.0)
+    {
         throw std::runtime_error("Friction coefficient must be non-negative");
+    }
 
     if (config.maxAccelForce <= 0.0)
+    {
         throw std::runtime_error("Maximum acceleration force must be positive");
+    }
 
     if (config.maxBrakeForce <= 0.0)
+    {
         throw std::runtime_error("Maximum brake force must be positive");
+    }
 
     config.departureStation = tokens[5];
     config.arrivalStation   = tokens[6];
 
     if (config.departureStation.empty() || config.arrivalStation.empty())
+    {
         throw std::runtime_error("Departure and arrival stations cannot be empty");
+    }
 
     if (config.departureStation == config.arrivalStation)
+    {
         throw std::runtime_error("Departure and arrival stations must be different");
+    }
 
     config.departureTime = Time(tokens[7]);
     if (!config.departureTime.isValid())
     {
         throw std::runtime_error(
             "Invalid departure time format '" + tokens[7] +
-            "'. Expected HHhMM (e.g., 14h10)"
-        );
+            "'. Expected HHhMM (e.g., 14h10)");
     }
 
     config.stopDuration = Time(tokens[8]);
@@ -114,8 +122,7 @@ TrainConfig TrainConfigParser::parseLine(const std::string& line)
     {
         throw std::runtime_error(
             "Invalid stop duration format '" + tokens[8] +
-            "'. Expected HHhMM (e.g., 00h10)"
-        );
+            "'. Expected HHhMM (e.g., 00h10)");
     }
 
     return config;

@@ -16,21 +16,17 @@ Graph* RailNetworkParser::parse()
     try
     {
         std::vector<std::string> lines = readLines();
-        int lineNumber = 0;
 
         for (const auto& line : lines)
         {
-            lineNumber++;
+            _lineNumber++;
             try
             {
                 parseLine(line, graph);
             }
             catch (const std::exception& e)
             {
-                throw std::runtime_error(
-                    "Error at line " + std::to_string(lineNumber) +
-                    ": " + e.what() + "\nContent: " + line
-                );
+                throwLineError(e.what(), line);
             }
         }
 
@@ -53,9 +49,9 @@ void RailNetworkParser::parseLine(const std::string& line, Graph* graph)
     auto tokens = StringUtils::splitTokens(line);
 
     if (tokens.empty())
-	{ 
-		return;
-	}
+    {
+        return;
+    }
 
     const std::string& keyword = tokens[0];
 
@@ -78,7 +74,9 @@ void RailNetworkParser::parseLine(const std::string& line, Graph* graph)
             throw std::runtime_error("Duplicate node: '" + nodeName + "'");
         }
 
-        NodeType type = (nodeName.rfind("RailNode", 0) == 0) ? NodeType::JUNCTION : NodeType::CITY;
+        NodeType type = (nodeName.rfind("RailNode", 0) == 0)
+                      ? NodeType::JUNCTION
+                      : NodeType::CITY;
 
         graph->addNode(new Node(nodeName, type));
         return;
@@ -97,7 +95,8 @@ void RailNetworkParser::parseLine(const std::string& line, Graph* graph)
 
         if (nodeA == nodeB)
         {
-            throw std::runtime_error("Rail cannot connect node to itself: '" + nodeA + "'");
+            throw std::runtime_error(
+                "Rail cannot connect node to itself: '" + nodeA + "'");
         }
 
         if (!graph->hasNode(nodeA))
@@ -124,15 +123,17 @@ void RailNetworkParser::parseLine(const std::string& line, Graph* graph)
         }
 
         if (length <= 0.0)
-		{
-			throw std::runtime_error("Rail length must be positive");
-		}
-        if (speed  <= 0.0)
-		{
-			throw std::runtime_error("Speed limit must be positive");
-		}
+        {
+            throw std::runtime_error("Rail length must be positive");
+        }
 
-        graph->addRail(new Rail(graph->getNode(nodeA), graph->getNode(nodeB), length, speed));
+        if (speed <= 0.0)
+        {
+            throw std::runtime_error("Speed limit must be positive");
+        }
+
+        graph->addRail(
+            new Rail(graph->getNode(nodeA), graph->getNode(nodeB), length, speed));
         return;
     }
 
