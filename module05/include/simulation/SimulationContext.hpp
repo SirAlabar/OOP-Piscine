@@ -1,6 +1,8 @@
 #ifndef SIMULATIONCONTEXT_HPP
 #define SIMULATIONCONTEXT_HPP
 
+#include "simulation/IPhysicsQueries.hpp"
+#include "simulation/IStopTimerStore.hpp"
 #include "patterns/states/StateRegistry.hpp"
 #include <map>
 #include <vector>
@@ -12,60 +14,63 @@ class CollisionAvoidance;
 class TrafficController;
 struct RiskData;
 
-class SimulationContext
+// Aggregates all per-frame simulation state that train states and movement
+// logic need to make decisions.  Implements IPhysicsQueries and IStopTimerStore
+// so that collaborators can depend on the narrower interface in tests.
+class SimulationContext : public IPhysicsQueries, public IStopTimerStore
 {
 private:
-	Graph* _network;
-	CollisionAvoidance* _collisionSystem;
-	TrafficController* _trafficController;
-	const std::vector<Train*>* _trains;
-	// State Management
-	StateRegistry _states;
-	// Cached Risk Data
-	std::map<Train*, RiskData> _riskMap;  // Refreshed once per frame
-	std::map<Train*, double> _stopDurations;
+    Graph*                     _network;
+    CollisionAvoidance*        _collisionSystem;
+    TrafficController*         _trafficController;
+    const std::vector<Train*>* _trains;
+
+    StateRegistry              _states;
+    std::map<Train*, RiskData> _riskMap;       // Refreshed once per tick
+    std::map<Train*, double>   _stopDurations;
 
 public:
-	SimulationContext(
-		Graph* network,
-		CollisionAvoidance* collisionSystem,
-		const std::vector<Train*>* trains,
-		TrafficController* trafficController
-	);
-	~SimulationContext();
+    SimulationContext(
+        Graph*                     network,
+        CollisionAvoidance*        collisionSystem,
+        const std::vector<Train*>* trains,
+        TrafficController*         trafficController
+    );
+    ~SimulationContext() override;
 
-	// Risk Data Access
+    // Risk data
+    // Returns the cached risk assessment for the given train.
+    // Precondition: refreshAllRiskData() must have been called this tick and
+    // the train must have an active rail.  Asserts in debug if the entry is
+    // absent; returns a sentinel default in release builds.
+    const RiskData& getRisk(const Train* train) const;
 
-	const RiskData& getRisk(const Train* train) const;
-	void refreshAllRiskData();
+    // Rebuild the entire risk cache from the current collision-avoidance state.
+    void refreshAllRiskData();
 
-	// Physics Queries
-	
-	double getCurrentRailSpeedLimit(const Train* train) const;
-	double getCurrentRailLength(const Train* train) const;
-	double getBrakingDistance(const Train* train) const;
-	double getDistanceToRailEnd(const Train* train) const;
+    // IPhysicsQueries
+    double getCurrentRailSpeedLimit(const Train* train) const override;
+    double getCurrentRailLength(const Train* train)     const override;
+    double getBrakingDistance(const Train* train)       const override;
+    double getDistanceToRailEnd(const Train* train)     const override;
+    Node*  getCurrentArrivalNode(const Train* train)    const override;
 
-	// Network Queries
-	
-	Node* getCurrentArrivalNode(const Train* train) const;
+    // IStopTimerStore
+    void   setStopDuration(Train* train, double durationSeconds) override;
+    double getStopDuration(const Train* train)                   const override;
+    bool   decrementStopDuration(Train* train, double dt)        override;
+    void   clearStopDuration(Train* train)                       override;
 
-	// State Registry Access =====
+    // State catalog
+    StateRegistry&       states();
+    const StateRegistry& states() const;
 
-	StateRegistry& states();
-	const StateRegistry& states() const;
-	
-	// TrafficController Access
-	TrafficController* getTrafficController() const;
+    // Traffic access
+    TrafficController* getTrafficController() const;
 
-	// Externalized State Data
-	void setStopDuration(Train* train, double durationSeconds);
-	double getStopDuration(const Train* train) const;
-	bool decrementStopDuration(Train* train, double dt);
-	void clearStopDuration(Train* train);
-
-	//Physics Abstraction
-	void applyForce(Train* train, double force, double dt);
+    // Physics mutation
+    // Apply a net force to the train and advance its velocity and position.
+    void applyForce(Train* train, double force, double dt);
 };
 
 #endif
