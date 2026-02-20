@@ -1,6 +1,6 @@
 #include "patterns/states/CruisingState.hpp"
 #include "patterns/states/StateRegistry.hpp"
-#include "patterns/mediator/TrafficController.hpp"
+#include "patterns/states/TrainTransitionState.hpp"
 #include "core/Train.hpp"
 #include "core/Rail.hpp"
 #include "simulation/SimulationContext.hpp"
@@ -21,23 +21,20 @@ void CruisingState::update(Train* train, double dt)
         return;
     }
 
-    double speedLimitMs = PhysicsSystem::kmhToMs(currentRail->getSpeedLimit());
+    double speedLimitMs    = PhysicsSystem::kmhToMs(currentRail->getSpeedLimit());
     double currentVelocity = train->getVelocity();
 
     if (currentVelocity > speedLimitMs)
     {
-        // Exceeding limit - apply light braking
-        double frictionForce = PhysicsSystem::calculateFriction(train);
-        double netForce = -frictionForce;
-
+        // Exceeding limit — apply light braking.
+        double netForce = -PhysicsSystem::calculateFriction(train);
         PhysicsSystem::updateVelocity(train, netForce, dt);
     }
     else if (currentVelocity < speedLimitMs * 0.95)
     {
-        // Below limit - accelerate
+        // Below limit — re-accelerate.
         double accelForceN = PhysicsSystem::kNtoN(train->getMaxAccelForce());
-        double netForce = PhysicsSystem::calculateNetForce(train, accelForceN);
-
+        double netForce    = PhysicsSystem::calculateNetForce(train, accelForceN);
         PhysicsSystem::updateVelocity(train, netForce, dt);
 
         if (train->getVelocity() > speedLimitMs)
@@ -58,71 +55,32 @@ ITrainState* CruisingState::checkTransition(Train* train, SimulationContext* ctx
 
     const RiskData& risk = ctx->getRisk(train);
 
-    // 1. Emergency situations always have highest priority (safety override)
+    // 1. Emergency zone — highest priority safety override.
     if (SafetyConstants::isEmergencyZone(risk.gap, risk.brakingDistance))
     {
         return ctx->states().emergency();
     }
 
-    // 2. Check if there is a leader ahead
-    if (risk.hasLeader())
+    // 2. Leader interaction — yield if priority demands it.
+    ITrainState* leaderResult = TrainTransitionState::checkLeaderInteraction(train, ctx);
+    if (leaderResult)
     {
-        // Check priority through TrafficController
-        TrafficController* controller = ctx->getTrafficController();
-        Rail* currentRail = train->getCurrentRail();
-        
-        if (controller && currentRail)
-        {
-            // Request access - if GRANTED, we have higher priority than leader
-            TrafficController::AccessDecision decision = 
-                controller->requestRailAccess(train, currentRail);
-            
-            if (decision == TrafficController::DENY)
-            {
-                // Leader has higher priority - must yield
-                // If the leader has stopped, transition to Braking first
-                if (risk.leader->getVelocity() < 0.1)
-                {
-                    return ctx->states().braking();
-                }
-
-                // If too close to a moving leader, also start braking
-                if (risk.gap < risk.safeDistance)
-                {
-                    return ctx->states().braking();
-                }
-            }
-            // If GRANT: we have priority, ignore leader and continue
-        }
-        else
-        {
-            // Fallback: no controller, use old logic
-            if (risk.leader->getVelocity() < 0.1)
-            {
-                return ctx->states().braking();
-            }
-
-            if (risk.gap < risk.safeDistance)
-            {
-                return ctx->states().braking();
-            }
-        }
+        return leaderResult;
     }
 
-    // 3. Check if braking is required due to approaching end of the current rail
-    double brakingDist = ctx->getBrakingDistance(train);
-    double distRemaining = ctx->getDistanceToRailEnd(train);
+    // 3. Approaching end of rail — begin braking.
+    double brakingDist    = ctx->getBrakingDistance(train);
+    double distRemaining  = ctx->getDistanceToRailEnd(train);
 
     if (distRemaining <= brakingDist * SafetyConstants::BRAKING_MARGIN)
     {
         return ctx->states().braking();
     }
 
-    // Otherwise, remain in Cruising state
     return nullptr;
 }
 
 std::string CruisingState::getName() const
 {
-	return "Cruising";
+    return "Cruising";
 }

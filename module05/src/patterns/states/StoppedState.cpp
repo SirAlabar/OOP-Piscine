@@ -1,22 +1,20 @@
 #include "patterns/states/StoppedState.hpp"
-#include "patterns/mediator/TrafficController.hpp"
+#include "patterns/states/StateRegistry.hpp"
+#include "patterns/states/TrainTransitionState.hpp"
 #include "core/Train.hpp"
 #include "core/Rail.hpp"
 #include "simulation/SimulationContext.hpp"
-#include "patterns/states/StateRegistry.hpp"
-#include "simulation/RiskData.hpp"
 
 void StoppedState::update(Train* train, double dt)
 {
     (void)dt;
 
-	if (!train)
-	{
-		return;
-	}
-	
-	// Ensure velocity is zero while stopped
-	train->setVelocity(0.0);
+    if (!train)
+    {
+        return;
+    }
+
+    train->setVelocity(0.0);
 }
 
 ITrainState* StoppedState::checkTransition(Train* train, SimulationContext* ctx)
@@ -26,45 +24,25 @@ ITrainState* StoppedState::checkTransition(Train* train, SimulationContext* ctx)
         return nullptr;
     }
 
-    // Ensure the train is fully stopped
     train->setVelocity(0.0);
 
-    // Check if train has a stop duration (station stop)
-    double stopDuration = ctx->getStopDuration(train);
-    if (stopDuration > 0.0)
-    {
-        // Train must wait until stop duration expires
-        // Decrement will happen in SimulationManager
-        return nullptr;  // Stay in Stopped state
-    }
-
-    // Get current rail
-    Rail* currentRail = train->getCurrentRail();
-    if (!currentRail)
+    // Must wait until the station stop duration expires (decremented by SimulationManager).
+    if (ctx->getStopDuration(train) > 0.0)
     {
         return nullptr;
     }
 
-    // Request access through TrafficController (Mediator pattern)
-    TrafficController* controller = ctx->getTrafficController();
-    if (!controller)
+    // Request access — on GRANT resume, on DENY transition to Waiting.
+    ITrainState* resumed = TrainTransitionState::checkRailAccessForResume(train, ctx);
+    if (resumed)
     {
-        return nullptr;
+        return resumed;
     }
 
-    // Check if we have permission to resume movement
-    TrafficController::AccessDecision decision = controller->requestRailAccess(train, currentRail);
-    
-    if (decision == TrafficController::GRANT)
-    {
-        return ctx->states().accelerating();
-    }
-    
-    // Access denied - transition to Waiting state
     return ctx->states().waiting();
 }
 
 std::string StoppedState::getName() const
 {
-	return "Stopped";
+    return "Stopped";
 }
