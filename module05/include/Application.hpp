@@ -3,6 +3,7 @@
 
 #include "io/CLI.hpp"
 #include "patterns/factories/TrainFactory.hpp"
+#include "simulation/SimulationManager.hpp"
 #include <functional>
 #include <memory>
 #include <string>
@@ -27,17 +28,11 @@ struct SimulationBundle
 // Orchestrates the entire railway simulation application.
 class Application
 {
-public:
-    Application(int argc, char* argv[]);
-    ~Application();
-    Application(const Application&)            = delete;
-    Application& operator=(const Application&) = delete;
-
-    int run();
 
 private:
-    CLI            _cli;
-    IOutputWriter* _consoleWriter;
+    CLI              _cli;
+    IOutputWriter*   _consoleWriter;
+    SimulationManager _sim;
 
     // --- Simulation lifecycle ---
     bool _buildSimulation(const std::string& netFile, const std::string& trainFile, SimulationBundle& outBundle, int seedOverride = -1);
@@ -73,6 +68,14 @@ private:
     unsigned int    _resolveSeed(int seedOverride) const;
     static double   _estimateJourneyMinutes(const Train* train);
     static std::string _readFile(const std::string& path);
+
+public:
+    Application(int argc, char* argv[]);
+    ~Application();
+    Application(const Application&)            = delete;
+    Application& operator=(const Application&) = delete;
+
+    int run();
 };
 
 #endif

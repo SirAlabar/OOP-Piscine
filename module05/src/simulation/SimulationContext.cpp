@@ -3,7 +3,7 @@
 #include "simulation/PhysicsSystem.hpp"
 #include "simulation/RiskData.hpp"
 #include "patterns/states/StateRegistry.hpp"
-#include "patterns/mediator/TrafficController.hpp"
+#include "patterns/mediator/ITrainController.hpp"
 #include "core/Train.hpp"
 #include "core/Rail.hpp"
 #include "core/Node.hpp"
@@ -14,7 +14,7 @@ SimulationContext::SimulationContext(
     Graph*                     network,
     CollisionAvoidance*        collisionSystem,
     const std::vector<Train*>* trains,
-    TrafficController*         trafficController)
+    ITrainController*          trafficController)
     : _network(network),
       _collisionSystem(collisionSystem),
       _trafficController(trafficController),
@@ -167,7 +167,7 @@ const StateRegistry& SimulationContext::states() const
 }
 
 // Traffic access
-TrafficController* SimulationContext::getTrafficController() const
+ITrainController* SimulationContext::getTrafficController() const
 {
     return _trafficController;
 }

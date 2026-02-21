@@ -1,5 +1,5 @@
 #include "patterns/factories/EventFactory.hpp"
-#include "patterns/observers/EventManager.hpp"
+#include "simulation/IEventScheduler.hpp"
 #include "patterns/events/StationDelayEvent.hpp"
 #include "patterns/events/TrackMaintenanceEvent.hpp"
 #include "patterns/events/SignalFailureEvent.hpp"
@@ -14,8 +14,8 @@ const EventConfig EventFactory::CONFIG_TRACK_MAINTENANCE = {0.015, 60, 180}; // 
 const EventConfig EventFactory::CONFIG_SIGNAL_FAILURE = {0.01, 5, 20};       // 1% per minute (~0.6/hour)
 const EventConfig EventFactory::CONFIG_WEATHER = {0.005, 120, 300};          // 0.5% per minute (~0.3/hour)
 
-EventFactory::EventFactory(unsigned int seed, Graph* network, EventManager* eventManager)
-	: _rng(seed), _network(network), _eventManager(eventManager)
+EventFactory::EventFactory(unsigned int seed, Graph* network, IEventScheduler* eventScheduler)
+	: _rng(seed), _network(network), _eventManager(eventScheduler)
 {
 }
 

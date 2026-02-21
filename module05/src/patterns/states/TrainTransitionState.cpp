@@ -1,6 +1,6 @@
 #include "patterns/states/TrainTransitionState.hpp"
 #include "patterns/states/StateRegistry.hpp"
-#include "patterns/mediator/TrafficController.hpp"
+#include "patterns/mediator/ITrainController.hpp"
 #include "simulation/SimulationContext.hpp"
 #include "simulation/RiskData.hpp"
 #include "core/Train.hpp"
@@ -23,12 +23,12 @@ ITrainState* checkLeaderInteraction(Train* train, SimulationContext* ctx)
         return nullptr;
     }
 
-    TrafficController* controller = ctx->getTrafficController();
-    Rail*              currentRail = train->getCurrentRail();
+    ITrainController* controller = ctx->getTrafficController();
+    Rail*             currentRail = train->getCurrentRail();
 
     if (controller && currentRail)
     {
-        if (controller->requestRailAccess(train, currentRail) == TrafficController::GRANT)
+        if (controller->requestRailAccess(train, currentRail) == ITrainController::GRANT)
         {
             // Higher priority than the leader — continue.
             return nullptr;
@@ -57,13 +57,13 @@ ITrainState* checkRailAccessForResume(Train* train, SimulationContext* ctx)
         return nullptr;
     }
 
-    TrafficController* controller = ctx->getTrafficController();
+    ITrainController* controller = ctx->getTrafficController();
     if (!controller)
     {
         return nullptr;
     }
 
-    if (controller->requestRailAccess(train, currentRail) == TrafficController::GRANT)
+    if (controller->requestRailAccess(train, currentRail) == ITrainController::GRANT)
     {
         return ctx->states().accelerating();
     }
@@ -71,4 +71,4 @@ ITrainState* checkRailAccessForResume(Train* train, SimulationContext* ctx)
     return nullptr;
 }
 
-} // namespace TrainTransitionState
+}

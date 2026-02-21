@@ -3,11 +3,11 @@
 
 #include <vector>
 #include <map>
+#include <functional>
 #include "utils/Time.hpp"
 #include "simulation/SimulationConfig.hpp"
-#include <functional>
-
-class ISimulationOutput;
+#include "patterns/observers/EventDispatcher.hpp"
+#include "patterns/observers/EventScheduler.hpp"
 
 // Simulation time configuration
 namespace SimConfig
@@ -32,7 +32,6 @@ class SimulationContext;
 class FileOutputWriter;
 class ISimulationOutput;
 class TrafficController;
-class EventManager;
 class EventFactory;
 class Event;
 class StatsCollector;
@@ -41,16 +40,17 @@ class ICommand;
 class ITrainState;
 class IObserver;
 
+// Regular class — owned by Application as a value member.
+// No Singleton; one instance per simulation run.
 class SimulationManager
 {
-public:
-    using TrainList = std::vector<Train*>;
-
 private:
-    SimulationManager();
+    // Event subsystem — value members; EventScheduler holds a reference to
+    // EventDispatcher so declaration order matters (_dispatcher before _scheduler).
+    EventDispatcher _eventDispatcher;
+    EventScheduler  _eventScheduler;
 
-
-	Graph*              _network;
+    Graph*              _network;
     TrainList           _trains;
     CollisionAvoidance* _collisionSystem;
     TrafficController*  _trafficController;
@@ -66,9 +66,9 @@ private:
     unsigned int _eventSeed;
     double       _lastEventGenerationTime;
 
-    ISimulationOutput*               _simulationWriter;
+    ISimulationOutput*              _simulationWriter;
     std::map<Train*, FileOutputWriter*> _outputWriters;
-    std::map<Train*, ITrainState*> _previousStates;
+    std::map<Train*, ITrainState*>  _previousStates;
     int _lastSnapshotMinute;
     int _lastDashboardMinute;
 
@@ -76,7 +76,7 @@ private:
 
     std::vector<IObserver*> _eventAdapters;  // Owned; created in registerObservers(), cleared in reset()
 
-	void tick(bool replayMode, bool advanceTime);
+    void tick(bool replayMode, bool advanceTime);
     void updateTrainStates(double dt);
     void checkDepartures();
     void handleStateTransitions();
@@ -84,31 +84,29 @@ private:
     void cleanupOutputWriters();
     void updateEvents();
     void registerObservers();
-	void refreshSimulationState();
+    void refreshSimulationState();
     void logEventForAffectedTrains(Event* event, const std::string& action);
-	void simulationTick(bool replayMode);
+    void simulationTick(bool replayMode);
     void applyReplayCommands();
-	bool shouldStopEarly(bool replayMode);
-	void updateDashboard();
-	bool hasValidState(const Train* train) const;
-	bool isTrainActive(const Train* train) const;
+    bool shouldStopEarly(bool replayMode);
+    void updateDashboard();
+    bool hasValidState(const Train* train) const;
+    bool isTrainActive(const Train* train) const;
     bool hasAnyActiveTrain() const;
-	void recordCommand(ICommand* cmd);
+    void recordCommand(ICommand* cmd);
 
 public:
-    static SimulationManager& getInstance()
-    {
-        static SimulationManager instance;
-        return instance;
-    }
+    using TrainList = std::vector<Train*>;
 
-    SimulationManager(const SimulationManager&)             = delete;
-    SimulationManager& operator=(const SimulationManager&)  = delete;
+    SimulationManager();
+    ~SimulationManager();
+
+    SimulationManager(const SimulationManager&)            = delete;
+    SimulationManager& operator=(const SimulationManager&) = delete;
     SimulationManager(SimulationManager&&)                  = delete;
     SimulationManager& operator=(SimulationManager&&)       = delete;
 
-    ~SimulationManager();
-
+    // Configuration setters
     void setNetwork(Graph* network);
     void addTrain(Train* train);
     void setTimestep(double timestep);
@@ -119,13 +117,11 @@ public:
     void setStatsCollector(StatsCollector* stats);
 
     // Configure network, seed, round-trip mode, and writer in one call.
-    // Must be called before addTrain() / registerOutputWriter() / run().
     void configure(const SimulationConfig& config);
 
-    // Inject CommandManager before calling run().  Pass nullptr to disable.
+    // Inject CommandManager before calling run(). Pass nullptr to disable.
     void setCommandManager(CommandManager* mgr);
 
-    // Find a train by name; used by command applyReplay().
     Train* findTrain(const std::string& name) const;
 
     void start();
@@ -140,16 +136,14 @@ public:
              class IRenderer* renderer = nullptr,
              const std::function<void()>& loopHook = std::function<void()>());
 
-    double          getCurrentTime()          const;
-    Time            getCurrentTimeFormatted() const;
-    const TrainList& getTrains()              const;
-
-    // Forwarding accessor so renderers can query active events without
-    // depending on EventManager directly.
+    double             getCurrentTime()          const;
+    Time               getCurrentTimeFormatted() const;
+    const TrainList&   getTrains()               const;
     const std::vector<Event*>& getActiveEvents() const;
-    const Graph*    getNetwork()              const;
-    bool            isRunning()               const;
-    unsigned int    getSeed()                 const;
+    int                getTotalEventsGenerated() const;
+    const Graph*       getNetwork()              const;
+    bool               isRunning()               const;
+    unsigned int       getSeed()                 const;
 
     double getSimulationSpeed() const;
     void   setSimulationSpeed(double speed);

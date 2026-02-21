@@ -4,6 +4,7 @@
 #include "patterns/states/StoppedState.hpp"
 #include "patterns/states/StateRegistry.hpp"
 #include "patterns/mediator/TrafficController.hpp"
+#include "patterns/mediator/ITrainController.hpp"
 #include "core/Train.hpp"
 #include "core/Graph.hpp"
 #include "core/Node.hpp"
@@ -135,7 +136,7 @@ TEST_F(TrainStateTest, SimulationContextProvidesStateRegistry)
 
 TEST_F(TrainStateTest, SimulationContextProvidesTrafficController)
 {
-	TrafficController* tc = context->getTrafficController();
+	ITrainController* tc = context->getTrafficController();
 	EXPECT_EQ(tc, trafficController);
 }
 

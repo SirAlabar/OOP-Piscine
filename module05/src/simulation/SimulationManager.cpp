@@ -13,7 +13,8 @@
 #include "patterns/states/IdleState.hpp"
 #include "io/FileOutputWriter.hpp"
 #include "io/ISimulationOutput.hpp"
-#include "patterns/observers/EventManager.hpp"
+#include "patterns/observers/EventDispatcher.hpp"
+#include "patterns/observers/EventScheduler.hpp"
 #include "patterns/observers/TrainEventAdapter.hpp"
 #include "patterns/observers/RailEventAdapter.hpp"
 #include "patterns/factories/EventFactory.hpp"
@@ -30,7 +31,8 @@
 #include "rendering/IRenderer.hpp"
 
 SimulationManager::SimulationManager()
-    : _network(nullptr),
+    : _eventScheduler(_eventDispatcher),
+      _network(nullptr),
       _collisionSystem(new CollisionAvoidance()),
       _trafficController(nullptr),
       _context(nullptr),
@@ -61,7 +63,7 @@ SimulationManager::~SimulationManager()
     {
         delete adapter;
     }
-    EventManager::destroy();
+    // _eventScheduler and _eventDispatcher are value members; destroyed automatically.
 }
 
 // Initialization
@@ -95,8 +97,7 @@ void SimulationManager::setNetwork(Graph* network)
                               &_trains, _trafficController);
 
     _eventFactory =
-        new EventFactory(_eventSeed, _network,
-                         &EventManager::getInstance());
+        new EventFactory(_eventSeed, _network, &_eventScheduler);
 }
 
 void SimulationManager::addTrain(Train* train)
@@ -147,7 +148,7 @@ void SimulationManager::setEventSeed(unsigned int seed)
     if (_network && _eventFactory)
     {
         delete _eventFactory;
-        _eventFactory = new EventFactory(_eventSeed, _network, &EventManager::getInstance());
+        _eventFactory = new EventFactory(_eventSeed, _network, &_eventScheduler);
     }
 }
 
@@ -437,7 +438,7 @@ void SimulationManager::updateDashboard()
 
     int activeEvents =
         static_cast<int>(
-            EventManager::getInstance()
+            _eventScheduler
                 .getActiveEvents()
                 .size()
         );
@@ -471,7 +472,12 @@ const SimulationManager::TrainList& SimulationManager::getTrains() const
 
 const std::vector<Event*>& SimulationManager::getActiveEvents() const
 {
-    return EventManager::getInstance().getActiveEvents();
+    return _eventScheduler.getActiveEvents();
+}
+
+int SimulationManager::getTotalEventsGenerated() const
+{
+    return _eventScheduler.getTotalEventsGenerated();
 }
 
 const Graph* SimulationManager::getNetwork() const
@@ -524,7 +530,8 @@ void SimulationManager::reset()
     _statsCollector           = nullptr;
     _commandManager           = nullptr;  // Application re-injects after reset
 
-    EventManager::getInstance().clear();
+    _eventScheduler.clear();
+    _eventDispatcher.clearObservers();
 
     for (IObserver* adapter : _eventAdapters)
     {
@@ -594,7 +601,7 @@ void SimulationManager::updateTrainStates(double dt)
         }
 
         const std::vector<Event*>& activeEvents =
-            EventManager::getInstance().getActiveEvents();
+            _eventScheduler.getActiveEvents();
 
         MovementSystem::checkSignalFailures(train, _context, activeEvents);
 
@@ -724,15 +731,13 @@ void SimulationManager::cleanupOutputWriters()
 
 void SimulationManager::registerObservers()
 {
-    EventManager& eventManager = EventManager::getInstance();
-
     for (Train* train : _trains)
     {
         if (train)
         {
             IObserver* adapter = new TrainEventAdapter(train);
             _eventAdapters.push_back(adapter);
-            eventManager.attach(adapter);
+            _eventDispatcher.attach(adapter);
         }
     }
 
@@ -742,7 +747,7 @@ void SimulationManager::registerObservers()
         {
             if (node)
             {
-                eventManager.attach(node);
+                _eventDispatcher.attach(node);
             }
         }
         for (Rail* rail : _network->getRails())
@@ -751,7 +756,7 @@ void SimulationManager::registerObservers()
             {
                 IObserver* adapter = new RailEventAdapter(rail);
                 _eventAdapters.push_back(adapter);
-                eventManager.attach(adapter);
+                _eventDispatcher.attach(adapter);
             }
         }
     }
@@ -764,11 +769,10 @@ void SimulationManager::updateEvents()
         return;
     }
 
-    EventManager& eventManager = EventManager::getInstance();
-    std::vector<Event*> previousActive = eventManager.getActiveEvents();
+    std::vector<Event*> previousActive = _eventScheduler.getActiveEvents();
     Time currentTimeFormatted = getCurrentTimeFormatted();
-    eventManager.update(currentTimeFormatted);
-    std::vector<Event*> currentActive = eventManager.getActiveEvents();
+    _eventScheduler.update(currentTimeFormatted);
+    std::vector<Event*> currentActive = _eventScheduler.getActiveEvents();
 
     for (Event* event : currentActive)
     {
@@ -822,7 +826,7 @@ void SimulationManager::updateEvents()
         {
             if (event)
             {
-                eventManager.scheduleEvent(event);
+                _eventScheduler.scheduleEvent(event);
             }
         }
         _lastEventGenerationTime = _currentTime;

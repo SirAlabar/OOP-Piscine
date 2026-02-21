@@ -11,6 +11,7 @@ class Train;
 class Graph;
 class Node;
 class CollisionAvoidance;
+class ITrainController;
 class TrafficController;
 struct RiskData;
 
@@ -22,7 +23,7 @@ class SimulationContext : public IPhysicsQueries, public IStopTimerStore
 private:
     Graph*                     _network;
     CollisionAvoidance*        _collisionSystem;
-    TrafficController*         _trafficController;
+    ITrainController*          _trafficController;
     const std::vector<Train*>* _trains;
 
     StateRegistry              _states;
@@ -34,7 +35,7 @@ public:
         Graph*                     network,
         CollisionAvoidance*        collisionSystem,
         const std::vector<Train*>* trains,
-        TrafficController*         trafficController
+        ITrainController*          trafficController
     );
     ~SimulationContext() override;
 
@@ -66,7 +67,7 @@ public:
     const StateRegistry& states() const;
 
     // Traffic access
-    TrafficController* getTrafficController() const;
+    ITrainController* getTrafficController() const;
 
     // Physics mutation
     // Apply a net force to the train and advance its velocity and position.

@@ -10,9 +10,9 @@ class Time;
 enum class EventType;
 
 // Narrow interface for scheduling and querying simulation events.
-// Implemented by EventManager.
+// Implemented by EventScheduler (owned by SimulationManager).
 // Injected into any class that needs event data without coupling to the
-// full EventManager (ISubject + scheduling + statistics in one god-object).
+// full scheduling implementation.
 class IEventScheduler
 {
 public:

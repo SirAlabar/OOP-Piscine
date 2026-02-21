@@ -7,7 +7,7 @@
 #include <vector>
 
 class Graph;
-class EventManager;
+class IEventScheduler;
 
 // Event configuration
 struct EventConfig
@@ -21,9 +21,9 @@ struct EventConfig
 class EventFactory
 {
 private:
-	SeededRNG     _rng;
-	Graph*        _network;
-	EventManager* _eventManager;  // For conflict checking
+	SeededRNG         _rng;
+	Graph*            _network;
+	IEventScheduler*  _eventManager;  // For conflict checking (non-owning)
 
 	// Event configurations
 	static const EventConfig CONFIG_STATION_DELAY;
@@ -47,10 +47,10 @@ private:
 	bool canCreateWeather() const;
 
 public:
-	EventFactory(unsigned int seed, Graph* network, EventManager* eventManager);
+	EventFactory(unsigned int seed, Graph* network, IEventScheduler* eventScheduler);
 
-	// Attempt to generate events based on probability
-	// Returns vector of created events (may be empty)
+	// Attempt to generate events based on probability.
+	// Returns vector of created events (may be empty).
 	// timestep: simulation timestep in seconds (default 1.0)
 	std::vector<Event*> tryGenerateEvents(const Time& currentTime, double timestepSeconds = 1.0);
 

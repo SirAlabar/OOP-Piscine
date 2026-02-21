@@ -12,7 +12,6 @@
 #include "patterns/strategies/IPathfindingStrategy.hpp"
 #include "patterns/strategies/DijkstraStrategy.hpp"
 #include "patterns/strategies/AStarStrategy.hpp"
-#include "simulation/SimulationManager.hpp"
 #include "simulation/SimulationConfig.hpp"
 #include "analysis/MonteCarloRunner.hpp"
 #include "core/Train.hpp"
@@ -29,10 +28,6 @@
 #include <iterator>
 #include <memory>
 
-// =============================================================================
-// Construction / destruction
-// =============================================================================
-
 Application::Application(int argc, char* argv[])
     : _cli(argc, argv),
       _consoleWriter(new ConsoleOutputWriter())
@@ -43,10 +38,6 @@ Application::~Application()
 {
     delete _consoleWriter;
 }
-
-// =============================================================================
-// Phase 1 helpers
-// =============================================================================
 
 void Application::_printConfiguration(
     const std::string& netFile,
@@ -174,10 +165,6 @@ std::string Application::_readFile(const std::string& path)
     return std::string(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>());
 }
 
-// =============================================================================
-// Phase 2 build sub-steps
-// =============================================================================
-
 Graph* Application::_parseNetwork(const std::string& netFile)
 {
     _consoleWriter->writeProgress("Parsing network file...");
@@ -296,7 +283,7 @@ void Application::_configureSimulation(SimulationBundle& bundle, int seedOverrid
 {
     _consoleWriter->writeProgress("Initializing simulation...");
 
-    SimulationManager& sim = SimulationManager::getInstance();
+    SimulationManager& sim = _sim;
     sim.reset();
 
     SimulationConfig config;
@@ -328,10 +315,6 @@ void Application::_configureSimulation(SimulationBundle& bundle, int seedOverrid
         _consoleWriter->writeTrainSchedule(train->getName(), train->getDepartureTime());
     }
 }
-
-// =============================================================================
-// _buildSimulation — thin orchestrator
-// =============================================================================
 
 bool Application::_buildSimulation(
     const std::string& netFile,
@@ -379,13 +362,9 @@ bool Application::_buildSimulation(
     }
 }
 
-// =============================================================================
-// _teardownSimulation
-// =============================================================================
-
 void Application::_teardownSimulation(SimulationBundle& bundle)
 {
-    SimulationManager::getInstance().reset();
+    _sim.reset();
 
     for (FileOutputWriter* w : bundle.writers)
     {
@@ -403,10 +382,6 @@ void Application::_teardownSimulation(SimulationBundle& bundle)
     delete bundle.graph;
     bundle.graph = nullptr;
 }
-
-// =============================================================================
-// Hot-reload helpers
-// =============================================================================
 
 bool Application::_validateFilesForReload(
     const std::string& netFile,
@@ -520,9 +495,6 @@ void Application::_recordReloadCommand(
         rebuildCallback));
 }
 
-// =============================================================================
-// Execution modes
-// =============================================================================
 
 int Application::_runMonteCarlo(
     const std::string& netFile,
@@ -569,7 +541,7 @@ int Application::_runReplay(
         return 1;
     }
 
-    SimulationManager& sim = SimulationManager::getInstance();
+    SimulationManager& sim = _sim;
     sim.setCommandManager(&cmdMgr);
 
     const double maxTime = (meta.stopTime > 0.0) ? meta.stopTime : 1e9;
@@ -595,7 +567,7 @@ int Application::_runHotReload(
     const std::string& trainFile)
 {
     SimulationBundle   bundle;
-    SimulationManager& sim    = SimulationManager::getInstance();
+    SimulationManager& sim = _sim;
     SFMLRenderer       renderer;
     CommandManager*    cmdMgr = _setupCommandManager();
 
@@ -674,7 +646,7 @@ int Application::_runRender(
     const std::string& trainFile)
 {
     SimulationBundle   bundle;
-    SimulationManager& sim    = SimulationManager::getInstance();
+    SimulationManager& sim = _sim;
     SFMLRenderer       renderer;
     CommandManager*    cmdMgr = _setupCommandManager();
 
@@ -704,7 +676,7 @@ int Application::_runConsole(
     const std::string& trainFile)
 {
     SimulationBundle   bundle;
-    SimulationManager& sim    = SimulationManager::getInstance();
+    SimulationManager& sim = _sim;
     CommandManager*    cmdMgr = _setupCommandManager();
 
     if (!_buildSimulation(netFile, trainFile, bundle))
@@ -736,10 +708,6 @@ int Application::_runConsole(
     delete cmdMgr;
     return 0;
 }
-
-// =============================================================================
-// run — dispatcher
-// =============================================================================
 
 int Application::run()
 {
