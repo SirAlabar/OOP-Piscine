@@ -5,9 +5,6 @@
 #include "utils/Time.hpp"
 
 // Narrow interface for simulation-domain output.
-// These are the only two methods SimulationManager actually calls on its
-// output writer — it should not be forced to depend on the 16-method
-// IOutputWriter interface.
 class ISimulationOutput
 {
 public:
@@ -17,6 +14,14 @@ public:
     virtual void writeEventActivated(const Time&        currentTime,
                                      const std::string& eventType,
                                      const std::string& description) = 0;
+
+    // Called when an active event expires.
+    virtual void writeEventEnded(const Time&        currentTime,
+                                 const std::string& eventType)
+    {
+        (void)currentTime;
+        (void)eventType;
+    }
 
     // Called every N simulation-minutes to emit a status dashboard line.
     virtual void writeDashboard(const Time& currentTime,

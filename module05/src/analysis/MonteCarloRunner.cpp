@@ -1,168 +1,174 @@
 #include "analysis/MonteCarloRunner.hpp"
-#include "analysis/StatsCollector.hpp"
 #include "io/RailNetworkParser.hpp"
 #include "io/TrainConfigParser.hpp"
+#include "io/ILogger.hpp"
 #include "patterns/factories/TrainFactory.hpp"
+#include "patterns/factories/TrainValidator.hpp"
+#include "patterns/strategies/IPathfindingStrategy.hpp"
 #include "patterns/strategies/DijkstraStrategy.hpp"
 #include "patterns/strategies/AStarStrategy.hpp"
-#include "simulation/SimulationContext.hpp"
-#include "patterns/states/ITrainState.hpp"
-#include "patterns/states/StateRegistry.hpp"
+#include "simulation/SimulationConfig.hpp"
 #include "core/Train.hpp"
 #include "core/Graph.hpp"
 #include "core/Node.hpp"
 #include "core/Rail.hpp"
+#include "patterns/states/ITrainState.hpp"
 #include "utils/FileSystemUtils.hpp"
-#include <stdexcept>
 #include <fstream>
+#include <stdexcept>
 #include <iostream>
-#include <iomanip>
 
 MonteCarloRunner::MonteCarloRunner(const std::string& networkFile,
                                    const std::string& trainFile,
-                                   unsigned int baseSeed,
-                                   unsigned int numRuns,
-                                   const std::string& pathfindingAlgo)
+                                   unsigned int       baseSeed,
+                                   unsigned int       numRuns,
+                                   const std::string& pathfindingAlgo,
+                                   ILogger*           logger)
     : _networkFile(networkFile),
       _trainFile(trainFile),
       _baseSeed(baseSeed),
       _numRuns(numRuns),
-      _pathfindingAlgo(pathfindingAlgo)
+      _pathfindingAlgo(pathfindingAlgo),
+      _logger(logger)
 {
 }
 
+// Public API
 void MonteCarloRunner::runAll()
 {
     _allMetrics.clear();
-
-    std::cout << "\n========================================\n";
-    std::cout << "  MONTE CARLO SIMULATION\n";
-    std::cout << "========================================\n";
-    std::cout << "Runs: " << _numRuns << "\n";
-    std::cout << "Base seed: " << _baseSeed << "\n";
-    std::cout << "Pathfinding: " << _pathfindingAlgo << "\n\n";
+    _allMetrics.reserve(_numRuns);
 
     for (unsigned int i = 0; i < _numRuns; ++i)
     {
         unsigned int seed = _baseSeed + i;
-
-        std::cout << "Run " << (i + 1) << "/" << _numRuns
-                  << " (seed=" << seed << ")... ";
-        std::cout.flush();
+        log("Run " + std::to_string(i + 1) + "/" + std::to_string(_numRuns)
+            + " (seed=" + std::to_string(seed) + ")");
 
         SimulationMetrics metrics = runSingleSimulation(seed);
         _allMetrics.push_back(metrics);
-
-        std::cout << "done (" << std::fixed << std::setprecision(1)
-                  << metrics.totalDuration << "s)\n";
     }
 
-    std::cout << "\nAll simulations complete!\n\n";
+    log("Monte Carlo complete: " + std::to_string(_numRuns) + " runs finished.");
 }
 
 void MonteCarloRunner::writeCSV(const std::string& filename) const
 {
-    FileSystemUtils::ensureOutputDirectoryExists();
-
     std::ofstream file(filename);
-
     if (!file.is_open())
     {
-        throw std::runtime_error("Failed to open CSV file: " + filename);
+        throw std::runtime_error("Cannot open CSV output: " + filename);
     }
 
     // Header
-    file << "Run,Seed,TotalDuration(s),TotalEvents,CollisionAvoidances";
+    file << "seed,totalDuration,totalEvents,collisionAvoidances";
 
-    if (!_allMetrics.empty())
+    // Collect all unique train names across all runs for column headers
+    std::vector<std::string> trainNames;
+    for (const SimulationMetrics& m : _allMetrics)
     {
-        for (const auto& pair : _allMetrics[0].trainMetrics)
+        for (const auto& kv : m.trainMetrics)
         {
-            const std::string& name = pair.first;
-            file << "," << name << "_ActualTime(s)"
-                 << "," << name << "_EstimatedTime(s)"
-                 << "," << name << "_Transitions"
-                 << "," << name << "_Waits"
-                 << "," << name << "_Emergencies"
-                 << "," << name << "_Events"
-                 << "," << name << "_Completed";
+            const std::string& name = kv.first;
+            bool found = false;
+            for (const std::string& n : trainNames)
+            {
+                if (n == name)
+                {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found)
+            {
+                trainNames.push_back(name);
+            }
         }
     }
 
+    for (const std::string& name : trainNames)
+    {
+        file << "," << name << "_actualTime"
+             << "," << name << "_estimatedTime"
+             << "," << name << "_stateTransitions"
+             << "," << name << "_eventsAffecting"
+             << "," << name << "_reached";
+    }
     file << "\n";
 
     // Rows
-    for (size_t i = 0; i < _allMetrics.size(); ++i)
+    for (const SimulationMetrics& m : _allMetrics)
     {
-        const SimulationMetrics& m = _allMetrics[i];
-
-        file << (i + 1)
-             << "," << m.seed
-             << "," << std::fixed << std::setprecision(2) << m.totalDuration
+        file << m.seed
+             << "," << m.totalDuration
              << "," << m.totalEventsGenerated
              << "," << m.collisionAvoidanceActivations;
 
-        if (!_allMetrics.empty())
+        for (const std::string& name : trainNames)
         {
-            for (const auto& pair : _allMetrics[0].trainMetrics)
+            auto it = m.trainMetrics.find(name);
+            if (it != m.trainMetrics.end())
             {
-                const std::string& name = pair.first;
-                auto it = m.trainMetrics.find(name);
-
-                if (it != m.trainMetrics.end())
-                {
-                    const TrainMetrics& tm = it->second;
-                    file << "," << tm.actualTravelTime
-                         << "," << tm.estimatedTravelTime
-                         << "," << tm.stateTransitions
-                         << "," << tm.waitEvents
-                         << "," << tm.emergencyEvents
-                         << "," << tm.eventsAffectingTrain
-                         << "," << (tm.reachedDestination ? 1 : 0);
-                }
-                else
-                {
-                    file << ",0,0,0,0,0,0,0";
-                }
+                const TrainMetrics& tm = it->second;
+                file << "," << tm.actualTravelTime
+                     << "," << tm.estimatedTravelTime
+                     << "," << tm.stateTransitions
+                     << "," << tm.eventsAffectingTrain
+                     << "," << (tm.reachedDestination ? 1 : 0);
+            }
+            else
+            {
+                file << ",,,,,";
             }
         }
-
         file << "\n";
     }
 
-    file.close();
-
-    std::cout << "✓ Statistics written to: " << filename << "\n";
-    std::cout << "  Total runs: " << _allMetrics.size() << "\n\n";
+    log("CSV written: " + filename);
 }
 
-SimulationMetrics MonteCarloRunner::runSingleSimulation(unsigned int seed)
+void MonteCarloRunner::log(const std::string& message) const
 {
-    StatsCollector stats(seed);
-    Graph* graph = parseNetwork();
+    if (_logger)
+    {
+        _logger->writeProgress(message);
+    }
+}
 
-    DijkstraStrategy dijkstra;
-    AStarStrategy    astar;
+double MonteCarloRunner::estimateJourneySeconds(const Train* train)
+{
+    if (!train)
+    {
+        return 0.0;
+    }
 
-    IPathfindingStrategy* strategy = selectStrategy(dijkstra, astar);
-    std::vector<Train*> trains = buildTrains(graph, stats, strategy);
+    double seconds = 0.0;
+    for (const PathSegment& seg : train->getPath())
+    {
+        if (seg.rail && seg.rail->getSpeedLimit() > 0.0)
+        {
+            seconds += (seg.rail->getLength() / seg.rail->getSpeedLimit())
+                       * SimConfig::SECONDS_PER_HOUR;
+        }
+    }
+    return seconds;
+}
 
-    setupSimulation(graph, trains, stats, seed);
+Graph* MonteCarloRunner::parseNetwork() const
+{
+    RailNetworkParser parser(_networkFile);
+    return parser.parse();
+}
 
-    std::map<Train*, double> departureTime;
-    std::map<Train*, double> arrivalTime;
-
-    runSimulationLoop(trains, stats, departureTime, arrivalTime);
-
-    SimulationMetrics metrics = finalizeMetrics(stats, trains, departureTime, arrivalTime);
-
-    cleanup(graph, trains);
-
-    return metrics;
+std::vector<TrainConfig> MonteCarloRunner::parseTrains() const
+{
+    TrainConfigParser parser(_trainFile);
+    return parser.parse();
 }
 
 IPathfindingStrategy* MonteCarloRunner::selectStrategy(
-    IPathfindingStrategy& dijkstra, IPathfindingStrategy& astar)
+    IPathfindingStrategy& dijkstra,
+    IPathfindingStrategy& astar)
 {
     if (_pathfindingAlgo == "astar")
     {
@@ -172,96 +178,102 @@ IPathfindingStrategy* MonteCarloRunner::selectStrategy(
 }
 
 std::vector<Train*> MonteCarloRunner::buildTrains(
-    Graph* graph, StatsCollector& stats, IPathfindingStrategy* strategy)
+    Graph*                graph,
+    StatsCollector&       stats,
+    IPathfindingStrategy* strategy)
 {
-    std::vector<Train*> trains;
     std::vector<TrainConfig> configs = parseTrains();
+    std::vector<Train*>      trains;
 
     for (const TrainConfig& config : configs)
     {
-        Train* train = TrainFactory::create(config, graph);
+        // Validate config against the network (mirrors Application::_buildTrains).
+        ValidationResult vr = TrainValidator::validate(config, graph);
+        if (!vr.valid)
+        {
+            log("Skipping train '" + config.name + "': " + vr.error);
+            continue;
+        }
 
+        Train* train = TrainFactory::create(config, graph);
         if (!train)
         {
+            log("Failed to create train: " + config.name);
             continue;
         }
 
-        Node* start = graph->getNode(config.departureStation);
-        Node* end   = graph->getNode(config.arrivalStation);
-
-        if (!start || !end)
-        {
-            delete train;
-            continue;
-        }
-
-        auto path = strategy->findPath(graph, start, end);
+        Node* startNode = graph->getNode(config.departureStation);
+        Node* endNode   = graph->getNode(config.arrivalStation);
+        auto  path      = strategy->findPath(graph, startNode, endNode);
 
         if (path.empty())
         {
+            log("No path for train '" + config.name + "' ("
+                + config.departureStation + " -> " + config.arrivalStation + ")");
             delete train;
             continue;
         }
 
         train->setPath(path);
 
-        double estimatedSeconds = 0.0;
-        for (const PathSegment& segment : path)
-        {
-            double hours = segment.rail->getLength() / segment.rail->getSpeedLimit();
-            estimatedSeconds += hours * 3600.0;
-        }
-
+        double estimatedSeconds = estimateJourneySeconds(train);
         stats.registerTrain(train, estimatedSeconds);
+
         trains.push_back(train);
     }
 
     return trains;
 }
 
-void MonteCarloRunner::setupSimulation(Graph* graph,
-                                       const std::vector<Train*>& trains,
-                                       StatsCollector& stats,
-                                       unsigned int seed)
+void MonteCarloRunner::setupSimulation(
+    Graph*                     graph,
+    const std::vector<Train*>& trains,
+    StatsCollector&            stats,
+    unsigned int               seed)
 {
     _sim.reset();
-    _sim.setSimulationWriter(nullptr);
-    _sim.setEventSeed(seed);
-    _sim.setNetwork(graph);
+
+    SimulationConfig config;
+    config.network   = graph;
+    config.seed      = seed;
+    config.roundTrip = false;
+    config.writer    = nullptr;  // Silent — no console output during MC runs.
+
+    _sim.configure(config);
     _sim.setStatsCollector(&stats);
 
     for (Train* train : trains)
     {
         _sim.addTrain(train);
     }
-
-    _sim.start();
 }
 
-void MonteCarloRunner::runSimulationLoop(const std::vector<Train*>& trains,
-                                         StatsCollector& stats,
-                                         std::map<Train*, double>& departureTime,
-                                         std::map<Train*, double>& arrivalTime)
+void MonteCarloRunner::runSimulationLoop(
+    const std::vector<Train*>&  trains,
+    StatsCollector&             stats,
+    std::map<Train*, double>&   departureTime,
+    std::map<Train*, double>&   arrivalTime)
 {
-    SimulationContext* context = _sim.getContext();
-
-    if (!context)
-    {
-        throw std::runtime_error("SimulationContext null");
-    }
-
-    StateRegistry& states = context->states();
-
-    std::map<Train*, ITrainState*> previousStates;
+    // Track previous states to detect transitions.
+    std::map<Train*, std::string> prevStates;
     for (Train* train : trains)
     {
-        previousStates[train] = train->getCurrentState();
+        if (train)
+        {
+            prevStates[train] = "Idle";
+        }
     }
 
-    const double maxTime = SimConfig::SECONDS_PER_DAY;
+    _sim.start();
 
-    while (_sim.isRunning() && _sim.getCurrentTime() < maxTime)
+    constexpr double maxSimTime = 1e9;  // shouldStopEarly() terminates when done.
+
+    while (_sim.isRunning() && _sim.getCurrentTime() < maxSimTime)
     {
+        _sim.step();
+
+        double currentTime = _sim.getCurrentTime();
+
         for (Train* train : trains)
         {
             if (!train)
@@ -269,51 +281,60 @@ void MonteCarloRunner::runSimulationLoop(const std::vector<Train*>& trains,
                 continue;
             }
 
-            ITrainState*  current  = train->getCurrentState();
-            ITrainState*& previous = previousStates[train];
-
-            if (current != previous)
+            if (!train->getCurrentState())
             {
-                std::string prevName = previous ? previous->getName() : "";
-                std::string currName = current  ? current->getName()  : "";
+                continue;
+            }
 
-                stats.recordStateTransition(train, prevName, currName);
+            std::string currentStateName = train->getCurrentState()->getName();
+            std::string& prevStateName   = prevStates[train];
 
-                if (previous == states.idle() && current != states.idle())
+            if (currentStateName != prevStateName)
+            {
+                // Detect departure (Idle → anything else)
+                if (prevStateName == "Idle" && currentStateName != "Idle")
                 {
-                    departureTime[train] = _sim.getCurrentTime();
+                    departureTime[train] = currentTime;
                 }
 
-                if (current == states.waiting() || current == states.emergency())
+                // Detect arrival (transition to finished state at destination)
+                if (train->isFinished() && arrivalTime.find(train) == arrivalTime.end())
+                {
+                    arrivalTime[train] = currentTime;
+                    stats.checkTrainDestination(train);
+                }
+
+                // Collision avoidance proxy: Idle → Waiting mid-journey
+                if (currentStateName == "Waiting" && prevStateName != "Idle")
                 {
                     stats.recordCollisionAvoidance();
                 }
 
-                previous = current;
+                stats.recordStateTransition(train, prevStateName, currentStateName);
+                prevStateName = currentStateName;
+            }
+
+            // Check arrival for already-finished trains that may not change state
+            if (train->isFinished() && arrivalTime.find(train) == arrivalTime.end())
+            {
+                arrivalTime[train] = currentTime;
+                stats.checkTrainDestination(train);
             }
         }
 
-        _sim.step();
-
-        bool allFinished = true;
+        // shouldStopEarly is called inside sim.run(), but since we drive via
+        // step() here we replicate the stop condition manually.
+        bool allDone = true;
         for (Train* train : trains)
         {
-            if (!train)
+            if (train && !train->isFinished())
             {
-                continue;
-            }
-
-            if (!train->isFinished())
-            {
-                allFinished = false;
-            }
-            else if (arrivalTime.find(train) == arrivalTime.end())
-            {
-                arrivalTime[train] = _sim.getCurrentTime();
+                allDone = false;
+                break;
             }
         }
 
-        if (allFinished)
+        if (allDone)
         {
             break;
         }
@@ -321,22 +342,15 @@ void MonteCarloRunner::runSimulationLoop(const std::vector<Train*>& trains,
 }
 
 SimulationMetrics MonteCarloRunner::finalizeMetrics(
-    StatsCollector& stats,
-    const std::vector<Train*>& trains,
-    const std::map<Train*, double>& departureTime,
-    const std::map<Train*, double>& arrivalTime)
+    StatsCollector&                    stats,
+    const std::vector<Train*>&         trains,
+    const std::map<Train*, double>&    departureTime,
+    const std::map<Train*, double>&    arrivalTime)
 {
-    stats.finalize(_sim.getCurrentTime());
+    double totalDuration = _sim.getCurrentTime();
+    stats.finalize(totalDuration);
 
-    // Record total events generated this run.
-    int totalEvents = _sim.getTotalEventsGenerated();
-    for (int i = 0; i < totalEvents; ++i)
-    {
-        stats.recordEventGenerated();
-    }
-
-    SimulationMetrics metrics = stats.getMetrics();
-
+    // Patch actual travel times from our timing maps.
     for (Train* train : trains)
     {
         if (!train)
@@ -344,21 +358,23 @@ SimulationMetrics MonteCarloRunner::finalizeMetrics(
             continue;
         }
 
-        stats.checkTrainDestination(train);
+        auto deptIt = departureTime.find(train);
+        auto arrIt  = arrivalTime.find(train);
 
-        auto dep = departureTime.find(train);
-        auto arr = arrivalTime.find(train);
-
-        if (dep != departureTime.end() && arr != arrivalTime.end())
+        if (deptIt != departureTime.end() && arrIt != arrivalTime.end())
         {
-            double actual = arr->second - dep->second;
-            metrics.trainMetrics[train->getName()].actualTravelTime = actual;
-        }
+            double actual = arrIt->second - deptIt->second;
 
-        metrics.trainMetrics[train->getName()].reachedDestination = train->isFinished();
+            SimulationMetrics& m = const_cast<SimulationMetrics&>(stats.getMetrics());
+            auto tmIt = m.trainMetrics.find(train->getName());
+            if (tmIt != m.trainMetrics.end())
+            {
+                tmIt->second.actualTravelTime = actual;
+            }
+        }
     }
 
-    return metrics;
+    return stats.getMetrics();
 }
 
 void MonteCarloRunner::cleanup(Graph* graph, std::vector<Train*>& trains)
@@ -374,14 +390,35 @@ void MonteCarloRunner::cleanup(Graph* graph, std::vector<Train*>& trains)
     delete graph;
 }
 
-Graph* MonteCarloRunner::parseNetwork() const
+SimulationMetrics MonteCarloRunner::runSingleSimulation(unsigned int seed)
 {
-    RailNetworkParser parser(_networkFile);
-    return parser.parse();
-}
+    DijkstraStrategy dijkstra;
+    AStarStrategy    astar;
 
-std::vector<TrainConfig> MonteCarloRunner::parseTrains() const
-{
-    TrainConfigParser parser(_trainFile);
-    return parser.parse();
+    Graph*           graph  = parseNetwork();
+    StatsCollector   stats(seed);
+
+    IPathfindingStrategy* strategy = selectStrategy(dijkstra, astar);
+    std::vector<Train*>   trains   = buildTrains(graph, stats, strategy);
+
+    if (trains.empty())
+    {
+        cleanup(graph, trains);
+        SimulationMetrics empty{};
+        empty.seed = seed;
+        return empty;
+    }
+
+    setupSimulation(graph, trains, stats, seed);
+
+    std::map<Train*, double> departureTime;
+    std::map<Train*, double> arrivalTime;
+
+    runSimulationLoop(trains, stats, departureTime, arrivalTime);
+
+    SimulationMetrics metrics =
+        finalizeMetrics(stats, trains, departureTime, arrivalTime);
+
+    cleanup(graph, trains);
+    return metrics;
 }

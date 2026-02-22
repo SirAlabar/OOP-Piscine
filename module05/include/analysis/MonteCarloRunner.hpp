@@ -11,26 +11,18 @@
 class Graph;
 class Train;
 class IPathfindingStrategy;
+class ILogger;
 struct TrainConfig;
 
 class MonteCarloRunner
 {
-public:
-    MonteCarloRunner(const std::string& networkFile,
-                     const std::string& trainFile,
-                     unsigned int baseSeed,
-                     unsigned int numRuns,
-                     const std::string& pathfindingAlgo);
-
-    void runAll();
-    void writeCSV(const std::string& filename) const;
-
 private:
     std::string  _networkFile;
     std::string  _trainFile;
     unsigned int _baseSeed;
     unsigned int _numRuns;
     std::string  _pathfindingAlgo;
+    ILogger*     _logger;
 
     std::vector<SimulationMetrics> _allMetrics;
 
@@ -56,11 +48,28 @@ private:
                            std::map<Train*, double>& arrivalTime);
 
     SimulationMetrics finalizeMetrics(StatsCollector& stats,
-                                     const std::vector<Train*>& trains,
-                                     const std::map<Train*, double>& departureTime,
-                                     const std::map<Train*, double>& arrivalTime);
+                                      const std::vector<Train*>& trains,
+                                      const std::map<Train*, double>& departureTime,
+                                      const std::map<Train*, double>& arrivalTime);
 
     void cleanup(Graph* graph, std::vector<Train*>& trains);
+
+    void log(const std::string& message) const;
+
+    // Returns estimated journey duration in seconds for a fully-pathed train.
+    static double estimateJourneySeconds(const Train* train);
+
+public:
+    // logger may be nullptr for silent execution.
+    MonteCarloRunner(const std::string& networkFile,
+                     const std::string& trainFile,
+                     unsigned int       baseSeed,
+                     unsigned int       numRuns,
+                     const std::string& pathfindingAlgo,
+                     ILogger*           logger = nullptr);
+
+    void runAll();
+    void writeCSV(const std::string& filename) const;
 };
 
 #endif

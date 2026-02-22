@@ -5,25 +5,14 @@
 #include <map>
 #include <functional>
 #include "utils/Time.hpp"
+#include "simulation/SimConstants.hpp"
 #include "simulation/SimulationConfig.hpp"
 #include "patterns/observers/EventDispatcher.hpp"
 #include "patterns/observers/EventScheduler.hpp"
-
-// Simulation time configuration
-namespace SimConfig
-{
-    constexpr double BASE_TIMESTEP_SECONDS  = 1.0;
-    constexpr double SECONDS_PER_MINUTE     = 60.0;
-    constexpr double SECONDS_PER_HOUR       = 3600.0;
-    constexpr double SECONDS_PER_DAY        = 86400.0;
-
-    constexpr int MINUTES_PER_DAY       = 1440;
-    constexpr int MINUTES_PER_HALF_DAY  = 720;
-
-    constexpr double MIN_SPEED     = 0.1;
-    constexpr double MAX_SPEED     = 100.0;
-    constexpr double DEFAULT_SPEED = 10.0;
-}
+#include "patterns/commands/ICommandRecorder.hpp"
+#include "simulation/TrainLifecycleService.hpp"
+#include "simulation/EventPipeline.hpp"
+#include "simulation/SimulationReporting.hpp"
 
 class Train;
 class Graph;
@@ -40,13 +29,16 @@ class ICommand;
 class ITrainState;
 class IObserver;
 
-// Regular class — owned by Application as a value member.
-// No Singleton; one instance per simulation run.
-class SimulationManager
+// Thin facade / composition root.
+// Owns all simulation data and wires the three sub-services:
+//   TrainLifecycleService — departures, state transitions, physics
+//   EventPipeline         — event scheduling, activation, expiration
+//   SimulationReporting   — snapshot files, console dashboard
+//
+class SimulationManager : public ICommandRecorder
 {
 private:
-    // Event subsystem — value members; EventScheduler holds a reference to
-    // EventDispatcher so declaration order matters (_dispatcher before _scheduler).
+    // Event subsystem — _dispatcher before _scheduler (constructor order matters).
     EventDispatcher _eventDispatcher;
     EventScheduler  _eventScheduler;
 
@@ -66,38 +58,34 @@ private:
     unsigned int _eventSeed;
     double       _lastEventGenerationTime;
 
-    ISimulationOutput*              _simulationWriter;
-    std::map<Train*, FileOutputWriter*> _outputWriters;
-    std::map<Train*, ITrainState*>  _previousStates;
+    ISimulationOutput*                   _simulationWriter;
+    std::map<Train*, FileOutputWriter*>  _outputWriters;
+    std::map<Train*, ITrainState*>       _previousStates;
     int _lastSnapshotMinute;
     int _lastDashboardMinute;
 
-    CommandManager* _commandManager;  // Not owned; injected by Application
+    CommandManager* _commandManager;  // Not owned; injected by Application.
 
-    std::vector<IObserver*> _eventAdapters;  // Owned; created in registerObservers(), cleared in reset()
+    std::vector<IObserver*> _eventAdapters;  // Owned; created in registerObservers().
 
+    // Sub-services (initialized last; hold references to the members above).
+    TrainLifecycleService _lifecycle;
+    EventPipeline         _eventPipeline;
+    SimulationReporting   _reporting;
+
+    // Thin coordination methods that remain in SimulationManager.
     void tick(bool replayMode, bool advanceTime);
-    void updateTrainStates(double dt);
-    void checkDepartures();
-    void handleStateTransitions();
-    void writeSnapshots();
     void cleanupOutputWriters();
-    void updateEvents();
     void registerObservers();
     void refreshSimulationState();
-    void logEventForAffectedTrains(Event* event, const std::string& action);
     void simulationTick(bool replayMode);
     void applyReplayCommands();
     bool shouldStopEarly(bool replayMode);
-    void updateDashboard();
-    bool hasValidState(const Train* train) const;
-    bool isTrainActive(const Train* train) const;
-    bool hasAnyActiveTrain() const;
-    void recordCommand(ICommand* cmd);
-
+	
 public:
     using TrainList = std::vector<Train*>;
 
+public:
     SimulationManager();
     ~SimulationManager();
 
@@ -105,6 +93,9 @@ public:
     SimulationManager& operator=(const SimulationManager&) = delete;
     SimulationManager(SimulationManager&&)                  = delete;
     SimulationManager& operator=(SimulationManager&&)       = delete;
+
+    // ICommandRecorder — takes ownership of cmd.
+    void record(ICommand* cmd) override;
 
     // Configuration setters
     void setNetwork(Graph* network);

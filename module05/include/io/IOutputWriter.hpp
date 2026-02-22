@@ -13,10 +13,6 @@ class Event;
 class Node;
 class Rail;
 
-// Full structured-output interface for Application-level reporting.
-// Extends ILogger (progress/error logging) and ISimulationOutput
-// (simulation-domain events) so that narrower dependencies can be injected
-// where classes do not need the complete interface.
 class IOutputWriter : public ILogger, public ISimulationOutput
 {
 public:
@@ -36,12 +32,10 @@ public:
     virtual void writePathDebug(const Train* train) = 0;
 
     // Simulation phase
-    // (writeEventActivated and writeDashboard inherited from ISimulationOutput)
+    // writeEventActivated, writeEventEnded, writeDashboard inherited from ISimulationOutput.
     virtual void writeSimulationStart() = 0;
     virtual void writeTrainSchedule(const std::string& trainName,
                                     const Time& departureTime) = 0;
-    virtual void writeEventEnded(const Time& currentTime,
-                                 const std::string& eventType) = 0;
 
     // Completion phase
     virtual void writeSimulationComplete() = 0;

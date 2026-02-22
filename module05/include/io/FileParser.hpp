@@ -6,8 +6,6 @@
 #include <fstream>
 
 // Base class for all file parsers.
-// Handles common file operations and provides shared helpers so that derived
-// parsers never duplicate error formatting, line counting, or whitespace logic.
 class FileParser
 {
 protected:
@@ -19,14 +17,8 @@ protected:
     virtual ~FileParser() = default;
 
     // Read all non-empty, non-comment lines from the file.
-    // Strips inline '#' comments and trims whitespace.
+    // Strips inline '#' comments, trims whitespace via StringUtils::trim.
     std::vector<std::string> readLines();
-
-    // Returns true when a line should be skipped (empty or starts with '#').
-    bool isEmptyOrComment(const std::string& line) const;
-
-    // Trim leading and trailing whitespace.
-    std::string trim(const std::string& str) const;
 
     // Throw a std::runtime_error formatted as:
     //   "Error at line N: <message>\nContent: <lineContent>"

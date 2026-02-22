@@ -6,15 +6,8 @@
 // 9.8, 3.6, 1000.0, etc. directly in source files.
 namespace PhysicsConstants
 {
-    // -------------------------------------------------------------------------
-    // Physical constants
-    // -------------------------------------------------------------------------
     constexpr double GRAVITY = 9.8;  // m/s² — standard gravitational acceleration
-
-    // -------------------------------------------------------------------------
-    // Unit conversion factors
-    // -------------------------------------------------------------------------
-
+    
     // Mass: metric tons → kilograms
     constexpr double TONS_TO_KG = 1000.0;
 

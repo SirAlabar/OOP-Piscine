@@ -271,9 +271,6 @@ std::vector<FileOutputWriter*> Application::_createOutputWriters(
     return writers;
 }
 
-// Render and replay modes require the simulation to loop back to origin so
-// the visual/playback lifecycle completes cleanly — it is not purely a
-// journey-domain decision. This method makes that policy explicit.
 bool Application::_shouldEnableRoundTrip() const
 {
     return _cli.hasRoundTrip() || _cli.hasRender() || _cli.hasReplay();
@@ -505,7 +502,8 @@ int Application::_runMonteCarlo(
         FileSystemUtils::ensureOutputDirectoryExists();
         MonteCarloRunner runner(
             netFile, trainFile,
-            _cli.getSeed(), _cli.getMonteCarloRuns(), _cli.getPathfinding());
+            _cli.getSeed(), _cli.getMonteCarloRuns(), _cli.getPathfinding(),
+            _consoleWriter);
         runner.runAll();
         runner.writeCSV("output/monte_carlo_results.csv");
         return 0;

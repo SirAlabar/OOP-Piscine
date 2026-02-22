@@ -1,8 +1,8 @@
 #include "io/FileParser.hpp"
+#include "utils/StringUtils.hpp"
 #include <filesystem>
 #include <stdexcept>
 #include <sstream>
-#include <algorithm>
 
 FileParser::FileParser(const std::string& filepath)
     : _filepath(filepath),
@@ -29,7 +29,7 @@ std::vector<std::string> FileParser::readLines()
             line = line.substr(0, commentPos);
         }
 
-        line = trim(line);
+        line = StringUtils::trim(line);
 
         if (!line.empty())
         {
@@ -38,23 +38,6 @@ std::vector<std::string> FileParser::readLines()
     }
 
     return lines;
-}
-
-bool FileParser::isEmptyOrComment(const std::string& line) const
-{
-    return line.empty() || line[0] == '#';
-}
-
-std::string FileParser::trim(const std::string& str) const
-{
-    size_t start = str.find_first_not_of(" \t\r\n");
-    if (start == std::string::npos)
-    {
-        return "";
-    }
-
-    size_t end = str.find_last_not_of(" \t\r\n");
-    return str.substr(start, end - start + 1);
 }
 
 void FileParser::throwLineError(
