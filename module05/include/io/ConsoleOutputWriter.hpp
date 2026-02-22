@@ -50,7 +50,6 @@ public:
     void writeOutputFileListing(const std::string& filename)            override;
 
 private:
-    std::string getEventIcon(const std::string& eventType) const;
 };
 
 #endif

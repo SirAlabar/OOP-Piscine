@@ -120,7 +120,7 @@ void ConsoleOutputWriter::writeEventActivated(const Time& currentTime,
                                                const std::string& description)
 {
 	std::cout << Color::BOLD_YELLOW << "\n[" << currentTime.toString() << "] "
-	          << Color::RESET << getEventIcon(eventType)
+	          << Color::RESET << Color::getEventIcon(eventType)
 	          << Color::BOLD_WHITE << " EVENT: " << Color::RESET
 	          << Color::CYAN << eventType << Color::RESET << std::endl;
 	std::cout << Color::DIM << "        └─ " << description 
@@ -195,13 +195,4 @@ void ConsoleOutputWriter::writeProgress(const std::string& message)
 void ConsoleOutputWriter::writeError(const std::string& message)
 {
 	std::cerr << Color::BOLD_RED << "Error: " << Color::RESET << message << std::endl;
-}
-
-std::string ConsoleOutputWriter::getEventIcon(const std::string& eventType) const
-{
-	if (eventType.find("StationDelay") != std::string::npos) return "⏱️ ";
-	if (eventType.find("TrackMaintenance") != std::string::npos) return "🚧";
-	if (eventType.find("SignalFailure") != std::string::npos) return "🚦";
-	if (eventType.find("Weather") != std::string::npos) return "⚠️ ";
-	return "📢";
 }

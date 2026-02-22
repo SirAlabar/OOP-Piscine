@@ -52,3 +52,43 @@ ITrainState* StateRegistry::emergency()
 {
 	return &_emergency;
 }
+
+ITrainState* StateRegistry::fromName(const std::string& name)
+{
+    if (name == _idle.getName())
+    {
+        return &_idle;
+    }
+
+    if (name == _accelerating.getName())
+    {
+        return &_accelerating;
+    }
+
+    if (name == _cruising.getName())
+    {
+        return &_cruising;
+    }
+
+    if (name == _waiting.getName())
+    {
+        return &_waiting;
+    }
+
+    if (name == _braking.getName())
+    {
+        return &_braking;
+    }
+
+    if (name == _stopped.getName())
+    {
+        return &_stopped;
+    }
+
+    if (name == _emergency.getName())
+    {
+        return &_emergency;
+    }
+
+    return nullptr;
+}

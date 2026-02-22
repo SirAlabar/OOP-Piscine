@@ -1,6 +1,7 @@
 #ifndef STATEREGISTRY_HPP
 #define STATEREGISTRY_HPP
 
+#include <string>
 #include "patterns/states/IdleState.hpp"
 #include "patterns/states/AcceleratingState.hpp"
 #include "patterns/states/CruisingState.hpp"
@@ -36,6 +37,9 @@ public:
 	ITrainState* braking();
 	ITrainState* stopped();
 	ITrainState* emergency();
+
+	// Returns the state whose getName() matches the given string, or nullptr.
+	ITrainState* fromName(const std::string& name);
 };
 
 #endif

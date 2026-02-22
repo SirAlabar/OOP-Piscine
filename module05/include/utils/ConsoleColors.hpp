@@ -66,6 +66,16 @@ namespace Color
 		if (eventType.find("Weather") != std::string::npos) return BLUE;
 		return WHITE;
 	}
+
+	// Event type icons
+	inline std::string getEventIcon(const std::string& eventType)
+	{
+		if (eventType.find("StationDelay") != std::string::npos) return "⏱️ ";
+		if (eventType.find("TrackMaintenance") != std::string::npos) return "🚧";
+		if (eventType.find("SignalFailure") != std::string::npos) return "🚦";
+		if (eventType.find("Weather") != std::string::npos) return "⚠️ ";
+		return "📢";
+	}
 }
 
 // Progress bar generator

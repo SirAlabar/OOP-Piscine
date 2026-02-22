@@ -67,36 +67,7 @@ void TrainStateChangeCommand::applyReplay(SimulationManager* sim)
 
     StateRegistry& states = context->states();
 
-    ITrainState* targetState = nullptr;
-
-    if (_toState == "Idle")
-    {
-        targetState = states.idle();
-    }
-    else if (_toState == "Accelerating")
-    {
-        targetState = states.accelerating();
-    }
-    else if (_toState == "Cruising")
-    {
-        targetState = states.cruising();
-    }
-    else if (_toState == "Waiting")
-    {
-        targetState = states.waiting();
-    }
-    else if (_toState == "Braking")
-    {
-        targetState = states.braking();
-    }
-    else if (_toState == "Stopped")
-    {
-        targetState = states.stopped();
-    }
-    else if (_toState == "Emergency")
-    {
-        targetState = states.emergency();
-    }
+    ITrainState* targetState = states.fromName(_toState);
 
     if (targetState)
     {
