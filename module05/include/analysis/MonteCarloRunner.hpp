@@ -16,6 +16,18 @@ struct TrainConfig;
 
 class MonteCarloRunner
 {
+public:
+    // logger may be nullptr for silent execution.
+    MonteCarloRunner(const std::string& networkFile,
+                     const std::string& trainFile,
+                     unsigned int       baseSeed,
+                     unsigned int       numRuns,
+                     const std::string& pathfindingAlgo,
+                     ILogger*           logger = nullptr);
+
+    void runAll();
+    void writeCSV(const std::string& filename) const;
+
 private:
     std::string  _networkFile;
     std::string  _trainFile;
@@ -58,18 +70,6 @@ private:
 
     // Returns estimated journey duration in seconds for a fully-pathed train.
     static double estimateJourneySeconds(const Train* train);
-
-public:
-    // logger may be nullptr for silent execution.
-    MonteCarloRunner(const std::string& networkFile,
-                     const std::string& trainFile,
-                     unsigned int       baseSeed,
-                     unsigned int       numRuns,
-                     const std::string& pathfindingAlgo,
-                     ILogger*           logger = nullptr);
-
-    void runAll();
-    void writeCSV(const std::string& filename) const;
 };
 
 #endif

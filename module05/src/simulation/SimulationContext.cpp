@@ -1,5 +1,5 @@
 #include "simulation/SimulationContext.hpp"
-#include "simulation/CollisionAvoidance.hpp"
+#include "simulation/ICollisionAvoidance.hpp"
 #include "simulation/PhysicsSystem.hpp"
 #include "simulation/RiskData.hpp"
 #include "patterns/states/StateRegistry.hpp"
@@ -10,11 +10,10 @@
 #include "core/Graph.hpp"
 #include <iostream>
 
-SimulationContext::SimulationContext(
-    Graph*                     network,
-    CollisionAvoidance*        collisionSystem,
-    const std::vector<Train*>* trains,
-    ITrainController*          trafficController)
+SimulationContext::SimulationContext(Graph*                     network,
+                                     ICollisionAvoidance*        collisionSystem,
+                                     const std::vector<Train*>* trains,
+                                     ITrainController*          trafficController)
     : _network(network),
       _collisionSystem(collisionSystem),
       _trafficController(trafficController),
@@ -25,7 +24,31 @@ SimulationContext::SimulationContext(
 
 SimulationContext::~SimulationContext() = default;
 
-// Risk data
+bool SimulationContext::isTrainActive(const Train* train) const
+{
+    return train
+        && train->getCurrentState()
+        && !train->isFinished()
+        && train->getCurrentState() != const_cast<StateRegistry&>(_states).idle();
+}
+
+bool SimulationContext::hasAnyActiveTrain() const
+{
+    if (!_trains)
+    {
+        return false;
+    }
+
+    for (const Train* train : *_trains)
+    {
+        if (isTrainActive(train))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
 
 const RiskData& SimulationContext::getRisk(const Train* train) const
 {
@@ -34,8 +57,7 @@ const RiskData& SimulationContext::getRisk(const Train* train) const
     if (it == _riskMap.end())
     {
         static const RiskData sentinel;
-        std::cerr << "[SimulationContext] WARNING: getRisk() miss — "
-                     "returning sentinel RiskData\n";
+        std::cerr << "[SimulationContext] getRisk() miss — returning sentinel\n";
         return sentinel;
     }
 
@@ -59,8 +81,6 @@ void SimulationContext::refreshAllRiskData()
         }
     }
 }
-
-// IPhysicsQueries
 
 double SimulationContext::getCurrentRailSpeedLimit(const Train* train) const
 {
@@ -115,8 +135,6 @@ Node* SimulationContext::getCurrentArrivalNode(const Train* train) const
     return path[currentIndex].to;
 }
 
-// IStopTimerStore
-
 void SimulationContext::setStopDuration(Train* train, double durationSeconds)
 {
     if (train)
@@ -128,25 +146,24 @@ void SimulationContext::setStopDuration(Train* train, double durationSeconds)
 double SimulationContext::getStopDuration(const Train* train) const
 {
     auto it = _stopDurations.find(const_cast<Train*>(train));
-    if (it != _stopDurations.end())
-    {
-        return it->second;
-    }
-    return 0.0;
+    return (it != _stopDurations.end()) ? it->second : 0.0;
 }
 
 bool SimulationContext::decrementStopDuration(Train* train, double dt)
 {
     auto it = _stopDurations.find(train);
+
     if (it != _stopDurations.end())
     {
         it->second -= dt;
+
         if (it->second <= 0.0)
         {
             it->second = 0.0;
             return true;
         }
     }
+
     return false;
 }
 
@@ -155,7 +172,6 @@ void SimulationContext::clearStopDuration(Train* train)
     _stopDurations.erase(train);
 }
 
-// State catalog
 StateRegistry& SimulationContext::states()
 {
     return _states;
@@ -166,13 +182,11 @@ const StateRegistry& SimulationContext::states() const
     return _states;
 }
 
-// Traffic access
 ITrainController* SimulationContext::getTrafficController() const
 {
     return _trafficController;
 }
 
-// Physics mutation
 void SimulationContext::applyForce(Train* train, double force, double dt)
 {
     if (!train)

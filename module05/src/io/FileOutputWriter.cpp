@@ -48,18 +48,18 @@ void FileOutputWriter::writeHeader(double estimatedTimeMinutes)
     int hours   = static_cast<int>(estimatedTimeMinutes) / 60;
     int minutes = static_cast<int>(estimatedTimeMinutes) % 60;
 
-    _file << "Train : " << _train->getName() << std::endl;
+    _file << "Train : " << _train->getName() << "\n";
     _file << "Final travel time : "
           << std::setfill('0') << std::setw(2) << hours   << "h"
-          << std::setfill('0') << std::setw(2) << minutes << "m" << std::endl;
-    _file << std::endl;
+          << std::setfill('0') << std::setw(2) << minutes << "m" << "\n";
+    _file << "\n";
 }
 
 void FileOutputWriter::writePathInfo()
 {
     const auto& path = _train->getPath();
 
-    _file << "PATH:" << std::endl;
+    _file << "PATH:" << "\n";
 
     for (std::size_t i = 0; i < path.size(); ++i)
     {
@@ -72,12 +72,12 @@ void FileOutputWriter::writePathInfo()
               << segment.from->getName() << " <-> " << segment.to->getName()
               << " | length=" << std::fixed << std::setprecision(2) << segment.rail->getLength() << "km"
               << " | speed="  << static_cast<int>(segment.rail->getSpeedLimit()) << "km/h"
-              << std::endl;
+              << "\n";
     }
 
     _file << "  Total distance: " << std::fixed << std::setprecision(2)
-          << _totalPathDistance << "km" << std::endl;
-    _file << std::endl;
+          << _totalPathDistance << "km" << "\n";
+    _file << "\n";
 }
 
 void FileOutputWriter::writeSnapshot(double currentTimeSeconds)
@@ -106,7 +106,7 @@ void FileOutputWriter::writeSnapshot(double currentTimeSeconds)
               << "[" << statusStr.str() << "] - "
               << "[" << std::setw(6) << std::right << std::fixed
                      << std::setprecision(0) << velocityKmh << "km/h] - "
-              << "[ ]" << std::endl;
+              << "[ ]" << "\n";
 
         _finalSnapshotWritten = true;
         return;
@@ -132,7 +132,7 @@ void FileOutputWriter::writeSnapshot(double currentTimeSeconds)
           << "[" << statusStr.str() << "] - "
           << "[" << std::setw(6) << std::right << std::fixed
                  << std::setprecision(0) << velocityKmh << "km/h] - "
-          << visualization << std::endl;
+          << visualization << "\n";
 }
 
 void FileOutputWriter::writeEventNotification(double             currentTimeSeconds,
@@ -142,10 +142,10 @@ void FileOutputWriter::writeEventNotification(double             currentTimeSeco
 {
     std::string timeStr = formatTime(currentTimeSeconds);
 
-    _file << std::endl;
-    _file << "*** EVENT " << action << " ***" << std::endl;
-    _file << "[" << timeStr << "] - " << eventType << ": " << eventDetails << std::endl;
-    _file << std::endl;
+    _file << "\n";
+    _file << "*** EVENT " << action << " ***" << "\n";
+    _file << "[" << timeStr << "] - " << eventType << ": " << eventDetails << "\n";
+    _file << "\n";
 }
 
 void FileOutputWriter::close()

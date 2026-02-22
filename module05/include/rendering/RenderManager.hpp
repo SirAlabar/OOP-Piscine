@@ -93,7 +93,6 @@ private:
 	void renderDayNightOverlay(sf::RenderWindow& window, const SimulationManager& simulation);
 
 	sf::Vector2f projectIsometric(const sf::Vector2f& worldPoint, const CameraManager& camera) const;
-	sf::Vector2f computeTrainPosition(const Train* train, const CameraManager& camera, bool& movingRight) const;
 
 	int computeRailBitmask(const World& world, int x, int y) const;
 	std::string getRailSpriteName(int bitmask) const;

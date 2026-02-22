@@ -15,7 +15,9 @@ class StatsCollector;
 class ICommandRecorder;
 class Event;
 
-// Owns the event update cycle 
+// Owns the event update cycle that was previously split across
+// updateEvents() and logEventForAffectedTrains() in SimulationManager:
+//
 //   update() — per-tick entry point:
 //     1. Snapshot pre-update active events (to detect expirations).
 //     2. Advance the scheduler (activates and expires events).
@@ -25,14 +27,31 @@ class Event;
 //     5. Every 60 simulated seconds: ask EventFactory to try generating events.
 class EventPipeline
 {
+public:
+    EventPipeline(
+        EventFactory*&                        eventFactory,
+        EventScheduler&                       eventScheduler,
+        std::vector<Train*>&                  trains,
+        SimulationContext*&                   context,
+        ISimulationOutput*&                   simulationWriter,
+        std::map<Train*, FileOutputWriter*>&  outputWriters,
+        StatsCollector*&                      statsCollector,
+        double&                               currentTime,
+        double&                               lastEventGenerationTime
+    );
+
+    void setCommandRecorder(ICommandRecorder* recorder);
+
+    void update();
+
 private:
-    EventFactory*&      _eventFactory;
-    EventScheduler&     _eventScheduler;
-    TrainList&          _trains;
-    SimulationContext*& _context;
-    ISimulationOutput*& _simulationWriter;
-    WriterMap&          _outputWriters;
-    StatsCollector*&    _statsCollector;
+    EventFactory*&                       _eventFactory;
+    EventScheduler&                      _eventScheduler;
+    std::vector<Train*>&                 _trains;
+    SimulationContext*&                  _context;
+    ISimulationOutput*&                  _simulationWriter;
+    std::map<Train*, FileOutputWriter*>& _outputWriters;
+    StatsCollector*&                     _statsCollector;
     double&             _currentTime;
     double&             _lastEventGenerationTime;
     ICommandRecorder*   _recorder;
@@ -45,26 +64,6 @@ private:
         const std::map<std::string, int>& preCounts,
         const std::map<std::string, int>& postCounts);
     void logEventForAffectedTrains(Event* event, const std::string& action);
-
-public:
-    using TrainList    = std::vector<Train*>;
-    using WriterMap    = std::map<Train*, FileOutputWriter*>;
-
-    EventPipeline(
-        EventFactory*&     eventFactory,
-        EventScheduler&    eventScheduler,
-        TrainList&         trains,
-        SimulationContext*& context,
-        ISimulationOutput*& simulationWriter,
-        WriterMap&         outputWriters,
-        StatsCollector*&   statsCollector,
-        double&            currentTime,
-        double&            lastEventGenerationTime
-    );
-
-    void setCommandRecorder(ICommandRecorder* recorder);
-
-    void update();
 };
 
 #endif

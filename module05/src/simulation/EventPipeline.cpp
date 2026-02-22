@@ -16,10 +16,10 @@
 EventPipeline::EventPipeline(
     EventFactory*&      eventFactory,
     EventScheduler&     eventScheduler,
-    TrainList&          trains,
-    SimulationContext*& context,
-    ISimulationOutput*& simulationWriter,
-    WriterMap&          outputWriters,
+    std::vector<Train*>&                 trains,
+    SimulationContext*&                  context,
+    ISimulationOutput*&                  simulationWriter,
+    std::map<Train*, FileOutputWriter*>& outputWriters,
     StatsCollector*&    statsCollector,
     double&             currentTime,
     double&             lastEventGenerationTime)
@@ -157,7 +157,8 @@ void EventPipeline::notifyNewEvent(Event* event)
         int totalMinutes = static_cast<int>(_currentTime / SimConfig::SECONDS_PER_MINUTE);
         Time t(totalMinutes / 60, totalMinutes % 60);
 
-        _simulationWriter->writeEventActivated(t, eventTypeStr, event->getDescription());
+        _simulationWriter->writeEventActivated(t, eventTypeStr,
+                                               event->getDescription());
     }
 }
 
@@ -192,7 +193,8 @@ void EventPipeline::notifyEndedEvents(
     }
 }
 
-void EventPipeline::logEventForAffectedTrains(Event* event, const std::string& action)
+void EventPipeline::logEventForAffectedTrains(Event* event,
+                                               const std::string& action)
 {
     if (!event)
     {

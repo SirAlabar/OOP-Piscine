@@ -10,12 +10,12 @@
 
 SimulationReporting::SimulationReporting(
     ISimulationOutput*& simulationWriter,
-    WriterMap&          outputWriters,
-    TrainList&          trains,
-    SimulationContext*& context,
-    EventScheduler&     eventScheduler,
-    double&             currentTime,
-    StateMap&           previousStates,
+    std::map<Train*, FileOutputWriter*>& outputWriters,
+    std::vector<Train*>&                 trains,
+    SimulationContext*&                  context,
+    EventScheduler&                      eventScheduler,
+    double&                              currentTime,
+    std::map<Train*, ITrainState*>&      previousStates,
     int&                lastSnapshotMinute,
     int&                lastDashboardMinute)
     : _simulationWriter(simulationWriter),
@@ -89,7 +89,8 @@ void SimulationReporting::updateDashboard()
         return;
     }
 
-    int currentMinute = static_cast<int>(_currentTime / SimConfig::SECONDS_PER_MINUTE);
+    int currentMinute =
+        static_cast<int>(_currentTime / SimConfig::SECONDS_PER_MINUTE);
 
     bool shouldUpdate =
         (currentMinute % 5 == 0)
@@ -128,7 +129,8 @@ void SimulationReporting::updateDashboard()
 
     _lastDashboardMinute = currentMinute;
 
-    int activeEvents = static_cast<int>(_eventScheduler.getActiveEvents().size());
+    int activeEvents =
+        static_cast<int>(_eventScheduler.getActiveEvents().size());
 
     int totalMinutes = static_cast<int>(_currentTime / SimConfig::SECONDS_PER_MINUTE);
     Time t(totalMinutes / 60, totalMinutes % 60);

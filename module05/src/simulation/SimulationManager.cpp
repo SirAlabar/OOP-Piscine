@@ -2,7 +2,9 @@
 #include "simulation/SimulationConfig.hpp"
 #include "simulation/SimulationContext.hpp"
 #include "simulation/CollisionAvoidance.hpp"
+#include "simulation/NetworkServicesFactory.hpp"
 #include "patterns/mediator/TrafficController.hpp"
+#include "patterns/factories/EventFactory.hpp"
 #include "core/Train.hpp"
 #include "core/Graph.hpp"
 #include "core/Rail.hpp"
@@ -12,9 +14,6 @@
 #include "io/ISimulationOutput.hpp"
 #include "patterns/observers/EventDispatcher.hpp"
 #include "patterns/observers/EventScheduler.hpp"
-#include "patterns/observers/TrainEventAdapter.hpp"
-#include "patterns/observers/RailEventAdapter.hpp"
-#include "patterns/factories/EventFactory.hpp"
 #include "patterns/events/Event.hpp"
 #include "analysis/StatsCollector.hpp"
 #include "patterns/commands/CommandManager.hpp"
@@ -23,9 +22,11 @@
 #include <chrono>
 #include <algorithm>
 
-
 SimulationManager::SimulationManager()
     : _eventScheduler(_eventDispatcher),
+      _rng(0),
+      _networkServicesFactory(nullptr, &_trains),
+      _observerManager(_eventDispatcher),
       _network(nullptr),
       _collisionSystem(new CollisionAvoidance()),
       _trafficController(nullptr),
@@ -37,13 +38,11 @@ SimulationManager::SimulationManager()
       _simulationSpeed(SimConfig::DEFAULT_SPEED),
       _running(false),
       _roundTripEnabled(false),
-      _eventSeed(0),
       _lastEventGenerationTime(-60.0),
       _simulationWriter(nullptr),
       _lastSnapshotMinute(-1),
       _lastDashboardMinute(-1),
       _commandManager(nullptr),
-      // Services: each holds references to the data members above.
       _lifecycle(
           _trains, _context, _trafficController,
           _currentTime, _timestep, _roundTripEnabled,
@@ -57,8 +56,8 @@ SimulationManager::SimulationManager()
           _eventScheduler, _currentTime, _previousStates,
           _lastSnapshotMinute, _lastDashboardMinute)
 {
-    // Services that need to record commands take `this` via the ICommandRecorder
-    // interface.  Set after full construction to avoid calling virtuals during init.
+    _networkServicesFactory = NetworkServicesFactory(_collisionSystem, &_trains);
+
     _lifecycle.setCommandRecorder(this);
     _eventPipeline.setCommandRecorder(this);
 }
@@ -66,14 +65,8 @@ SimulationManager::SimulationManager()
 SimulationManager::~SimulationManager()
 {
     cleanupOutputWriters();
+    destroyNetworkServices();
     delete _collisionSystem;
-    delete _trafficController;
-    delete _context;
-    delete _eventFactory;
-    for (IObserver* adapter : _eventAdapters)
-    {
-        delete adapter;
-    }
 }
 
 void SimulationManager::record(ICommand* cmd)
@@ -93,29 +86,29 @@ void SimulationManager::record(ICommand* cmd)
     }
 }
 
-// Configuration setters
-void SimulationManager::setNetwork(Graph* network)
+void SimulationManager::destroyNetworkServices()
 {
-    _network = network;
+    delete _trafficController;
+    _trafficController = nullptr;
 
     delete _context;
     _context = nullptr;
 
-    delete _trafficController;
-    _trafficController = nullptr;
-
     delete _eventFactory;
     _eventFactory = nullptr;
+}
 
-    _trafficController =
-        new TrafficController(_network, _collisionSystem, &_trains);
+void SimulationManager::setNetwork(Graph* network)
+{
+    _network = network;
 
-    _context =
-        new SimulationContext(_network, _collisionSystem,
-                              &_trains, _trafficController);
+    destroyNetworkServices();
+    _rng.reseed(_rng.getSeed());
 
-    _eventFactory =
-        new EventFactory(_eventSeed, _network, &_eventScheduler);
+    NetworkServices svc = _networkServicesFactory.build(_network, _rng, &_eventScheduler);
+    _trafficController  = svc.trafficController;
+    _context            = svc.context;
+    _eventFactory       = svc.eventFactory;
 }
 
 void SimulationManager::addTrain(Train* train)
@@ -143,12 +136,12 @@ void SimulationManager::setTimestep(double timestep)
 
 void SimulationManager::setEventSeed(unsigned int seed)
 {
-    _eventSeed = seed;
+    _rng.reseed(seed);
 
-    if (_network && _eventFactory)
+    if (_network)
     {
         delete _eventFactory;
-        _eventFactory = new EventFactory(_eventSeed, _network, &_eventScheduler);
+        _eventFactory = _networkServicesFactory.buildEventFactory(_network, _rng, &_eventScheduler);
     }
 }
 
@@ -162,8 +155,7 @@ void SimulationManager::setRoundTripMode(bool enabled)
     _roundTripEnabled = enabled;
 }
 
-void SimulationManager::registerOutputWriter(Train* train,
-                                              FileOutputWriter* writer)
+void SimulationManager::registerOutputWriter(Train* train, FileOutputWriter* writer)
 {
     if (train && writer)
     {
@@ -189,7 +181,6 @@ void SimulationManager::setCommandManager(CommandManager* mgr)
     _commandManager = mgr;
 }
 
-// Simulation control
 void SimulationManager::start()
 {
     _running             = true;
@@ -201,7 +192,7 @@ void SimulationManager::start()
         return;
     }
 
-    registerObservers();
+    _observerManager.wire(_trains, _network);
     refreshSimulationState();
 }
 
@@ -235,7 +226,6 @@ void SimulationManager::tick(bool replayMode, bool advanceTime)
         _lifecycle.handleStateTransitions();
     }
 
-    _context->refreshAllRiskData();
     _lifecycle.updateTrainStates(_timestep);
     _eventPipeline.update();
 
@@ -285,8 +275,7 @@ void SimulationManager::run(double maxTime,
             std::chrono::duration<double> elapsed = now - previous;
             previous = now;
 
-            accumulator +=
-                elapsed.count() * _simulationSpeed * SimConfig::SECONDS_PER_MINUTE;
+            accumulator += elapsed.count() * _simulationSpeed * SimConfig::SECONDS_PER_MINUTE;
 
             while (accumulator >= _timestep && _running)
             {
@@ -311,7 +300,6 @@ void SimulationManager::run(double maxTime,
     }
 }
 
-
 void SimulationManager::simulationTick(bool replayMode)
 {
     tick(replayMode, true);
@@ -320,9 +308,7 @@ void SimulationManager::simulationTick(bool replayMode)
 void SimulationManager::applyReplayCommands()
 {
     std::vector<ICommand*> commands =
-        _commandManager->getCommandsForTime(
-            _currentTime,
-            _currentTime + _timestep);
+        _commandManager->getCommandsForTime(_currentTime, _currentTime + _timestep);
 
     for (ICommand* command : commands)
     {
@@ -357,48 +343,11 @@ void SimulationManager::refreshSimulationState()
     _context->refreshAllRiskData();
 }
 
-void SimulationManager::registerObservers()
-{
-    for (Train* train : _trains)
-    {
-        if (train)
-        {
-            IObserver* adapter = new TrainEventAdapter(train);
-            _eventAdapters.push_back(adapter);
-            _eventDispatcher.attach(adapter);
-        }
-    }
-
-    if (!_network)
-    {
-        return;
-    }
-
-    for (Node* node : _network->getNodes())
-    {
-        if (node)
-        {
-            _eventDispatcher.attach(node);
-        }
-    }
-
-    for (Rail* rail : _network->getRails())
-    {
-        if (rail)
-        {
-            IObserver* adapter = new RailEventAdapter(rail);
-            _eventAdapters.push_back(adapter);
-            _eventDispatcher.attach(adapter);
-        }
-    }
-}
-
 void SimulationManager::cleanupOutputWriters()
 {
     _outputWriters.clear();
 }
 
-// Getters
 double SimulationManager::getCurrentTime() const
 {
     return _currentTime;
@@ -410,7 +359,7 @@ Time SimulationManager::getCurrentTimeFormatted() const
     return Time(totalMinutes / 60, totalMinutes % 60);
 }
 
-const SimulationManager::TrainList& SimulationManager::getTrains() const
+const TrainList& SimulationManager::getTrains() const
 {
     return _trains;
 }
@@ -437,7 +386,7 @@ bool SimulationManager::isRunning() const
 
 unsigned int SimulationManager::getSeed() const
 {
-    return _eventSeed;
+    return _rng.getSeed();
 }
 
 double SimulationManager::getSimulationSpeed() const
@@ -447,8 +396,7 @@ double SimulationManager::getSimulationSpeed() const
 
 void SimulationManager::setSimulationSpeed(double speed)
 {
-    _simulationSpeed =
-        std::max(SimConfig::MIN_SPEED, std::min(SimConfig::MAX_SPEED, speed));
+    _simulationSpeed = std::max(SimConfig::MIN_SPEED, std::min(SimConfig::MAX_SPEED, speed));
 }
 
 Train* SimulationManager::findTrain(const std::string& name) const
@@ -460,7 +408,13 @@ Train* SimulationManager::findTrain(const std::string& name) const
             return train;
         }
     }
+
     return nullptr;
+}
+
+SimulationContext* SimulationManager::getContext() const
+{
+    return _context;
 }
 
 void SimulationManager::reset()
@@ -468,31 +422,18 @@ void SimulationManager::reset()
     cleanupOutputWriters();
     _trains.clear();
     _previousStates.clear();
-    _currentTime              = 0.0;
-    _running                  = false;
-    _lastSnapshotMinute       = -1;
-    _lastDashboardMinute      = -1;
-    _lastEventGenerationTime  = -60.0;
-    _statsCollector           = nullptr;
-    _commandManager           = nullptr;
+    _currentTime             = 0.0;
+    _running                 = false;
+    _lastSnapshotMinute      = -1;
+    _lastDashboardMinute     = -1;
+    _lastEventGenerationTime = -60.0;
+    _statsCollector          = nullptr;
+    _commandManager          = nullptr;
 
     _eventScheduler.clear();
-    _eventDispatcher.clearObservers();
+    _observerManager.clear();
 
-    for (IObserver* adapter : _eventAdapters)
-    {
-        delete adapter;
-    }
-    _eventAdapters.clear();
-
-    delete _context;
-    _context = nullptr;
-
-    delete _trafficController;
-    _trafficController = nullptr;
-
-    delete _eventFactory;
-    _eventFactory = nullptr;
+    destroyNetworkServices();
 
     _network = nullptr;
 }

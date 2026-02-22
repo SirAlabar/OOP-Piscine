@@ -5,11 +5,12 @@
 #include <map>
 #include <string>
 #include <memory>
+#include "core/INetworkQuery.hpp"
 
 class Node;
 class Rail;
 
-class Graph
+class Graph : public INetworkQuery
 {
 public:
 	using NodeList = std::vector<Node*>;

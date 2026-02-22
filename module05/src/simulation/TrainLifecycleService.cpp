@@ -12,7 +12,7 @@
 #include "core/Train.hpp"
 
 TrainLifecycleService::TrainLifecycleService(
-    TrainList&          trains,
+    std::vector<Train*>& trains,
     SimulationContext*& context,
     TrafficController*& trafficCtrl,
     double&             currentTime,
@@ -96,7 +96,8 @@ void TrainLifecycleService::checkDepartures()
 
             if (_recorder)
             {
-                _recorder->record(new TrainDepartureCommand(_currentTime, train->getName()));
+                _recorder->record(
+                    new TrainDepartureCommand(_currentTime, train->getName()));
             }
         }
     }
@@ -201,7 +202,8 @@ void TrainLifecycleService::updateTrainStates(double dt)
         if (newRailIndex != prevRailIndex && _recorder)
         {
             _recorder->record(
-                new TrainAdvanceRailCommand(_currentTime, train->getName(), newRailIndex));
+                new TrainAdvanceRailCommand(
+                    _currentTime, train->getName(), newRailIndex));
         }
     }
 }

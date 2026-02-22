@@ -18,6 +18,10 @@
 #include <stdexcept>
 #include <iostream>
 
+// ---------------------------------------------------------------------------
+// Construction
+// ---------------------------------------------------------------------------
+
 MonteCarloRunner::MonteCarloRunner(const std::string& networkFile,
                                    const std::string& trainFile,
                                    unsigned int       baseSeed,
@@ -33,7 +37,10 @@ MonteCarloRunner::MonteCarloRunner(const std::string& networkFile,
 {
 }
 
+// ---------------------------------------------------------------------------
 // Public API
+// ---------------------------------------------------------------------------
+
 void MonteCarloRunner::runAll()
 {
     _allMetrics.clear();
@@ -126,6 +133,10 @@ void MonteCarloRunner::writeCSV(const std::string& filename) const
 
     log("CSV written: " + filename);
 }
+
+// ---------------------------------------------------------------------------
+// Private helpers
+// ---------------------------------------------------------------------------
 
 void MonteCarloRunner::log(const std::string& message) const
 {

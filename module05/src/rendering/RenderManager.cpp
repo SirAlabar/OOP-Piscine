@@ -1,4 +1,5 @@
 #include "rendering/RenderManager.hpp"
+#include "rendering/TrainPositionInterpolator.hpp"
 #include "simulation/SimulationManager.hpp"
 #include "rendering/CameraManager.hpp"
 #include "utils/IsometricUtils.hpp"
@@ -309,7 +310,8 @@ void RenderManager::renderTrains(sf::RenderWindow& window, const SpriteAtlas& at
 		}
 
 		bool movingRight = true;
-		sf::Vector2f trainPos = computeTrainPosition(train, camera, movingRight);
+		sf::Vector2f trainPos = TrainPositionInterpolator::compute(
+			train, camera, _nodeWorldPositions, _railPaths, movingRight);
 		_trainRenderer.draw(window, atlas, train, trainPos, movingRight, zoom);
 
 		if (_fontLoaded)
@@ -369,110 +371,6 @@ void RenderManager::renderDayNightOverlay(sf::RenderWindow& window, const Simula
 sf::Vector2f RenderManager::projectIsometric(const sf::Vector2f& worldPoint, const CameraManager& camera) const
 {
 	return IsometricUtils::project(worldPoint, camera);
-}
-
-sf::Vector2f RenderManager::computeTrainPosition(const Train* train, const CameraManager& camera, bool& movingRight) const
-{
-	const PathSegment* segment = train->getCurrentPathSegment();
-	if (!segment || !segment->rail)
-	{
-		movingRight = true;
-		return camera.getOffset();
-	}
-
-	const Node* fromNode = segment->from;
-	const Node* toNode = segment->to;
-
-	if (_nodeWorldPositions.count(fromNode) == 0 || _nodeWorldPositions.count(toNode) == 0)
-	{
-		movingRight = true;
-		return camera.getOffset();
-	}
-
-	// Check if we have a stored L-path for this rail
-	const Rail* rail = segment->rail;
-	if (_railPaths.count(rail) == 0)
-	{
-		// Fallback: straight line interpolation
-		const sf::Vector2f start = _nodeWorldPositions.at(fromNode);
-		const sf::Vector2f end = _nodeWorldPositions.at(toNode);
-
-		double railLengthMeters = rail->getLength() * 1000.0;
-		double t = (railLengthMeters > 0.0) ? (train->getPosition() / railLengthMeters) : 0.0;
-		t = std::max(0.0, std::min(1.0, t));
-
-		const sf::Vector2f world(
-			start.x + static_cast<float>((end.x - start.x) * t),
-			start.y + static_cast<float>((end.y - start.y) * t)
-		);
-
-		movingRight = true;
-		return projectIsometric(world, camera);
-	}
-
-	// Use stored L-path
-	const RailPath& path = _railPaths.at(rail);
-
-	// Determine direction based on travel direction
-	sf::Vector2f pathStart, pathCorner, pathEnd;
-	if (fromNode == rail->getNodeA())
-	{
-		// Traveling A -> B, use path as-is
-		pathStart = path.start;
-		pathCorner = path.corner;
-		pathEnd = path.end;
-	}
-	else
-	{
-		// Traveling B -> A, reverse the path
-		pathStart = path.end;
-		pathCorner = path.corner;
-		pathEnd = path.start;
-	}
-
-	// Calculate segment lengths
-	float dx1 = pathCorner.x - pathStart.x;
-	float dy1 = pathCorner.y - pathStart.y;
-	float segment1Length = std::sqrt(dx1 * dx1 + dy1 * dy1);
-
-	float dx2 = pathEnd.x - pathCorner.x;
-	float dy2 = pathEnd.y - pathCorner.y;
-	float segment2Length = std::sqrt(dx2 * dx2 + dy2 * dy2);
-
-	float totalLength = segment1Length + segment2Length;
-
-	// Calculate train progress (0.0 to 1.0)
-	double railLengthMeters = rail->getLength() * 1000.0;
-	double t = (railLengthMeters > 0.0) ? (train->getPosition() / railLengthMeters) : 0.0;
-	t = std::max(0.0, std::min(1.0, t));
-
-	// Convert progress to distance along path
-	float distanceAlongPath = static_cast<float>(t) * totalLength;
-
-	sf::Vector2f worldPos;
-
-	if (distanceAlongPath <= segment1Length)
-	{
-		// Train is on first segment (start -> corner)
-		float segmentT = (segment1Length > 0.0f) ? (distanceAlongPath / segment1Length) : 0.0f;
-		worldPos.x = pathStart.x + (pathCorner.x - pathStart.x) * segmentT;
-		worldPos.y = pathStart.y + (pathCorner.y - pathStart.y) * segmentT;
-
-		// Determine orientation
-		movingRight = (std::abs(dx1) > std::abs(dy1));
-	}
-	else
-	{
-		// Train is on second segment (corner -> end)
-		float segmentT = (segment2Length > 0.0f) ? ((distanceAlongPath - segment1Length) / segment2Length) : 0.0f;
-		worldPos.x = pathCorner.x + (pathEnd.x - pathCorner.x) * segmentT;
-		worldPos.y = pathCorner.y + (pathEnd.y - pathCorner.y) * segmentT;
-
-		// Determine orientation
-		movingRight = (std::abs(dx2) > std::abs(dy2));
-	}
-
-	return projectIsometric(worldPos, camera);
 }
 
 int RenderManager::computeRailBitmask(const World& world, int x, int y) const
