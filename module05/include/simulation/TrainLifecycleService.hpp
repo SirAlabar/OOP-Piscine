@@ -48,8 +48,7 @@ private:
     EventScheduler&     _eventScheduler;
     ICommandRecorder*   _recorder;
 
-    bool isTrainActive(const Train* train) const;
-    Time getCurrentTimeFormatted()         const;
+    Time getCurrentTimeFormatted() const;
 };
 
 #endif

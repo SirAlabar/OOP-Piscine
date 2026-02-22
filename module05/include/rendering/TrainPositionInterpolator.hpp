@@ -1,6 +1,7 @@
 #ifndef TRAINPOSITIONINTERPOLATOR_HPP
 #define TRAINPOSITIONINTERPOLATOR_HPP
 
+#include "rendering/RenderTypes.hpp"
 #include <SFML/System/Vector2.hpp>
 #include <map>
 
@@ -8,7 +9,6 @@ class Train;
 class Node;
 class Rail;
 class CameraManager;
-struct RailPath;
 
 // Pure geometry helper: converts a train's scalar progress along its current
 // rail into an isometric screen position, using the stored L-shaped rail paths.

@@ -56,9 +56,6 @@ private:
     double&             _lastEventGenerationTime;
     ICommandRecorder*   _recorder;
 
-    bool isTrainActive(const Train* train) const;
-    bool hasAnyActiveTrain()               const;
-
     void notifyNewEvent(Event* event);
     void notifyEndedEvents(
         const std::map<std::string, int>& preCounts,

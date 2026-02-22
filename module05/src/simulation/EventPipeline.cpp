@@ -41,26 +41,7 @@ void EventPipeline::setCommandRecorder(ICommandRecorder* recorder)
     _recorder = recorder;
 }
 
-bool EventPipeline::isTrainActive(const Train* train) const
-{
-    return train
-        && _context
-        && train->getCurrentState()
-        && !train->isFinished()
-        && train->getCurrentState() != _context->states().idle();
-}
 
-bool EventPipeline::hasAnyActiveTrain() const
-{
-    for (const Train* train : _trains)
-    {
-        if (isTrainActive(train))
-        {
-            return true;
-        }
-    }
-    return false;
-}
 
 void EventPipeline::update()
 {
@@ -69,8 +50,7 @@ void EventPipeline::update()
         return;
     }
 
-    int totalMinutes = static_cast<int>(_currentTime / SimConfig::SECONDS_PER_MINUTE);
-    Time currentTimeFormatted(totalMinutes / 60, totalMinutes % 60);
+    Time currentTimeFormatted = Time::fromSeconds(_currentTime);
 
     // --- Snapshot pre-update active events (type counts) ---
     // We need counts, not pointers, because update() may delete expired events.
@@ -152,10 +132,9 @@ void EventPipeline::notifyNewEvent(Event* event)
                 event->getDescription()));
     }
 
-    if (_simulationWriter && hasAnyActiveTrain())
+    if (_simulationWriter && _context && _context->hasAnyActiveTrain())
     {
-        int totalMinutes = static_cast<int>(_currentTime / SimConfig::SECONDS_PER_MINUTE);
-        Time t(totalMinutes / 60, totalMinutes % 60);
+        Time t = Time::fromSeconds(_currentTime);
 
         _simulationWriter->writeEventActivated(t, eventTypeStr,
                                                event->getDescription());
@@ -171,8 +150,7 @@ void EventPipeline::notifyEndedEvents(
         return;
     }
 
-    int totalMinutes = static_cast<int>(_currentTime / SimConfig::SECONDS_PER_MINUTE);
-    Time t(totalMinutes / 60, totalMinutes % 60);
+    Time t = Time::fromSeconds(_currentTime);
 
     for (const auto& kv : preCounts)
     {
@@ -205,7 +183,7 @@ void EventPipeline::logEventForAffectedTrains(Event* event,
 
     for (Train* train : _trains)
     {
-        if (!isTrainActive(train))
+        if (!_context || !_context->isTrainActive(train))
         {
             continue;
         }

@@ -2,7 +2,6 @@
 #include "rendering/TrainPositionInterpolator.hpp"
 #include "simulation/SimulationManager.hpp"
 #include "rendering/CameraManager.hpp"
-#include "utils/IsometricUtils.hpp"
 #include "core/Graph.hpp"
 #include "core/Node.hpp"
 #include "core/Rail.hpp"
@@ -11,12 +10,15 @@
 #include <algorithm>
 #include <iomanip>
 
+namespace
+{
+    constexpr int DEFAULT_RAIL_BITMASK = 5;
+}
+
 RenderManager::RenderManager()
 	: _eventsAtlasLoaded(false),
-	  _worldSeed(0),
-	  _fontLoaded(false)
+	  _worldSeed(0)
 {
-	loadFont();
 }
 
 void RenderManager::setNodePositions(const std::map<const Node*, sf::Vector2f>& positions)
@@ -38,22 +40,6 @@ void RenderManager::setWorldSeed(unsigned int seed)
 {
 	_worldSeed = seed;
 }
-
-void RenderManager::loadFont()
-{
-    if (_fontLoaded)
-    {
-        return;
-    }
-
-    _fontLoaded = _labelFont.loadFromFile("assets/Minecraft.ttf");
-
-    if (!_fontLoaded)
-    {
-        throw std::runtime_error("Failed to load UI font: assets/Minecraft.ttf");
-    }
-}
-
 
 bool RenderManager::loadEventsAtlas(const std::string& texturePath,
                                     const std::string& jsonPath)
@@ -87,12 +73,7 @@ void RenderManager::buildRailBitmasks(World& world)
 		{
 			if (world.isRailOccupied(x, y))
 			{
-				uint8_t bitmask = world.getRailMask(x, y);
-
-				if (bitmask == 0)
-				{
-					bitmask = 5;
-				}
+				int bitmask = computeRailBitmask(world, x, y);
 
 				RailTile tile;
 				tile.gridX = x;
@@ -138,12 +119,7 @@ void RenderManager::buildStationTiles(const Graph* graph, World& world)
 		world.markStationOccupied(worldX, worldY);
 
 		// Use explicit rail connections instead of proximity
-		int bitmask = world.getRailMask(worldX, worldY);
-
-		if (bitmask == 0)
-		{
-			bitmask = 5;
-		}
+		int bitmask = computeRailBitmask(world, worldX, worldY);
 
 		// Remap corners to T-junctions for stations
 		if (bitmask == 3)  bitmask = 7;   // N+E → N+E+S
@@ -173,52 +149,8 @@ void RenderManager::render(sf::RenderWindow& window, const SpriteAtlas& atlas,
 	renderTrains(window, atlas, simulation, camera);
 	renderDayNightOverlay(window, simulation);
 
-	// UI LAYER - Draw time and speed at top center
-	if (_fontLoaded)
-	{
-		// _currentTime is in SECONDS, convert to minutes for display
-		double currentTimeSeconds = simulation.getCurrentTime();
-		int totalMinutes = static_cast<int>(currentTimeSeconds / SimConfig::SECONDS_PER_MINUTE);
-		int cycleMinutes = totalMinutes % SimConfig::MINUTES_PER_DAY;  // Minutes in a day
-		int hours = cycleMinutes / 60;
-		int minutes = cycleMinutes % 60;
-
-		std::ostringstream timeStream;
-		timeStream << std::setfill('0') << std::setw(2) << hours
-		        << "h" << std::setw(2) << minutes;
-
-		sf::Text timeLabel;
-		timeLabel.setFont(_labelFont);
-		timeLabel.setString(timeStream.str());
-		timeLabel.setCharacterSize(24);
-		timeLabel.setFillColor(sf::Color::White);
-		timeLabel.setOutlineColor(sf::Color::Black);
-		timeLabel.setOutlineThickness(2.0f);
-
-		sf::FloatRect bounds = timeLabel.getLocalBounds();
-		timeLabel.setOrigin(bounds.width / 2.0f, 0);
-		timeLabel.setPosition(window.getSize().x / 2.0f, 10.0f);
-
-		window.draw(timeLabel);
-
-		// Draw speed indicator below clock
-		std::ostringstream speedStream;
-		speedStream << std::fixed << std::setprecision(1) << simulation.getSimulationSpeed() << "x";
-
-		sf::Text speedLabel;
-		speedLabel.setFont(_labelFont);
-		speedLabel.setString(speedStream.str());
-		speedLabel.setCharacterSize(18);
-		speedLabel.setFillColor(sf::Color(150, 255, 150));  // Light green
-		speedLabel.setOutlineColor(sf::Color::Black);
-		speedLabel.setOutlineThickness(1.5f);
-
-		sf::FloatRect speedBounds = speedLabel.getLocalBounds();
-		speedLabel.setOrigin(speedBounds.width / 2.0f, 0);
-		speedLabel.setPosition(window.getSize().x / 2.0f, 40.0f);
-
-		window.draw(speedLabel);
-	}
+	// UI layer
+	_hudRenderer.draw(window, simulation.getCurrentTime(), simulation.getSimulationSpeed());
 
 	window.display();
 }
@@ -226,75 +158,8 @@ void RenderManager::render(sf::RenderWindow& window, const SpriteAtlas& atlas,
 void RenderManager::renderWorld(sf::RenderWindow& window, const SpriteAtlas& atlas,
                                  const CameraManager& camera, const World& world)
 {
-	float zoom = camera.getCurrentZoom();
-
-	for (int y = 0; y < world.getHeight(); ++y)
-	{
-		for (int x = 0; x < world.getWidth(); ++x)
-		{
-			sf::Vector2f worldPos(static_cast<float>(x), static_cast<float>(y));
-			sf::Vector2f screenPos = projectIsometric(worldPos, camera);
-
-			std::pair<int, int> pos = std::make_pair(x, y);
-
-			// Priority 1: Station (highest priority)
-			if (_stationMapCache.count(pos) != 0)
-			{
-				const StationTile& station = _stationMapCache.at(pos);
-
-				// Render station sprite
-				std::string stationSprite = "station_" + std::to_string(station.bitmask) + ".png";
-				if (!atlas.hasFrame(stationSprite))
-				{
-					stationSprite = "station_5.png";
-				}
-				_railRenderer.drawTileScaled(window, atlas, stationSprite, screenPos, zoom);
-
-				// Render city label (using cached font)
-				if (_fontLoaded && station.node)
-				{
-					sf::Text label;
-					label.setFont(_labelFont); // Using cached font!
-					label.setString(station.node->getName());
-					label.setCharacterSize(static_cast<unsigned int>(12 * zoom));
-					label.setFillColor(sf::Color(255, 255, 0)); // Yellow
-					label.setOutlineColor(sf::Color::Black);
-					label.setOutlineThickness(1.0f * zoom);
-
-					sf::FloatRect bounds = label.getLocalBounds();
-					label.setOrigin(bounds.width / 2.0f, bounds.height / 2.0f);
-					label.setPosition(screenPos.x, screenPos.y - 30.0f * zoom);
-
-					window.draw(label);
-				}
-
-				continue; // Station rendered, skip to next tile
-			}
-
-			// Priority 2: Rail
-			if (_railBitmaskCache.count(pos) != 0)
-			{
-				int bitmask = _railBitmaskCache.at(pos);
-				std::string railSprite = getRailSpriteName(bitmask);
-				if (!atlas.hasFrame(railSprite))
-				{
-					railSprite = "rail_5.png";
-				}
-				_railRenderer.drawTileScaled(window, atlas, railSprite, screenPos, zoom);
-				continue; // Rail rendered, skip to next tile
-			}
-
-			// Priority 3: Terrain (lowest priority)
-			std::string spriteName = world.getCachedSprite(x, y);
-
-			if (!atlas.hasFrame(spriteName))
-			{
-				spriteName = "grass_01.png";
-			}
-
-			_railRenderer.drawTileScaled(window, atlas, spriteName, screenPos, zoom);
-		}
-	}
+	_worldRenderer.draw(window, atlas, camera, world,
+	                    _railBitmaskCache, _stationMapCache, _hudRenderer);
 }
 
 void RenderManager::renderTrains(sf::RenderWindow& window, const SpriteAtlas& atlas,
@@ -313,23 +178,7 @@ void RenderManager::renderTrains(sf::RenderWindow& window, const SpriteAtlas& at
 		sf::Vector2f trainPos = TrainPositionInterpolator::compute(
 			train, camera, _nodeWorldPositions, _railPaths, movingRight);
 		_trainRenderer.draw(window, atlas, train, trainPos, movingRight, zoom);
-
-		if (_fontLoaded)
-		{
-			sf::Text label;
-			label.setFont(_labelFont);
-			label.setString(train->getName());
-			label.setCharacterSize(static_cast<unsigned int>(10 * zoom));
-			label.setFillColor(sf::Color(255, 0, 0));
-			label.setOutlineColor(sf::Color::Black);
-			label.setOutlineThickness(1.0f * zoom);
-
-			sf::FloatRect bounds = label.getLocalBounds();
-			label.setOrigin(bounds.width / 2.0f, bounds.height / 2.0f);
-			label.setPosition(trainPos.x, trainPos.y - 20.0f * zoom);
-
-			window.draw(label);
-		}
+		_hudRenderer.drawTrainLabel(window, train->getName(), trainPos, zoom);
 	}
 }
 
@@ -368,26 +217,16 @@ void RenderManager::renderDayNightOverlay(sf::RenderWindow& window, const Simula
 	}
 }
 
-sf::Vector2f RenderManager::projectIsometric(const sf::Vector2f& worldPoint, const CameraManager& camera) const
-{
-	return IsometricUtils::project(worldPoint, camera);
-}
-
 int RenderManager::computeRailBitmask(const World& world, int x, int y) const
 {
 	int mask = world.getRailMask(x, y);
 
 	if (mask == 0)
 	{
-		mask = 5;
+		mask = DEFAULT_RAIL_BITMASK;
 	}
 
 	return mask;
-}
-
-std::string RenderManager::getRailSpriteName(int bitmask) const
-{
-	return "rail_" + std::to_string(bitmask) + ".png";
 }
 
 float RenderManager::calculateDayNightIntensity(double currentTime) const

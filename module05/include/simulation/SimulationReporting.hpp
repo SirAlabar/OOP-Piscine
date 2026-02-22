@@ -43,8 +43,6 @@ private:
     std::map<Train*, ITrainState*>&       _previousStates;
     int&                                  _lastSnapshotMinute;
     int&                                  _lastDashboardMinute;
-
-    bool isTrainActive(const Train* train) const;
 };
 
 #endif

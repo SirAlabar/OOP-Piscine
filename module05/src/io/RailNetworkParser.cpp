@@ -114,20 +114,8 @@ void RailNetworkParser::parseLine(const std::string& line, Graph* graph)
 
         try
         {
-            std::size_t pos = 0;
-
-            length = std::stod(tokens[3], &pos);
-            if (pos != tokens[3].size())
-            {
-                throw std::runtime_error("Invalid numeric value: '" + tokens[3] + "'");
-            }
-
-            pos = 0;
-            speed  = std::stod(tokens[4], &pos);
-            if (pos != tokens[4].size())
-            {
-                throw std::runtime_error("Invalid numeric value: '" + tokens[4] + "'");
-            }
+            length = StringUtils::parseDouble(tokens[3], "length");
+            speed  = StringUtils::parseDouble(tokens[4], "speedLimit");
         }
         catch (...)
         {

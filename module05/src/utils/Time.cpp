@@ -48,6 +48,11 @@ int Time::toMinutes() const
     return _hours * 60 + _minutes;
 }
 
+double Time::toSeconds() const
+{
+    return static_cast<double>(toMinutes()) * 60.0;
+}
+
 // Format as "HHhMM"
 std::string Time::toString() const
 {

@@ -1,6 +1,7 @@
 #ifndef EVENTRENDERER_HPP
 #define EVENTRENDERER_HPP
 
+#include "rendering/RenderTypes.hpp"
 #include <SFML/Graphics.hpp>
 #include <map>
 #include <string>
@@ -11,8 +12,6 @@ class CameraManager;
 class Node;
 class Rail;
 class Event;
-
-struct RailPath;
 
 class EventRenderer
 {

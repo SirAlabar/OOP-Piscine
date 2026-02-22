@@ -45,7 +45,7 @@ void MovementSystem::checkSignalFailures(Train*                     train,
                                                train);
     if (signalEvent)
     {
-        double stopSeconds = signalEvent->getStopDuration().toMinutes() * 60.0;
+        double stopSeconds = signalEvent->getStopDuration().toSeconds();
         ctx->setStopDuration(train, stopSeconds);
     }
 }
@@ -114,7 +114,7 @@ void MovementSystem::handleArrivalAtNode(Train*                     train,
         train->setVelocity(0.0);
         train->setState(ctx->states().stopped());
 
-        double stopSeconds = train->getStopDuration().toMinutes() * 60.0;
+        double stopSeconds = train->getStopDuration().toSeconds();
         ctx->setStopDuration(train, stopSeconds);
 
         train->advanceToNextRail();
@@ -133,7 +133,7 @@ void MovementSystem::handleArrivalAtNode(Train*                     train,
 
         train->setVelocity(0.0);
 
-        double stopSeconds = train->getStopDuration().toMinutes() * 60.0;
+        double stopSeconds = train->getStopDuration().toSeconds();
 
         // Apply additional delay from an active StationDelayEvent, if present.
         StationDelayEvent* stationEvent =
@@ -142,7 +142,7 @@ void MovementSystem::handleArrivalAtNode(Train*                     train,
                                                    train);
         if (stationEvent)
         {
-            stopSeconds += stationEvent->getAdditionalDelay().toMinutes() * 60.0;
+            stopSeconds += stationEvent->getAdditionalDelay().toSeconds();
         }
 
         ctx->setStopDuration(train, stopSeconds);

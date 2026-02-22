@@ -9,7 +9,7 @@
 #include "patterns/events/WeatherEvent.hpp"
 #include "core/Rail.hpp"
 #include "core/Node.hpp"
-#include "rendering/RenderManager.hpp"
+#include "rendering/RenderTypes.hpp"
 
 #include <array>
 #include <cmath>

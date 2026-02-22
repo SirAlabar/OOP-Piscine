@@ -1,6 +1,6 @@
 #include "rendering/TrainPositionInterpolator.hpp"
 #include "rendering/CameraManager.hpp"
-#include "rendering/RenderManager.hpp"  // RailPath struct
+#include "rendering/RenderTypes.hpp"  // RailPath struct
 #include "utils/IsometricUtils.hpp"
 #include "core/Train.hpp"
 #include "core/Rail.hpp"

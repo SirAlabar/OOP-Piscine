@@ -35,19 +35,9 @@ void TrainLifecycleService::setCommandRecorder(ICommandRecorder* recorder)
     _recorder = recorder;
 }
 
-bool TrainLifecycleService::isTrainActive(const Train* train) const
-{
-    return train
-        && _context
-        && train->getCurrentState()
-        && !train->isFinished()
-        && train->getCurrentState() != _context->states().idle();
-}
-
 Time TrainLifecycleService::getCurrentTimeFormatted() const
 {
-    int totalMinutes = static_cast<int>(_currentTime / SimConfig::SECONDS_PER_MINUTE);
-    return Time(totalMinutes / 60, totalMinutes % 60);
+    return Time::fromSeconds(_currentTime);
 }
 
 void TrainLifecycleService::checkDepartures()
@@ -112,7 +102,7 @@ void TrainLifecycleService::handleStateTransitions()
 
     for (Train* train : _trains)
     {
-        if (!isTrainActive(train))
+        if (!_context->isTrainActive(train))
         {
             continue;
         }

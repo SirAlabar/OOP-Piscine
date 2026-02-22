@@ -68,6 +68,20 @@ public:
         return out;
     }
 
+    // Parse a double from a token; throws if the token contains non-numeric characters.
+    static double parseDouble(const std::string& token, const std::string& fieldName)
+    {
+        std::size_t pos = 0;
+        double value = std::stod(token, &pos);
+
+        if (pos != token.size())
+        {
+            throw std::runtime_error("Invalid numeric value for '" + fieldName + "': '" + token + "'");
+        }
+
+        return value;
+    }
+
     // Unescape a JSON string value (handles \", \\, \n)
     static std::string unescapeJson(const std::string& s)
     {

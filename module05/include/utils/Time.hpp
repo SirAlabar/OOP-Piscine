@@ -20,7 +20,8 @@ public:
 
     int         getHours()   const;
     int         getMinutes() const;
-    int         toMinutes()  const;   // Convert to total minutes for comparison
+    int         toMinutes()  const;
+    double      toSeconds()  const;
     std::string toString()   const;   // Format as "HHhMM"
     bool        isValid()    const;   // Hours: 0-23, Minutes: 0-59
 

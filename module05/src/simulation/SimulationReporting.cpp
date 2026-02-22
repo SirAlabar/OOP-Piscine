@@ -30,15 +30,6 @@ SimulationReporting::SimulationReporting(
 {
 }
 
-bool SimulationReporting::isTrainActive(const Train* train) const
-{
-    return train
-        && _context
-        && train->getCurrentState()
-        && !train->isFinished()
-        && train->getCurrentState() != _context->states().idle();
-}
-
 void SimulationReporting::writeSnapshots()
 {
     int  currentMinute = static_cast<int>(_currentTime / SimConfig::SECONDS_PER_MINUTE);
@@ -55,7 +46,7 @@ void SimulationReporting::writeSnapshots()
         Train*            train  = pair.first;
         FileOutputWriter* writer = pair.second;
 
-        if (!writer || !isTrainActive(train))
+        if (!writer || !(_context && _context->isTrainActive(train)))
         {
             continue;
         }
@@ -116,7 +107,7 @@ void SimulationReporting::updateDashboard()
         {
             completedTrains++;
         }
-        else if (isTrainActive(train))
+        else if (_context && _context->isTrainActive(train))
         {
             activeTrains++;
         }
@@ -132,8 +123,7 @@ void SimulationReporting::updateDashboard()
     int activeEvents =
         static_cast<int>(_eventScheduler.getActiveEvents().size());
 
-    int totalMinutes = static_cast<int>(_currentTime / SimConfig::SECONDS_PER_MINUTE);
-    Time t(totalMinutes / 60, totalMinutes % 60);
+    Time t = Time::fromSeconds(_currentTime);
 
     _simulationWriter->writeDashboard(
         t,

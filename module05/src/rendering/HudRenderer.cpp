@@ -63,3 +63,52 @@ void HudRenderer::draw(sf::RenderWindow& window, double currentTimeSeconds, doub
     speedLabel.setPosition(window.getSize().x / 2.0f, 40.0f);
     window.draw(speedLabel);
 }
+
+void HudRenderer::drawLabel(sf::RenderWindow& window, const std::string& text,
+                             unsigned int charSize, const sf::Color& fillColor,
+                             float outlineThickness, const sf::Vector2f& position) const
+{
+    sf::Text label;
+    label.setFont(_font);
+    label.setString(text);
+    label.setCharacterSize(charSize);
+    label.setFillColor(fillColor);
+    label.setOutlineColor(sf::Color::Black);
+    label.setOutlineThickness(outlineThickness);
+
+    sf::FloatRect bounds = label.getLocalBounds();
+    label.setOrigin(bounds.width / 2.0f, bounds.height / 2.0f);
+    label.setPosition(position);
+
+    window.draw(label);
+}
+
+void HudRenderer::drawCityLabel(sf::RenderWindow& window, const std::string& name,
+                                 const sf::Vector2f& position, float zoom) const
+{
+    if (!_fontLoaded)
+    {
+        return;
+    }
+
+    drawLabel(window, name,
+              static_cast<unsigned int>(12 * zoom),
+              sf::Color(255, 255, 0),
+              1.0f * zoom,
+              sf::Vector2f(position.x, position.y - 30.0f * zoom));
+}
+
+void HudRenderer::drawTrainLabel(sf::RenderWindow& window, const std::string& name,
+                                  const sf::Vector2f& position, float zoom) const
+{
+    if (!_fontLoaded)
+    {
+        return;
+    }
+
+    drawLabel(window, name,
+              static_cast<unsigned int>(10 * zoom),
+              sf::Color(255, 0, 0),
+              1.0f * zoom,
+              sf::Vector2f(position.x, position.y - 20.0f * zoom));
+}
