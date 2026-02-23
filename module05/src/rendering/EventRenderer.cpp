@@ -3,9 +3,6 @@
 #include "rendering/CameraManager.hpp"
 #include "utils/IsometricUtils.hpp"
 #include "patterns/events/Event.hpp"
-#include "patterns/events/TrackMaintenanceEvent.hpp"
-#include "patterns/events/SignalFailureEvent.hpp"
-#include "patterns/events/StationDelayEvent.hpp"
 #include "patterns/events/WeatherEvent.hpp"
 #include "core/Rail.hpp"
 #include "core/Node.hpp"
@@ -105,81 +102,37 @@ sf::Vector2f EventRenderer::resolveIconWorldPosition(
 	const std::map<const Node*, sf::Vector2f>& nodeWorldPositions,
 	const std::map<const Rail*, RailPath>&     railPaths) const
 {
-	switch (event->getType())
+	const Rail* rail = event->getAnchorRail();
+	const Node* node = event->getAnchorNode();
+
+	if (rail)
 	{
-		case EventType::TRACK_MAINTENANCE:
+		const auto it = railPaths.find(rail);
+		if (it == railPaths.end())
 		{
-			const auto* maint =
-				static_cast<const TrackMaintenanceEvent*>(event);
-			const Rail* rail = maint->getRail();
-			if (!rail)
-			{
-				return {};
-			}
-			const auto it = railPaths.find(rail);
-			if (it == railPaths.end())
-			{
-				return {};
-			}
-			// Midpoint of the L-path: average of start and end
-			return (it->second.start + it->second.end) * 0.5f;
+			return {};
+		}
+		return (it->second.start + it->second.end) * 0.5f;
+	}
+
+	if (node)
+	{
+		const auto it = nodeWorldPositions.find(node);
+		if (it == nodeWorldPositions.end())
+		{
+			return {};
 		}
 
-		case EventType::SIGNAL_FAILURE:
+		// Weather events use their center node but get a visual offset
+		if (event->getType() == EventType::WEATHER)
 		{
-			const auto* sig =
-				static_cast<const SignalFailureEvent*>(event);
-			const Node* node = sig->getNode();
-			if (!node)
-			{
-				return {};
-			}
-			const auto it = nodeWorldPositions.find(node);
-			if (it == nodeWorldPositions.end())
-			{
-				return {};
-			}
-			return it->second;
-		}
-
-		case EventType::STATION_DELAY:
-		{
-			const auto* delay =
-				static_cast<const StationDelayEvent*>(event);
-			const Node* station = delay->getStation();
-			if (!station)
-			{
-				return {};
-			}
-			const auto it = nodeWorldPositions.find(station);
-			if (it == nodeWorldPositions.end())
-			{
-				return {};
-			}
-			return it->second;
-		}
-
-		case EventType::WEATHER:
-		{
-			const auto* weather =
-				static_cast<const WeatherEvent*>(event);
-			const Node* center = weather->getCenterNode();
-			if (!center)
-			{
-				return {};
-			}
-			const auto it = nodeWorldPositions.find(center);
-			if (it == nodeWorldPositions.end())
-			{
-				return {};
-			}
-			// Offset weather icon so it doesn't sit directly on the rail/node
 			return sf::Vector2f(it->second.x + 2.0f, it->second.y - 2.0f);
 		}
 
-		default:
-			return {};
+		return it->second;
 	}
+
+	return {};
 }
 
 

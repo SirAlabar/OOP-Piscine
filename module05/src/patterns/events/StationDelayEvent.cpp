@@ -91,3 +91,14 @@ Time StationDelayEvent::getAdditionalDelay() const
 {
 	return _additionalDelay;
 }
+
+
+const Node* StationDelayEvent::getAnchorNode() const
+{
+	return _station;
+}
+
+const Rail* StationDelayEvent::getAnchorRail() const
+{
+	return nullptr;
+}

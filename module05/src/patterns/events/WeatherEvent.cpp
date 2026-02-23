@@ -126,3 +126,14 @@ void WeatherEvent::setAffectedRails(const std::vector<Rail*>& rails)
 {
 	_affectedRails = rails;
 }
+
+
+const Node* WeatherEvent::getAnchorNode() const
+{
+	return _centerNode;
+}
+
+const Rail* WeatherEvent::getAnchorRail() const
+{
+	return nullptr;
+}

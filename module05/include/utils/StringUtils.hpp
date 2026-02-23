@@ -4,10 +4,22 @@
 #include <string>
 #include <vector>
 #include <sstream>
+#include <iomanip>
+#include <sstream>
 
 class StringUtils
 {
 public:
+
+    // Build the opening JSON field for a command record: {"t":<timestamp>
+    // Caller appends remaining fields and closing brace.
+    static std::string serializeHeader(double timestamp)
+    {
+        std::ostringstream ss;
+        ss << std::fixed << std::setprecision(6);
+        ss << "{\"t\":" << timestamp;
+        return ss.str();
+    }
 
     // Split a string by whitespace into tokens
     static std::vector<std::string> splitTokens(const std::string& line)

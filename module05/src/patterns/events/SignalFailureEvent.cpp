@@ -81,3 +81,14 @@ Time SignalFailureEvent::getStopDuration() const
 {
 	return _stopDuration;
 }
+
+
+const Node* SignalFailureEvent::getAnchorNode() const
+{
+	return _node;
+}
+
+const Rail* SignalFailureEvent::getAnchorRail() const
+{
+	return nullptr;
+}

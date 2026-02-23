@@ -27,8 +27,11 @@ public:
 	std::string getDescription() const override;
 
 	// Getters
-	Rail* getRail() const;
-	double getSpeedReductionFactor() const;
+	Rail*  getRail()                  const;
+	double getSpeedReductionFactor()  const;
+
+	const Node* getAnchorNode() const override;
+	const Rail* getAnchorRail() const override;
 };
 
 #endif

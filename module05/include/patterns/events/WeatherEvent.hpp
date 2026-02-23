@@ -35,8 +35,11 @@ public:
 
 	// Getters
 	std::string getWeatherType() const;
-	Node* getCenterNode() const;
-	double getRadiusKm() const;
+	Node*       getCenterNode()  const;
+	double      getRadiusKm()    const;
+
+	const Node* getAnchorNode() const override;
+	const Rail* getAnchorRail() const override;
 	double getSpeedReductionFactor() const;
 	double getFrictionIncrease() const;
 

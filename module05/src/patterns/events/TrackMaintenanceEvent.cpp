@@ -94,3 +94,14 @@ double TrackMaintenanceEvent::getSpeedReductionFactor() const
 {
 	return _speedReductionFactor;
 }
+
+
+const Node* TrackMaintenanceEvent::getAnchorNode() const
+{
+	return nullptr;
+}
+
+const Rail* TrackMaintenanceEvent::getAnchorRail() const
+{
+	return _rail;
+}

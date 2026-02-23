@@ -1,10 +1,9 @@
 #include "patterns/commands/TrainDepartureCommand.hpp"
+#include "utils/StringUtils.hpp"
 #include "simulation/SimulationManager.hpp"
 #include "simulation/SimulationContext.hpp"
 #include "patterns/states/StateRegistry.hpp"
 #include "core/Train.hpp"
-#include <sstream>
-#include <iomanip>
 
 TrainDepartureCommand::TrainDepartureCommand(double             timestamp,
                                              const std::string& trainName)
@@ -20,12 +19,9 @@ void TrainDepartureCommand::execute()
 
 std::string TrainDepartureCommand::serialize() const
 {
-    std::ostringstream ss;
-    ss << std::fixed << std::setprecision(6);
-    ss << "{\"t\":"     << _timestamp
-       << ",\"type\":\"DEPARTURE\""
-       << ",\"train\":\"" << _trainName << "\"}";
-    return ss.str();
+    return StringUtils::serializeHeader(_timestamp)
+        + ",\"type\":\"DEPARTURE\""
+        + ",\"train\":\"" + _trainName + "\"}";
 }
 
 std::string TrainDepartureCommand::getType() const

@@ -1,7 +1,6 @@
 #include "patterns/commands/ReloadCommand.hpp"
+#include "utils/StringUtils.hpp"
 #include <fstream>
-#include <sstream>
-#include <iomanip>
 
 ReloadCommand::ReloadCommand(double      timestamp,
                              std::string oldNetContent,
@@ -26,13 +25,10 @@ void ReloadCommand::execute()
 std::string ReloadCommand::serialize() const
 {
     // Only record the file paths (not full contents) in the JSON log.
-    std::ostringstream ss;
-    ss << std::fixed << std::setprecision(6);
-    ss << "{\"t\":" << _timestamp
-       << ",\"type\":\"RELOAD\""
-       << ",\"net_file\":\""   << _newNetFile   << "\""
-       << ",\"train_file\":\"" << _newTrainFile  << "\"}";
-    return ss.str();
+    return StringUtils::serializeHeader(_timestamp)
+        + ",\"type\":\"RELOAD\""
+        + ",\"net_file\":\""   + _newNetFile   + "\""
+        + ",\"train_file\":\"" + _newTrainFile  + "\"}";
 }
 
 std::string ReloadCommand::getType() const

@@ -26,8 +26,11 @@ public:
 	std::string getDescription() const override;
 
 	// Getters
-	Node* getNode() const;
-	Time getStopDuration() const;
+	Node* getNode()          const;
+	Time  getStopDuration() const;
+
+	const Node* getAnchorNode() const override;
+	const Rail* getAnchorRail() const override;
 };
 
 #endif

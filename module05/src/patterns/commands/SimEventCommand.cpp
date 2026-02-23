@@ -1,7 +1,5 @@
 #include "patterns/commands/SimEventCommand.hpp"
 #include "utils/StringUtils.hpp"
-#include <sstream>
-#include <iomanip>
 
 SimEventCommand::SimEventCommand(double             timestamp,
                                  const std::string& eventType,
@@ -29,13 +27,10 @@ double SimEventCommand::getTimestamp() const
 
 std::string SimEventCommand::serialize() const
 {
-    std::ostringstream ss;
-    ss << std::fixed << std::setprecision(6);
-    ss << "{\"t\":"           << _timestamp
-       << ",\"type\":\"EVENT\""
-       << ",\"event_type\":\"" << StringUtils::escapeJson(_eventType)  << "\""
-       << ",\"desc\":\""       << StringUtils::escapeJson(_description) << "\"}";
-    return ss.str();
+    return StringUtils::serializeHeader(_timestamp)
+        + ",\"type\":\"EVENT\""
+        + ",\"event_type\":\"" + StringUtils::escapeJson(_eventType)  + "\""
+        + ",\"desc\":\""       + StringUtils::escapeJson(_description) + "\"}";
 }
 
 void SimEventCommand::applyReplay(SimulationManager* /*sim*/)

@@ -1,10 +1,9 @@
 #include "patterns/commands/TrainStateChangeCommand.hpp"
+#include "utils/StringUtils.hpp"
 #include "simulation/SimulationManager.hpp"
 #include "simulation/SimulationContext.hpp"
 #include "patterns/states/StateRegistry.hpp"
 #include "core/Train.hpp"
-#include <sstream>
-#include <iomanip>
 
 TrainStateChangeCommand::TrainStateChangeCommand(double             timestamp,
                                                  const std::string& trainName,
@@ -24,14 +23,11 @@ void TrainStateChangeCommand::execute()
 
 std::string TrainStateChangeCommand::serialize() const
 {
-    std::ostringstream ss;
-    ss << std::fixed << std::setprecision(6);
-    ss << "{\"t\":"     << _timestamp
-       << ",\"type\":\"STATE_CHANGE\""
-       << ",\"train\":\"" << _trainName << "\""
-       << ",\"from\":\""  << _fromState << "\""
-       << ",\"to\":\""    << _toState   << "\"}";
-    return ss.str();
+    return StringUtils::serializeHeader(_timestamp)
+        + ",\"type\":\"STATE_CHANGE\""
+        + ",\"train\":\"" + _trainName + "\""
+        + ",\"from\":\""  + _fromState + "\""
+        + ",\"to\":\""    + _toState   + "\"}";
 }
 
 std::string TrainStateChangeCommand::getType() const

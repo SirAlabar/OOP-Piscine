@@ -1,8 +1,7 @@
 #include "patterns/commands/TrainAdvanceRailCommand.hpp"
 #include "simulation/SimulationManager.hpp"
+#include "utils/StringUtils.hpp"
 #include "core/Train.hpp"
-#include <sstream>
-#include <iomanip>
 
 TrainAdvanceRailCommand::TrainAdvanceRailCommand(double             timestamp,
                                                  const std::string& trainName,
@@ -20,13 +19,10 @@ void TrainAdvanceRailCommand::execute()
 
 std::string TrainAdvanceRailCommand::serialize() const
 {
-    std::ostringstream ss;
-    ss << std::fixed << std::setprecision(6);
-    ss << "{\"t\":" << _timestamp
-       << ",\"type\":\"ADVANCE_RAIL\""
-       << ",\"train\":\"" << _trainName << "\""
-       << ",\"rail_index\":" << _railIndex << "}";
-    return ss.str();
+    return StringUtils::serializeHeader(_timestamp)
+        + ",\"type\":\"ADVANCE_RAIL\""
+        + ",\"train\":\"" + _trainName + "\""
+        + ",\"rail_index\":" + std::to_string(_railIndex) + "}";
 }
 
 std::string TrainAdvanceRailCommand::getType() const

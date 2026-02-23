@@ -64,6 +64,9 @@ public:
     virtual bool        affectsTrain(Train* train)         const = 0;
     virtual bool        isApplicableToTrain(Train* train)  const = 0;
 
+    virtual const Node*  getAnchorNode()  const = 0;
+    virtual const Rail*  getAnchorRail()  const = 0;
+
     // Convert an EventType enum to its human-readable display string.
     // Centralises the mapping so no caller needs a local switch.
     static std::string typeToString(EventType type);
