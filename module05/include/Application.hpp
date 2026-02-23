@@ -2,9 +2,9 @@
 #define APPLICATION_HPP
 
 #include "io/CLI.hpp"
-#include "simulation/SimulationBuilder.hpp"
-#include "simulation/CollisionAvoidance.hpp"
-#include "simulation/SimulationManager.hpp"
+#include "simulation/core/SimulationBuilder.hpp"
+#include "simulation/systems/CollisionAvoidance.hpp"
+#include "simulation/core/SimulationManager.hpp"
 #include <memory>
 #include <string>
 #include <vector>

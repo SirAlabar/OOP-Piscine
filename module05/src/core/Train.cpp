@@ -1,7 +1,7 @@
 #include "core/Train.hpp"
 #include "core/Rail.hpp"
 #include "utils/Time.hpp"
-#include "patterns/states/ITrainState.hpp"
+#include "patterns/behavioral/states/ITrainState.hpp"
 #include <iostream>
 #include <algorithm>
 

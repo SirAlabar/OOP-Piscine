@@ -1,8 +1,8 @@
 #ifndef RUNSESSION_HPP
 #define RUNSESSION_HPP
 
-#include "simulation/SimulationBuilder.hpp"
-#include "simulation/SimulationManager.hpp"
+#include "simulation/core/SimulationBuilder.hpp"
+#include "simulation/core/SimulationManager.hpp"
 #include <functional>
 #include <memory>
 #include <string>

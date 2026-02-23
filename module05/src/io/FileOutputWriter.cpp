@@ -1,8 +1,8 @@
 #include "io/FileOutputWriter.hpp"
-#include "simulation/OccupancyMap.hpp"
+#include "simulation/state/OccupancyMap.hpp"
 #include "core/Node.hpp"
-#include "simulation/PhysicsSystem.hpp"
-#include "patterns/states/ITrainState.hpp"
+#include "simulation/systems/PhysicsSystem.hpp"
+#include "patterns/behavioral/states/ITrainState.hpp"
 #include "utils/FileSystemUtils.hpp"
 #include "utils/Time.hpp"
 #include <iomanip>

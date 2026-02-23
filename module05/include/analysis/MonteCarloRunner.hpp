@@ -2,7 +2,7 @@
 #define MONTE_CARLO_RUNNER_HPP
 
 #include "analysis/StatsCollector.hpp"
-#include "simulation/SimulationManager.hpp"
+#include "simulation/core/SimulationManager.hpp"
 
 #include <string>
 #include <vector>

@@ -3,10 +3,10 @@
 #include "app/RunSession.hpp"
 #include "io/CLI.hpp"
 #include "io/ConsoleOutputWriter.hpp"
-#include "simulation/CollisionAvoidance.hpp"
-#include "simulation/SimulationBuilder.hpp"
-#include "simulation/SimulationManager.hpp"
-#include "patterns/commands/CommandManager.hpp"
+#include "simulation/systems/CollisionAvoidance.hpp"
+#include "simulation/core/SimulationBuilder.hpp"
+#include "simulation/core/SimulationManager.hpp"
+#include "patterns/behavioral/command/CommandManager.hpp"
 
 #include <memory>
 #include <string>

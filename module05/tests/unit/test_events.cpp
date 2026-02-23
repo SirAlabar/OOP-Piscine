@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
 
-#include "patterns/events/Event.hpp"
-#include "patterns/events/TrackMaintenanceEvent.hpp"
-#include "patterns/events/WeatherEvent.hpp"
+#include "events/Event.hpp"
+#include "events/TrackMaintenanceEvent.hpp"
+#include "events/WeatherEvent.hpp"
 #include "core/Node.hpp"
 #include "core/Rail.hpp"
 

@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "simulation/PhysicsSystem.hpp"
+#include "simulation/systems/PhysicsSystem.hpp"
 #include "core/Train.hpp"
 #include "core/Node.hpp"
 #include "core/Rail.hpp"

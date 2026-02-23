@@ -2,7 +2,7 @@
 #define TRAINCONFIGPARSER_HPP
 
 #include "io/FileParser.hpp"
-#include "patterns/factories/TrainFactory.hpp"
+#include "patterns/creational/factories/TrainFactory.hpp"
 #include <vector>
 
 // Parses train configuration file

@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>
 
-#include "patterns/observers/EventDispatcher.hpp"
-#include "patterns/observers/EventScheduler.hpp"
-#include "patterns/observers/IObserver.hpp"
-#include "patterns/events/StationDelayEvent.hpp"
+#include "event_system/EventDispatcher.hpp"
+#include "event_system/EventScheduler.hpp"
+#include "patterns/behavioral/observers/IObserver.hpp"
+#include "events/StationDelayEvent.hpp"
 #include "core/Node.hpp"
 
 class CountingObserver : public IObserver

@@ -3,7 +3,7 @@
 
 #include "core/Train.hpp"
 #include "core/Rail.hpp"
-#include "simulation/OccupancyMap.hpp"
+#include "simulation/state/OccupancyMap.hpp"
 #include "utils/Time.hpp"
 #include <string>
 #include <fstream>

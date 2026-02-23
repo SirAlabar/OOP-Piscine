@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "simulation/OccupancyMap.hpp"
+#include "simulation/state/OccupancyMap.hpp"
 #include "core/Rail.hpp"
 #include "core/Node.hpp"
 #include "core/Train.hpp"

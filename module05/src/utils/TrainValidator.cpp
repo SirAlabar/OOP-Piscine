@@ -1,5 +1,5 @@
-#include "patterns/factories/TrainValidator.hpp"
-#include "patterns/factories/TrainFactory.hpp"
+#include "patterns/creational/factories/TrainValidator.hpp"
+#include "patterns/creational/factories/TrainFactory.hpp"
 #include "core/Graph.hpp"
 
 ValidationResult TrainValidator::validate(const TrainConfig& config, const Graph* network)

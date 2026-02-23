@@ -2,8 +2,8 @@
 
 #include <vector>
 
-#include "simulation/SimulationBuilder.hpp"
-#include "patterns/strategies/DijkstraStrategy.hpp"
+#include "simulation/core/SimulationBuilder.hpp"
+#include "patterns/behavioral/strategies/DijkstraStrategy.hpp"
 #include "core/Graph.hpp"
 #include "core/Node.hpp"
 #include "core/Rail.hpp"

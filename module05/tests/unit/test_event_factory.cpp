@@ -2,16 +2,16 @@
 #include <vector>
 #include <string>
 
-#include "patterns/factories/EventFactory.hpp"
-#include "simulation/IEventScheduler.hpp"
+#include "patterns/creational/factories/EventFactory.hpp"
+#include "simulation/interfaces/IEventScheduler.hpp"
 #include "core/INetworkQuery.hpp"
 #include "utils/IRng.hpp"
 #include "core/Node.hpp"
 #include "core/Rail.hpp"
-#include "patterns/events/StationDelayEvent.hpp"
-#include "patterns/events/TrackMaintenanceEvent.hpp"
-#include "patterns/events/SignalFailureEvent.hpp"
-#include "patterns/events/WeatherEvent.hpp"
+#include "events/StationDelayEvent.hpp"
+#include "events/TrackMaintenanceEvent.hpp"
+#include "events/SignalFailureEvent.hpp"
+#include "events/WeatherEvent.hpp"
 
 class FakeRng : public IRng
 {

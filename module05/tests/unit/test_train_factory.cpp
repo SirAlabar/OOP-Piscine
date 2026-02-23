@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "patterns/factories/TrainFactory.hpp"
+#include "patterns/creational/factories/TrainFactory.hpp"
 #include "core/Train.hpp"
 #include "core/Graph.hpp"
 #include "core/Node.hpp"

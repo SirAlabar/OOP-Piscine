@@ -1,13 +1,13 @@
 #include <gtest/gtest.h>
 #include <iostream>
 
-#include "patterns/factories/TrainFactory.hpp"
-#include "patterns/strategies/DijkstraStrategy.hpp"
-#include "patterns/states/IdleState.hpp"
-#include "patterns/states/AcceleratingState.hpp"
-#include "patterns/states/CruisingState.hpp"
-#include "patterns/states/BrakingState.hpp"
-#include "simulation/PhysicsSystem.hpp"
+#include "patterns/creational/factories/TrainFactory.hpp"
+#include "patterns/behavioral/strategies/DijkstraStrategy.hpp"
+#include "patterns/behavioral/states/IdleState.hpp"
+#include "patterns/behavioral/states/AcceleratingState.hpp"
+#include "patterns/behavioral/states/CruisingState.hpp"
+#include "patterns/behavioral/states/BrakingState.hpp"
+#include "simulation/systems/PhysicsSystem.hpp"
 
 #include "core/Graph.hpp"
 #include "core/Node.hpp"

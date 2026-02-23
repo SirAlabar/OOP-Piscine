@@ -5,8 +5,8 @@
 #include "core/Train.hpp"
 #include "io/CLI.hpp"
 #include "io/IOutputWriter.hpp"
-#include "patterns/commands/CommandManager.hpp"
-#include "rendering/SFMLRenderer.hpp"
+#include "patterns/behavioral/command/CommandManager.hpp"
+#include "rendering/graphics/SFMLRenderer.hpp"
 #include "utils/FileSystemUtils.hpp"
 #include "utils/FileWatcher.hpp"
 

@@ -6,8 +6,8 @@
 
 #include "io/RailNetworkParser.hpp"
 #include "io/TrainConfigParser.hpp"
-#include "patterns/factories/TrainFactory.hpp"
-#include "patterns/strategies/DijkstraStrategy.hpp"
+#include "patterns/creational/factories/TrainFactory.hpp"
+#include "patterns/behavioral/strategies/DijkstraStrategy.hpp"
 #include "core/Graph.hpp"
 #include "core/Node.hpp"
 #include "core/Rail.hpp"

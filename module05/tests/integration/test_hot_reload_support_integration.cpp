@@ -2,7 +2,7 @@
 
 #include "app/HotReloadSupport.hpp"
 #include "io/ConsoleOutputWriter.hpp"
-#include "patterns/commands/CommandManager.hpp"
+#include "patterns/behavioral/command/CommandManager.hpp"
 
 #include <cstdio>
 #include <fstream>

@@ -2,7 +2,7 @@
 #define NODE_HPP
 
 #include <string>
-#include "patterns/observers/IObserver.hpp"
+#include "patterns/behavioral/observers/IObserver.hpp"
 
 class Event;
 

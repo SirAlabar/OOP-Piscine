@@ -1,5 +1,5 @@
 #include "core/Node.hpp"
-#include "patterns/events/Event.hpp"
+#include "events/Event.hpp"
 
 // Default constructor
 Node::Node() : _name(""), _type(NodeType::CITY)

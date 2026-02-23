@@ -2,7 +2,7 @@
 #define ISOMETRICUTILS_HPP
 
 #include <SFML/Graphics.hpp>
-#include "rendering/CameraManager.hpp"
+#include "rendering/systems/CameraManager.hpp"
 
 namespace IsometricUtils
 {

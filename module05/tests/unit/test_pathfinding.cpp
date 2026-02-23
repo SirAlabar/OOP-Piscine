@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
-#include "patterns/strategies/DijkstraStrategy.hpp"
-#include "patterns/strategies/PathFinder.hpp"
+#include "patterns/behavioral/strategies/DijkstraStrategy.hpp"
+#include "patterns/behavioral/strategies/PathFinder.hpp"
 #include "core/Graph.hpp"
 #include "core/Node.hpp"
 #include "core/Rail.hpp"
