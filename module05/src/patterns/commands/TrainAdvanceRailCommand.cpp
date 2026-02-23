@@ -1,5 +1,5 @@
 #include "patterns/commands/TrainAdvanceRailCommand.hpp"
-#include "simulation/SimulationManager.hpp"
+#include "simulation/IReplayTarget.hpp"
 #include "utils/StringUtils.hpp"
 #include "core/Train.hpp"
 
@@ -35,14 +35,14 @@ double TrainAdvanceRailCommand::getTimestamp() const
     return _timestamp;
 }
 
-void TrainAdvanceRailCommand::applyReplay(SimulationManager* sim)
+void TrainAdvanceRailCommand::applyReplay(IReplayTarget* target)
 {
-    if (!sim)
+    if (!target)
     {
         return;
     }
 
-    Train* train = sim->findTrain(_trainName);
+    Train* train = target->findTrain(_trainName);
     if (!train)
     {
         return;

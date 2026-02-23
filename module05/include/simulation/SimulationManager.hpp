@@ -13,6 +13,7 @@
 #include "patterns/observers/EventDispatcher.hpp"
 #include "patterns/observers/EventScheduler.hpp"
 #include "patterns/commands/ICommandRecorder.hpp"
+#include "simulation/IReplayTarget.hpp"
 #include "simulation/TrainLifecycleService.hpp"
 #include "simulation/EventPipeline.hpp"
 #include "simulation/SimulationReporting.hpp"
@@ -38,7 +39,7 @@ using TrainList = std::vector<Train*>;
 //   TrainLifecycleService — departures, state transitions, physics
 //   EventPipeline         — event scheduling, activation, expiration
 //   SimulationReporting   — snapshot files, console dashboard
-class SimulationManager : public ICommandRecorder
+class SimulationManager : public ICommandRecorder, public IReplayTarget
 {
 private:
     EventDispatcher       _eventDispatcher;
@@ -51,6 +52,7 @@ private:
     Graph*                _network;
     TrainList             _trains;
     ICollisionAvoidance*  _collisionSystem;
+    bool                  _ownsCollision;
     TrafficController*    _trafficController;
     SimulationContext*    _context;
     EventFactory*         _eventFactory;
@@ -85,6 +87,7 @@ private:
 
 public:
     SimulationManager();
+    SimulationManager(ICollisionAvoidance* collision);
     ~SimulationManager();
 
     SimulationManager(const SimulationManager&)            = delete;
@@ -105,7 +108,7 @@ public:
     void configure(const SimulationConfig& config);
     void setCommandManager(CommandManager* mgr);
 
-    Train* findTrain(const std::string& name) const;
+    Train* findTrain(const std::string& name) const override;
 
     void start();
     void stop();
@@ -126,7 +129,7 @@ public:
     bool                       isRunning()               const;
     unsigned int               getSeed()                 const;
     double                     getSimulationSpeed()      const;
-    SimulationContext*         getContext()              const;
+    SimulationContext*         getContext()              const override;
 
     void setSimulationSpeed(double speed);
     void reset();

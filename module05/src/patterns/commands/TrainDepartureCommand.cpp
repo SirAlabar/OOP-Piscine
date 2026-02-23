@@ -1,6 +1,6 @@
 #include "patterns/commands/TrainDepartureCommand.hpp"
 #include "utils/StringUtils.hpp"
-#include "simulation/SimulationManager.hpp"
+#include "simulation/IReplayTarget.hpp"
 #include "simulation/SimulationContext.hpp"
 #include "patterns/states/StateRegistry.hpp"
 #include "core/Train.hpp"
@@ -34,20 +34,20 @@ double TrainDepartureCommand::getTimestamp() const
     return _timestamp;
 }
 
-void TrainDepartureCommand::applyReplay(SimulationManager* sim)
+void TrainDepartureCommand::applyReplay(IReplayTarget* target)
 {
-    if (!sim)
+    if (!target)
     {
         return;
     }
 
-    Train* train = sim->findTrain(_trainName);
+    Train* train = target->findTrain(_trainName);
     if (!train)
     {
         return;
     }
 
-    SimulationContext* ctx = sim->getContext();
+    SimulationContext* ctx = target->getContext();
     if (!ctx)
     {
         return;

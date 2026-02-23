@@ -33,7 +33,7 @@ std::string SimEventCommand::serialize() const
         + ",\"desc\":\""       + StringUtils::escapeJson(_description) + "\"}";
 }
 
-void SimEventCommand::applyReplay(SimulationManager* /*sim*/)
+void SimEventCommand::applyReplay(IReplayTarget* /*target*/)
 {
     // Event effects are not re-applied during replay to avoid double-effects.
 }

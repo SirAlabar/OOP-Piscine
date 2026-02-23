@@ -1,7 +1,8 @@
 #include "simulation/SimulationManager.hpp"
+#include "simulation/IReplayTarget.hpp"
+#include "simulation/CollisionAvoidance.hpp"
 #include "simulation/SimulationConfig.hpp"
 #include "simulation/SimulationContext.hpp"
-#include "simulation/CollisionAvoidance.hpp"
 #include "simulation/NetworkServicesFactory.hpp"
 #include "patterns/mediator/TrafficController.hpp"
 #include "patterns/factories/EventFactory.hpp"
@@ -23,12 +24,19 @@
 #include <algorithm>
 
 SimulationManager::SimulationManager()
+    : SimulationManager(new CollisionAvoidance())
+{
+    _ownsCollision = true;
+}
+
+SimulationManager::SimulationManager(ICollisionAvoidance* collision)
     : _eventScheduler(_eventDispatcher),
       _rng(0),
       _networkServicesFactory(nullptr, &_trains),
       _observerManager(_eventDispatcher),
       _network(nullptr),
-      _collisionSystem(new CollisionAvoidance()),
+      _collisionSystem(collision),
+      _ownsCollision(false),
       _trafficController(nullptr),
       _context(nullptr),
       _eventFactory(nullptr),
@@ -66,7 +74,10 @@ SimulationManager::~SimulationManager()
 {
     cleanupOutputWriters();
     destroyNetworkServices();
-    delete _collisionSystem;
+    if (_ownsCollision)
+    {
+        delete _collisionSystem;
+    }
 }
 
 void SimulationManager::record(ICommand* cmd)
@@ -314,7 +325,7 @@ void SimulationManager::applyReplayCommands()
     {
         if (command)
         {
-            command->applyReplay(this);
+            command->applyReplay(static_cast<IReplayTarget*>(this));
         }
     }
 }

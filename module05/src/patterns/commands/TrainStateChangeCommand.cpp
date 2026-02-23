@@ -1,6 +1,6 @@
 #include "patterns/commands/TrainStateChangeCommand.hpp"
 #include "utils/StringUtils.hpp"
-#include "simulation/SimulationManager.hpp"
+#include "simulation/IReplayTarget.hpp"
 #include "simulation/SimulationContext.hpp"
 #include "patterns/states/StateRegistry.hpp"
 #include "core/Train.hpp"
@@ -40,21 +40,21 @@ double TrainStateChangeCommand::getTimestamp() const
     return _timestamp;
 }
 
-void TrainStateChangeCommand::applyReplay(SimulationManager* sim)
+void TrainStateChangeCommand::applyReplay(IReplayTarget* target)
 {
-    if (!sim)
+    if (!target)
     {
         return;
     }
 
-    Train* train = sim->findTrain(_trainName);
+    Train* train = target->findTrain(_trainName);
 
     if (!train)
     {
         return;
     }
 
-    SimulationContext* context = sim->getContext();
+    SimulationContext* context = target->getContext();
 
     if (!context)
     {

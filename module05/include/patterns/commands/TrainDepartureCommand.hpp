@@ -2,6 +2,8 @@
 #define TRAINDEPARTURECOMMAND_HPP
 
 #include "patterns/commands/ICommand.hpp"
+
+class IReplayTarget;
 #include <string>
 
 // Records the moment a train departs (Idle -> Accelerating).
@@ -14,7 +16,7 @@ public:
     std::string serialize()                      const override;
     std::string getType()                        const override;
     double      getTimestamp()                   const override;
-    void        applyReplay(SimulationManager* sim)    override;
+    void        applyReplay(IReplayTarget* target)    override;
 
 private:
     double      _timestamp;

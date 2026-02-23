@@ -3,7 +3,7 @@
 
 #include <string>
 
-class SimulationManager;
+class IReplayTarget;
 
 // Abstract base for all recordable simulation actions.
 class ICommand
@@ -24,7 +24,7 @@ public:
     virtual double getTimestamp() const = 0;
 
     // Re-apply this command during replay mode (default: no-op).
-    virtual void applyReplay(SimulationManager*) {}
+    virtual void applyReplay(IReplayTarget*) {}
 };
 
 #endif

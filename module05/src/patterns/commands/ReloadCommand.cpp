@@ -41,7 +41,7 @@ double ReloadCommand::getTimestamp() const
     return _timestamp;
 }
 
-void ReloadCommand::applyReplay(SimulationManager* /*sim*/)
+void ReloadCommand::applyReplay(IReplayTarget* /*target*/)
 {
     // File-reload cannot be replayed deterministically (paths may no longer be valid).
 }
