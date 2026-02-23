@@ -72,11 +72,12 @@ Core concepts covered:
     │   ├── ex04/         # Observer
     │   └── ex05/         # Facade
     └── module05/          # Railway Simulation
-        └── docs/          # documents
-            ├── diagrams/  # UML diagrams
+        ├── docs/          # Design/architecture documents
+        │   └── uml/       # UML diagrams
         ├── include/       # Header files
         ├── src/           # Source files
-        └── inputs/        # Simulation input files
+        ├── tests/         # Unit and integration tests
+        └── examples/      # Simulation input examples
 
 ------------------------------------------------------------------------
 
@@ -92,6 +93,9 @@ Core features:
 -   Procedural world generation
 -   Real-time rendering
 -   Hot reload support
+-   Replay recording and playback
+-   Monte Carlo analysis mode
+-   Round-trip train mode
 
 ------------------------------------------------------------------------
 
@@ -174,6 +178,18 @@ Key features:
 
 This architecture ensures flexible and scalable system behavior.
 
+
+---
+
+# 🧪 Advanced Runtime Modes
+
+Additional features implemented after the core simulator:
+
+-   **Replay system (Command pattern):** record simulation commands with `--record` and replay with `--replay=<file>`.
+-   **Monte Carlo analysis:** run repeated deterministic simulations using `--monte-carlo=N` for statistical validation.
+-   **Round-trip mode:** trains automatically reverse direction at destination with `--round-trip`.
+-   **Pathfinding switch:** choose algorithm at runtime with `--pathfinding=dijkstra|astar`.
+
 ---
 
 # 🧠 Design Patterns Used
@@ -206,11 +222,20 @@ make
 
 cd module05\
 make\
-./railway_sim inputs/network.txt inputs/trains.txt
+./railway_sim examples/network_simple.txt examples/trains_simple.txt
 
 Hot reload:
 
-./railway_sim inputs/network.txt inputs/trains.txt --hot-reload
+./railway_sim examples/network_simple.txt examples/trains_simple.txt --hot-reload
+
+Replay record / replay:
+
+./railway_sim examples/network_simple.txt examples/trains_simple.txt --record
+./railway_sim examples/network_simple.txt examples/trains_simple.txt --replay=output/replay.json
+
+Monte Carlo:
+
+./railway_sim examples/network_simple.txt examples/trains_simple.txt --monte-carlo=100
 
 ------------------------------------------------------------------------
 
@@ -227,3 +252,5 @@ module05/docs/
 -   Physics simulation
 -   Design patterns
 -   Hot reload system
+-   Replay recording and playback
+-   Monte Carlo analysis mode
