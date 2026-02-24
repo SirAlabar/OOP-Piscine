@@ -6,9 +6,11 @@
 #include "io/CLI.hpp"
 #include "io/IOutputWriter.hpp"
 #include "patterns/behavioral/command/CommandManager.hpp"
-#include "rendering/graphics/SFMLRenderer.hpp"
+#include "rendering/core/IRenderer.hpp"
+#include "rendering/factory/IRendererFactory.hpp"
 #include "utils/FileSystemUtils.hpp"
 #include "utils/FileWatcher.hpp"
+#include <memory>
 
 namespace
 {
@@ -109,10 +111,19 @@ int ReplayModeHandler::run(const std::string& /*netFile*/,
     session.simulation().setCommandManager(&cmdMgr);
 
     const double maxTime = (meta.stopTime > 0.0) ? meta.stopTime : 1e9;
+
     if (session.cli().hasRender())
     {
-        SFMLRenderer renderer;
-        session.simulation().run(maxTime, true, true, &renderer);
+        std::unique_ptr<IRendererFactory> factory(createRendererFactory());
+        std::unique_ptr<IRenderer>        renderer(factory->create(session.simulation()));
+
+        if (!renderer)
+        {
+            session.output().writeError("Render mode not available: binary built without SFML.");
+            return 1;
+        }
+
+        session.simulation().run(maxTime, true, true, renderer.get());
     }
     else
     {
@@ -139,7 +150,16 @@ int HotReloadModeHandler::run(const std::string& netFile,
         false,
         [&](SimulationBundle& bundle, CommandManager* cmdMgr) -> int
         {
-            SFMLRenderer     renderer;
+            std::unique_ptr<IRendererFactory> factory(createRendererFactory());
+            std::unique_ptr<IRenderer>        renderer(factory->create(session.simulation()));
+
+            if (!renderer)
+            {
+                session.output().writeError("Render mode not available: binary built without SFML.");
+                return 1;
+            }
+
+            IRenderer*       rendererPtr   = renderer.get();
             HotReloadSupport support(session.output());
             const int        hotReloadSeed = static_cast<int>(session.simulation().getSeed());
 
@@ -157,8 +177,8 @@ int HotReloadModeHandler::run(const std::string& netFile,
                         session.simulation().setCommandManager(cmdMgr);
                     }
 
-                    renderer.shutdown();
-                    renderer.initialize(session.simulation());
+                    rendererPtr->shutdown();
+                    rendererPtr->initialize(session.simulation());
                     session.simulation().start();
                     return true;
                 };
@@ -169,7 +189,7 @@ int HotReloadModeHandler::run(const std::string& netFile,
                 {
                     session.output().writeProgress("Hot-reload: change detected in " + changedFile);
 
-                    const std::string oldNetContent = HotReloadSupport::readFile(netFile);
+                    const std::string oldNetContent   = HotReloadSupport::readFile(netFile);
                     const std::string oldTrainContent = HotReloadSupport::readFile(trainFile);
 
                     if (!support.validateFilesForReload(netFile, trainFile))
@@ -198,7 +218,7 @@ int HotReloadModeHandler::run(const std::string& netFile,
                 });
 
             watcher.start();
-            session.simulation().run(1e9, true, false, &renderer, [&watcher]() { watcher.poll(); });
+            session.simulation().run(1e9, true, false, rendererPtr, [&watcher]() { watcher.poll(); });
             watcher.stop();
             return 0;
         });
@@ -220,8 +240,16 @@ int RenderModeHandler::run(const std::string& netFile,
         false,
         [&](SimulationBundle& /*bundle*/, CommandManager* /*cmdMgr*/) -> int
         {
-            SFMLRenderer renderer;
-            session.simulation().run(1e9, true, false, &renderer);
+            std::unique_ptr<IRendererFactory> factory(createRendererFactory());
+            std::unique_ptr<IRenderer>        renderer(factory->create(session.simulation()));
+
+            if (!renderer)
+            {
+                session.output().writeError("Render mode not available: binary built without SFML.");
+                return 1;
+            }
+
+            session.simulation().run(1e9, true, false, renderer.get());
             return 0;
         });
 }

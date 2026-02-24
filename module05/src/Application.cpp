@@ -41,7 +41,7 @@ void Application::printConfiguration(const std::string& netFile,
 
     if (_cli.hasRender())
     {
-        _consoleWriter->writeConfiguration("Rendering", "enabled (SFML)");
+        _consoleWriter->writeConfiguration("Rendering", "enabled");
     }
     if (_cli.hasHotReload())
     {

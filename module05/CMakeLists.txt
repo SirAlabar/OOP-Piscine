@@ -1,55 +1,66 @@
 cmake_minimum_required(VERSION 3.14)
 project(RailwaySimulation VERSION 1.0 LANGUAGES CXX)
 
-# C++17 standard
+string(ASCII 27 Esc)
+set(R "${Esc}[0m")
+set(G "${Esc}[32m")
+set(Y "${Esc}[33m")
+set(C "${Esc}[36m")
+set(M "${Esc}[35m")
+set(B "${Esc}[34m")
+
+message("${C}=== Railway Simulation ===${R}")
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Compiler flags
-add_compile_options(-Wall -Wextra -Werror -Wpedantic -g)
+add_compile_options(-Wall -Wextra -Werror -Wpedantic)
+add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:-fdiagnostics-color=always>")
 
-# Include directories
 include_directories(include)
 
-# Collect source files (excluding main.cpp to avoid multiple main() definitions)
-file(GLOB_RECURSE LIB_SOURCES "src/*.cpp")
-list(FILTER LIB_SOURCES EXCLUDE REGEX ".*main\\.cpp$")
+# ─── Sources ─────────────────────────────────────────────────
+file(GLOB_RECURSE ALL_SOURCES "src/*.cpp")
+list(FILTER ALL_SOURCES EXCLUDE REGEX ".*main\\.cpp$")
+list(FILTER ALL_SOURCES EXCLUDE REGEX ".*/rendering/factory/.*")
 
-# SFML (optional in host, expected in Docker image)
+# ─── Optional SFML ───────────────────────────────────────────
 find_package(SFML 2.5 COMPONENTS graphics window system QUIET)
+
 if(SFML_FOUND)
-    add_compile_definitions(HAVE_SFML)
+    message("${G}SFML found — rendering enabled${R}")
+    list(APPEND ALL_SOURCES "src/rendering/factory/RendererFactory_SFML.cpp")
 else()
-    message(WARNING "SFML not found: --render mode will be unavailable on this host build")
-    list(FILTER LIB_SOURCES EXCLUDE REGEX ".*src/rendering/.*\\.cpp$")
+    message("${Y}SFML not found — headless build${R}")
+    list(FILTER ALL_SOURCES EXCLUDE REGEX ".*/rendering/.*")
+    list(APPEND ALL_SOURCES "src/rendering/factory/RendererFactory_Stub.cpp")
 endif()
 
-# Create library with core logic (shared between main executable and tests)
-add_library(RailwaySimCore ${LIB_SOURCES})
+# ─── Core library ────────────────────────────────────────────
+add_library(RailwaySimCore ${ALL_SOURCES})
+message("${B}Core library configured${R}")
 
-# Main executable
+if(SFML_FOUND)
+    target_link_libraries(RailwaySimCore sfml-graphics sfml-window sfml-system)
+endif()
+
+# ─── Main executable ─────────────────────────────────────────
 add_executable(Railway_Simulator src/main.cpp)
 target_link_libraries(Railway_Simulator RailwaySimCore)
-if(SFML_FOUND)
-    target_link_libraries(Railway_Simulator sfml-graphics sfml-window sfml-system)
+message("${B}Main executable configured${R}")
+
+# ─── Tests ───────────────────────────────────────────────────
+option(BUILD_TESTING "Build tests" ON)
+
+if(BUILD_TESTING)
+    enable_testing()
+    find_package(GTest REQUIRED)
+    file(GLOB_RECURSE TEST_SOURCES "tests/*.cpp")
+    add_executable(Railway_Simulator_tests ${TEST_SOURCES})
+    target_link_libraries(Railway_Simulator_tests RailwaySimCore GTest::GTest GTest::Main)
+    add_test(NAME UnitTests COMMAND Railway_Simulator_tests)
+    message("${M}Tests enabled${R}")
 endif()
 
-# Testing
-enable_testing()
-
-# GoogleTest
-find_package(GTest REQUIRED)
-
-# Collect test files
-file(GLOB_RECURSE TEST_SOURCES "tests/*.cpp")
-
-# Test executable
-add_executable(Railway_Simulator_tests ${TEST_SOURCES})
-target_link_libraries(Railway_Simulator_tests RailwaySimCore GTest::GTest GTest::Main)
-if(SFML_FOUND)
-    target_link_libraries(Railway_Simulator_tests sfml-graphics sfml-window sfml-system)
-endif()
-
-# Register tests with ctest
-add_test(NAME UnitTests COMMAND Railway_Simulator_tests)
+message("${C}Build system ready${R}")
