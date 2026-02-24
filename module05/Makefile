@@ -43,17 +43,18 @@ build:
 	@cmake -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) -S . -B $(BUILD_DIR) 2>&1 \
 		|| { printf "$(RED)✖  CMake configuration failed$(RESET)\n"; exit 1; }
 	@printf "$(YELLOW)  ▶  Building...$(RESET)\n"
-	@cmake --build $(BUILD_DIR) -- -j$$(nproc) 2>&1 | \
+	@set -o pipefail; cmake --build $(BUILD_DIR) -- -j$$(nproc) 2>&1 | \
 		while IFS= read -r line; do \
-			if echo "$$line" | grep -qE "^\[[ 0-9]+%\]"; then \
+			if echo "$$line" | grep -qE "error:"; then \
+				printf "\n$(RED)%s$(RESET)\n" "$$line"; \
+			elif echo "$$line" | grep -qE "^\[[ 0-9]+%\]"; then \
 				PCT=$$(echo "$$line" | grep -oE "[0-9]+%"); \
-				FILE=$$(echo "$$line" | sed "s/.*Building CXX object //;s/.*Linking.*//;s/\.cpp\.o.*/.cpp/"); \
-				printf "\r\033[K\033[33m  ▶  [%s] %s\033[0m" "$$PCT" "$$FILE"; \
+				FILE=$$(echo "$$line" | sed "s/.*Building CXX object //;s/\.cpp\.o.*/.cpp/"); \
+				printf "\r\033[K$(YELLOW)  ▶  [%s] %s$(RESET)" "$$PCT" "$$FILE"; \
 			fi; \
 		done; \
 		printf "\n"; \
-		test "$${PIPESTATUS[0]}" -eq 0 \
-		|| { printf "$(RED)✖  Build failed$(RESET)\n"; exit 1; }
+		test "$${PIPESTATUS[0]}" -eq 0 || { printf "$(RED)✖  Build failed$(RESET)\n"; exit 1; }
 	@printf "$(GREEN)  ✔  Build complete$(RESET)\n"
 
 debug:
@@ -85,7 +86,8 @@ run: build
 valgrind: debug
 	@printf "$(YELLOW)Running valgrind on main executable...$(RESET)\n"
 	@valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes \
-		--verbose --log-file=valgrind-main.log ./$(BUILD_DIR)/$(NAME)
+		--verbose --log-file=valgrind-main.log \
+		./$(BUILD_DIR)/$(NAME) $(NETWORK_FILE) $(TRAIN_FILE)
 	@printf "$(GREEN)Valgrind log saved to valgrind-main.log$(RESET)\n"
 
 valgrind-test: debug

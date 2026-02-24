@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <map>
+#include <memory>
 #include <functional>
 #include "utils/Time.hpp"
 #include "utils/SeededRNG.hpp"
@@ -42,42 +43,53 @@ using TrainList = std::vector<Train*>;
 class SimulationManager : public ICommandRecorder, public IReplayTarget
 {
 private:
-    EventDispatcher       _eventDispatcher;
-    EventScheduler        _eventScheduler;
-
+    EventDispatcher        _eventDispatcher;
+    EventScheduler         _eventScheduler;
     SeededRNG              _rng;
     NetworkServicesFactory _networkServicesFactory;
-    ObserverManager         _observerManager;
+    ObserverManager        _observerManager;
 
-    Graph*                _network;
-    TrainList             _trains;
-    ICollisionAvoidance*  _collisionSystem;
-    bool                  _ownsCollision;
-    TrafficController*    _trafficController;
-    SimulationContext*    _context;
-    EventFactory*         _eventFactory;
-    StatsCollector*       _statsCollector;
+    // Non-owning pointer to whichever collision system is active.
+    // _ownedCollision is non-null only when SimulationManager created it.
+    std::unique_ptr<ICollisionAvoidance> _ownedCollision;
+    ICollisionAvoidance*                 _collisionSystem;
 
-    double       _currentTime;
-    double       _timestep;
-    double       _simulationSpeed;
-    bool         _running;
-    bool         _roundTripEnabled;
-    double       _lastEventGenerationTime;
+    // Raw aliases used by sub-services via T*& references.
+    // Ownership is held by the unique_ptrs below.
+    TrafficController* _trafficController;
+    SimulationContext* _context;
+    EventFactory*      _eventFactory;
+
+    // Owning storage for network-bound services.
+    std::unique_ptr<TrafficController> _ownedTrafficController;
+    std::unique_ptr<SimulationContext> _ownedContext;
+    std::unique_ptr<EventFactory>      _ownedEventFactory;
+
+    Graph*    _network;
+    TrainList _trains;
+
+    double _currentTime;
+    double _timestep;
+    double _simulationSpeed;
+    bool   _running;
+    bool   _roundTripEnabled;
+    double _lastEventGenerationTime;
 
     ISimulationOutput*                  _simulationWriter;
+    StatsCollector*                     _statsCollector;
+    CommandManager*                     _commandManager;
+
     std::map<Train*, FileOutputWriter*> _outputWriters;
     std::map<Train*, ITrainState*>      _previousStates;
+
     int _lastSnapshotMinute;
     int _lastDashboardMinute;
-
-    CommandManager* _commandManager;
 
     TrainLifecycleService _lifecycle;
     EventPipeline         _eventPipeline;
     SimulationReporting   _reporting;
 
-    void destroyNetworkServices();
+    void resetNetworkServices();
     void tick(bool replayMode, bool advanceTime);
     void cleanupOutputWriters();
     void refreshSimulationState();
@@ -87,7 +99,7 @@ private:
 
 public:
     SimulationManager();
-    SimulationManager(ICollisionAvoidance* collision);
+    explicit SimulationManager(ICollisionAvoidance* collision);
     ~SimulationManager();
 
     SimulationManager(const SimulationManager&)            = delete;

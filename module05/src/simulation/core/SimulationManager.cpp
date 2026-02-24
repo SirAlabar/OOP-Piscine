@@ -24,23 +24,24 @@
 #include <algorithm>
 
 SimulationManager::SimulationManager()
-    : SimulationManager(new CollisionAvoidance())
+    : SimulationManager(nullptr)
 {
-    _ownsCollision = true;
+    _ownedCollision  = std::unique_ptr<ICollisionAvoidance>(new CollisionAvoidance());
+    _collisionSystem = _ownedCollision.get();
+    _networkServicesFactory = NetworkServicesFactory(_collisionSystem, &_trains);
 }
 
 SimulationManager::SimulationManager(ICollisionAvoidance* collision)
     : _eventScheduler(_eventDispatcher),
       _rng(0),
-      _networkServicesFactory(nullptr, &_trains),
+      _networkServicesFactory(collision, &_trains),
       _observerManager(_eventDispatcher),
-      _network(nullptr),
+      _ownedCollision(nullptr),
       _collisionSystem(collision),
-      _ownsCollision(false),
       _trafficController(nullptr),
       _context(nullptr),
       _eventFactory(nullptr),
-      _statsCollector(nullptr),
+      _network(nullptr),
       _currentTime(0.0),
       _timestep(SimConfig::BASE_TIMESTEP_SECONDS),
       _simulationSpeed(SimConfig::DEFAULT_SPEED),
@@ -48,9 +49,10 @@ SimulationManager::SimulationManager(ICollisionAvoidance* collision)
       _roundTripEnabled(false),
       _lastEventGenerationTime(-60.0),
       _simulationWriter(nullptr),
+      _statsCollector(nullptr),
+      _commandManager(nullptr),
       _lastSnapshotMinute(-1),
       _lastDashboardMinute(-1),
-      _commandManager(nullptr),
       _lifecycle(
           _trains, _context, _trafficController,
           _currentTime, _timestep, _roundTripEnabled,
@@ -64,21 +66,11 @@ SimulationManager::SimulationManager(ICollisionAvoidance* collision)
           _eventScheduler, _currentTime, _previousStates,
           _lastSnapshotMinute, _lastDashboardMinute)
 {
-    _networkServicesFactory = NetworkServicesFactory(_collisionSystem, &_trains);
-
     _lifecycle.setCommandRecorder(this);
     _eventPipeline.setCommandRecorder(this);
 }
 
-SimulationManager::~SimulationManager()
-{
-    cleanupOutputWriters();
-    destroyNetworkServices();
-    if (_ownsCollision)
-    {
-        delete _collisionSystem;
-    }
-}
+SimulationManager::~SimulationManager() = default;
 
 void SimulationManager::record(ICommand* cmd)
 {
@@ -97,29 +89,33 @@ void SimulationManager::record(ICommand* cmd)
     }
 }
 
-void SimulationManager::destroyNetworkServices()
+void SimulationManager::resetNetworkServices()
 {
-    delete _trafficController;
+    _ownedTrafficController.reset();
+    _ownedContext.reset();
+    _ownedEventFactory.reset();
+
     _trafficController = nullptr;
-
-    delete _context;
-    _context = nullptr;
-
-    delete _eventFactory;
-    _eventFactory = nullptr;
+    _context           = nullptr;
+    _eventFactory      = nullptr;
 }
 
 void SimulationManager::setNetwork(Graph* network)
 {
     _network = network;
 
-    destroyNetworkServices();
+    resetNetworkServices();
     _rng.reseed(_rng.getSeed());
 
     NetworkServices svc = _networkServicesFactory.build(_network, _rng, &_eventScheduler);
-    _trafficController  = svc.trafficController;
-    _context            = svc.context;
-    _eventFactory       = svc.eventFactory;
+
+    _ownedTrafficController.reset(svc.trafficController);
+    _ownedContext.reset(svc.context);
+    _ownedEventFactory.reset(svc.eventFactory);
+
+    _trafficController = _ownedTrafficController.get();
+    _context           = _ownedContext.get();
+    _eventFactory      = _ownedEventFactory.get();
 }
 
 void SimulationManager::addTrain(Train* train)
@@ -151,8 +147,9 @@ void SimulationManager::setEventSeed(unsigned int seed)
 
     if (_network)
     {
-        delete _eventFactory;
-        _eventFactory = _networkServicesFactory.buildEventFactory(_network, _rng, &_eventScheduler);
+        _ownedEventFactory.reset(
+            _networkServicesFactory.buildEventFactory(_network, _rng, &_eventScheduler));
+        _eventFactory = _ownedEventFactory.get();
     }
 }
 
@@ -444,7 +441,7 @@ void SimulationManager::reset()
     _eventScheduler.clear();
     _observerManager.clear();
 
-    destroyNetworkServices();
+    resetNetworkServices();
 
     _network = nullptr;
 }

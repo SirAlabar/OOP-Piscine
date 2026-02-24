@@ -1,18 +1,17 @@
-# 🎨 DESIGN PATTERNS MAPPING
-*Simple, Clean, No BS*
+# DESIGN PATTERNS MAPPING
 
 ---
 
 ## QUICK REFERENCE
 
-| Pattern | What It Does | Where We Use It |
-|---------|--------------|-----------------|
+| Pattern     | What It Does                          | Where We Use It              |
+|-------------|---------------------------------------|------------------------------|
 | **Factory** | Creates objects without specifying exact class | TrainFactory, EventFactory |
-| **Observer** | One object notifies many others | EventManager → Trains/Rails |
-| **Strategy** | Swap algorithms at runtime | Pathfinding (Dijkstra/A*) |
-| **State** | Object behavior changes with state | Train states (Accelerating/Braking/etc) |
-| **Command** | Actions as objects (undo/redo/replay) | User commands, hot-reload |
-| **Singleton** | One instance only | SimulationManager |
+| **Observer**| One object notifies many others       | EventDispatcher -> Trains/Rails |
+| **Strategy**| Swap algorithms at runtime            | Pathfinding (Dijkstra/A*)    |
+| **State**   | Object behavior changes with state    | Train states (Accelerating/Braking/etc) |
+| **Command** | Actions as objects (undo/redo/replay) | User commands, hot-reload    |
+| **Builder** | Step-by-step object construction      | SimulationBuilder            |
 
 ---
 
@@ -23,17 +22,17 @@
 **Solution:** Factory class handles creation + validation.
 
 ```
-TrainFactory::create(TrainConfig) → Train*
-  ✓ Validates mass > 0
-  ✓ Checks stations exist in network
-  ✓ Verifies path exists
-  ✓ Assigns unique ID
-  ✓ Returns ready-to-use Train
+TrainFactory::create(TrainConfig) -> Train*
+  [+] Validates mass > 0
+  [+] Checks stations exist in network
+  [+] Verifies path exists
+  [+] Assigns unique ID
+  [+] Returns ready-to-use Train
 
-EventFactory::createRandom() → Event*
-  ✓ Picks random event type
-  ✓ Picks random location
-  ✓ Sets duration/effects
+EventFactory::createRandom() -> Event*
+  [+] Picks random event type
+  [+] Picks random location
+  [+] Sets duration/effects
 ```
 
 **Classes:**
@@ -54,30 +53,30 @@ EventFactory::createRandom() → Event*
 
 **Problem:** Events affect multiple trains/rails. How do they all get notified?
 
-**Solution:** EventManager keeps list of observers, notifies them all.
+**Solution:** EventDispatcher keeps list of observers, notifies them all.
 
 ```
-Event happens → EventManager.notify(event) → All observers get onNotify(event)
+Event happens -> EventDispatcher.notify(event) -> All observers get onNotify(event)
 
 Observers:
-- Train: adjusts speed if TrackMaintenance affects current rail
-- Rail: reduces speed limit if TrackMaintenance event
-- Node: sets signal failure flag
+- Train : adjusts speed if TrackMaintenance affects current rail
+- Rail  : reduces speed limit if TrackMaintenance event
+- Node  : sets signal failure flag
 ```
 
 **How It Works:**
-1. Train registers: `EventManager.attach(train)`
-2. Event occurs: `EventManager.notify(event)`
+1. Train registers: `EventDispatcher.attach(train)`
+2. Event occurs: `EventDispatcher.notify(event)`
 3. Each observer checks: "Does this affect me?"
 4. If yes, apply effect
 
 **Classes:**
 - `IObserver` interface - has `onNotify(event)` method
-- `EventManager` - keeps list, calls notify
+- `EventDispatcher` - keeps list, calls notify
 - `Train/Rail/Node` - implement IObserver
 
 **Why This Helps:**
-- EventManager doesn't need to know about Trains
+- EventDispatcher doesn't need to know about Trains
 - Easy to add new observers (TrafficLight, WeatherStation)
 - Decoupled: events don't know who's listening
 
@@ -93,9 +92,9 @@ Observers:
 
 ```
 PathFinder
-  └─ uses IPathfindingStrategy
-      ├─ DijkstraStrategy (mandatory)
-      └─ AStarStrategy (bonus)
+  +-- uses IPathfindingStrategy
+      |-- DijkstraStrategy (mandatory)
+      +-- AStarStrategy (bonus)
 
 pathFinder.setStrategy(new DijkstraStrategy());
 path = pathFinder.findPath(start, end);
@@ -126,29 +125,23 @@ pathFinder.setStrategy(new AStarStrategy());
 **Solution:** Each state is a class with its own `update()` logic.
 
 ```
-States:
-┌─────────┐  departure   ┌──────────────┐  reached  ┌──────────┐
-│  Idle   │─────────────→│ Accelerating │──────────→│ Cruising │
-└─────────┘              └──────┬───────┘           └────┬─────┘
-                                │                        │
-                         rail   │                        │ need brake
-                       occupied │                        │
-                                ▼                        ▼
-                         ┌──────────┐            ┌──────────┐
-                         │ Waiting  │            │ Braking  │
-                         └──────────┘            └────┬─────┘
-                                                      │ v=0
-                                                      ▼
-                                               ┌──────────┐
-                                               │ Stopped  │
-                                               └──────────┘
+[ Idle ] --departure--> [ Accelerating ] --reached speed--> [ Cruising ]
+                               |                                  |
+                          rail occupied                      need brake
+                               |                                  |
+                               v                                  v
+                          [ Waiting ]                        [ Braking ]
+                                                                  |
+                                                                 v=0
+                                                                  v
+                                                            [ Stopped ]
 
 Each state handles its own physics/logic:
-- AcceleratingState: apply max force
-- CruisingState: maintain speed limit
-- BrakingState: apply brake force
-- WaitingState: gentle stop if blocked
-- StoppedState: wait for duration
+- AcceleratingState : apply max force
+- CruisingState     : maintain speed limit
+- BrakingState      : apply brake force
+- WaitingState      : gentle stop if blocked
+- StoppedState      : wait for duration
 ```
 
 **Classes:**
@@ -173,59 +166,63 @@ Each state handles its own physics/logic:
 
 ```
 Commands:
-- StartSimulationCommand
-- PauseSimulationCommand
-- AddTrainCommand (undoable)
-- RemoveTrainCommand (undoable)
-- ModifyRailCommand (undoable)
-- TriggerEventCommand
+- TrainDepartureCommand
+- TrainStateChangeCommand
+- TrainAdvanceRailCommand
+- SimEventCommand
+- ReloadCommand
 
-commandManager.execute(new AddTrainCommand(config));
-commandManager.undo();  // Train removed
-commandManager.redo();  // Train re-added
+commandManager.execute(new TrainDepartureCommand(...));
+commandManager.undo();
+commandManager.redo();
 
 For replay:
 commandManager.record(time, command);
-commandManager.saveReplay("replay.json");
+commandManager.saveToFile("replay.json");
 ```
 
 **Classes:**
-- `ICommand` interface - has `execute()`, `undo()`
+- `ICommand` interface - has `execute()`, `undo()`, `applyReplay()`
 - Concrete commands for each action
-- `CommandManager` - history stack, undo/redo
+- `CommandManager` - history stack, undo/redo, file save/load
 
 **Why This Helps:**
-- User actions can be undone
-- Commands can be saved for replay
-- Hot-reload = apply ModifyRailCommand at runtime
+- Actions can be saved for replay
+- Hot-reload recorded as ReloadCommand
+- Decoupled from SimulationManager
 
 **SOLID:** Single Responsibility (each command = one action)
 
 ---
 
-## 6. SINGLETON PATTERN
+## 6. BUILDER PATTERN
 
-**Problem:** SimulationManager should be single coordination point.
+**Problem:** SimulationManager requires a fully configured network, trains, writers,
+and seed before it can run. Constructing all of this inline in Application
+would be a god-function.
 
-**Solution:** Private constructor, static getInstance().
+**Solution:** SimulationBuilder assembles the simulation step by step and returns
+a ready-to-use SimulationBundle.
 
-```cpp
-class SimulationManager {
-    static SimulationManager* instance;
-    SimulationManager() {}  // private
-public:
-    static SimulationManager& getInstance() {
-        if (!instance) instance = new SimulationManager();
-        return *instance;
-    }
-};
+```
+SimulationBuilder::build(netFile, trainFile) -> SimulationBundle
+  [+] Parses network file  -> Graph
+  [+] Parses train file    -> TrainConfigs
+  [+] Validates each train against the network
+  [+] Creates FileOutputWriters per train
+  [+] Returns SimulationBundle { graph, trains, writers }
 ```
 
 **Classes:**
-- `SimulationManager` (singleton)
-- `EventManager` (singleton)
+- `SimulationBuilder` - orchestrates parsing, validation, and wiring
+- `SimulationBundle`  - plain data struct: output of the build step
 
-**Warning:** Singletons make testing harder. Use sparingly.
+**Why This Helps:**
+- Application never calls `new` directly for simulation objects
+- SimulationManager receives a fully valid bundle -- no partial state
+- Easy to test builder in isolation
+
+**SOLID:** Single Responsibility (building is separate from running)
 
 ---
 
@@ -234,17 +231,17 @@ public:
 ```
 STARTUP:
 1. Factory creates Graph, Trains from files
-2. Singleton SimulationManager initialized
-3. Trains register with EventManager (Observer)
+2. SimulationBuilder wires graph, trains, writers into SimulationBundle
+3. Trains register with EventDispatcher (Observer)
 
 SIMULATION LOOP:
 1. Each Train updates (State pattern)
 2. Train finds path (Strategy pattern)
 3. EventFactory creates random events (Factory)
-4. EventManager notifies observers (Observer)
+4. EventDispatcher notifies observers (Observer)
 
 USER ACTIONS:
-1. User types command
+1. User triggers action
 2. CommandManager executes (Command)
 3. Command recorded for replay
 ```
@@ -254,8 +251,8 @@ USER ACTIONS:
 1. TrainFactory creates train (Factory)
 2. Train finds path using DijkstraStrategy (Strategy)
 3. Train starts in IdleState (State)
-4. At departure time → AcceleratingState (State)
-5. Event occurs → EventManager notifies train (Observer)
+4. At departure time -> AcceleratingState (State)
+5. Event occurs -> EventDispatcher notifies train (Observer)
 6. Train adjusts behavior based on event
 ```
 
@@ -263,13 +260,13 @@ USER ACTIONS:
 
 ## 8. SOLID PRINCIPLES SUMMARY
 
-| Principle | How We Apply It |
-|-----------|----------------|
+| Principle               | How We Apply It |
+|-------------------------|----------------|
 | **Single Responsibility** | Each state class handles one state. Each command does one action. |
-| **Open/Closed** | Add new states/strategies/commands without changing existing code. |
-| **Liskov Substitution** | All states work through ITrainState. All strategies through IPathfindingStrategy. |
-| **Interface Segregation** | IObserver has 1 method. ICommand has 4 methods. Lean interfaces. |
-| **Dependency Inversion** | Train depends on ITrainState, not AcceleratingState. PathFinder depends on IPathfindingStrategy, not Dijkstra. |
+| **Open/Closed**           | Add new states/strategies/commands without changing existing code. |
+| **Liskov Substitution**   | All states work through ITrainState. All strategies through IPathfindingStrategy. |
+| **Interface Segregation** | IObserver has 1 method. ICommand has focused methods. Lean interfaces. |
+| **Dependency Inversion**  | Train depends on ITrainState, not AcceleratingState. PathFinder depends on IPathfindingStrategy, not Dijkstra. |
 
 ---
 
@@ -277,11 +274,11 @@ USER ACTIONS:
 
 ### Design Patterns (Need 3, We Have 6):
 - [x] Factory Pattern (TrainFactory, EventFactory)
-- [x] Observer Pattern (EventManager)
+- [x] Observer Pattern (EventDispatcher)
 - [x] Strategy Pattern (PathFinding)
 - [x] State Pattern (Train states)
-- [x] Command Pattern (User actions)
-- [x] Singleton Pattern (SimulationManager)
+- [x] Command Pattern (CommandManager)
+- [x] Builder Pattern (SimulationBuilder)
 
 ### SOLID Principles:
 - [x] Single Responsibility - each class has one job
@@ -291,10 +288,8 @@ USER ACTIONS:
 - [x] Dependency Inversion - depend on abstractions
 
 ### Questions They'll Ask:
-- "Why did you choose Factory?" → **To centralize creation and validation**
-- "Why Observer over direct calls?" → **Decoupling, easy to add observers**
-- "Why State over if/else?" → **Cleaner code, easier to extend**
-- "Why Strategy?" → **Can swap algorithms, benchmark different approaches**
-- "Show me SOLID in your code?" → **Point to specific examples above**
-
-**We're ready!**
+- "Why did you choose Factory?"   -> **To centralize creation and validation**
+- "Why Observer over direct calls?" -> **Decoupling, easy to add observers**
+- "Why State over if/else?"       -> **Cleaner code, easier to extend**
+- "Why Strategy?"                 -> **Can swap algorithms, benchmark different approaches**
+- "Show me SOLID in your code?"   -> **Point to specific examples above**
