@@ -34,7 +34,7 @@ if(SFML_FOUND)
 else()
     message("${Y}SFML not found — headless build${R}")
     list(FILTER ALL_SOURCES EXCLUDE REGEX ".*/rendering/.*")
-    list(APPEND ALL_SOURCES "src/rendering/factory/RendererFactory_Stub.cpp")
+    list(APPEND ALL_SOURCES "src/rendering/factory/RendererFactory_NoSFML.cpp")
 endif()
 
 # ─── Core library ────────────────────────────────────────────

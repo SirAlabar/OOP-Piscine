@@ -62,9 +62,12 @@ public:
           double maxAccelForce, double maxBrakeForce,
           const std::string& departureStation, const std::string& arrivalStation,
           const Time& departureTime, const Time& stopDuration);
-    Train(const Train& other);
-    Train& operator=(const Train& other);
     ~Train() = default;
+
+    Train(const Train&)            = delete;
+    Train& operator=(const Train&) = delete;
+    Train(Train&&)                  = delete;
+    Train& operator=(Train&&)       = delete;
 
     // Identity
     std::string getName()     const;

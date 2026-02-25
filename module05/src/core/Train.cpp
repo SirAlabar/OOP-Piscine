@@ -36,50 +36,6 @@ Train::Train(const std::string& name, double mass, double frictionCoef,
 {
 }
 
-// Copy constructor
-Train::Train(const Train& other)
-	: _name(other._name), _id(other._id),
-	  _finished(other._finished),
-	  _mass(other._mass), _frictionCoef(other._frictionCoef),
-	  _maxAccelForce(other._maxAccelForce),
-	  _maxBrakeForce(other._maxBrakeForce),
-	  _velocity(other._velocity),
-	  _position(other._position),
-	  _departureStation(other._departureStation),
-	  _arrivalStation(other._arrivalStation),
-	  _departureTime(other._departureTime),
-	  _stopDuration(other._stopDuration),
-	  _path(other._path),
-	  _currentRailIndex(other._currentRailIndex),
-	  _currentState(other._currentState)
-{
-}
-
-// Assignment operator
-Train& Train::operator=(const Train& other)
-{
-	if (this != &other)
-	{
-		_name = other._name;
-		_id = other._id;
-		_finished = other._finished;
-		_mass = other._mass;
-		_frictionCoef = other._frictionCoef;
-		_maxAccelForce = other._maxAccelForce;
-		_maxBrakeForce = other._maxBrakeForce;
-		_velocity = other._velocity;
-		_position = other._position;
-		_departureStation = other._departureStation;
-		_arrivalStation = other._arrivalStation;
-		_departureTime = other._departureTime;
-		_stopDuration = other._stopDuration;
-		_path = other._path;
-		_currentRailIndex = other._currentRailIndex;
-		_currentState = other._currentState;
-	}
-	return *this;
-}
-
 // Identity getters
 std::string Train::getName() const
 {

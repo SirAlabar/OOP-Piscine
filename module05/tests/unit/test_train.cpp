@@ -57,35 +57,7 @@ TEST_F(TrainTest, SequentialIDGeneration)
 	EXPECT_EQ(t3.getID(), 3);
 }
 
-TEST_F(TrainTest, CopyConstructor)
-{
-	Time depTime("14h10");
-	Time stopDur("00h05");
-	Train original("Express1", 80.0, 0.005, 356.0, 500.0, "CityA", "CityB", depTime, stopDur);
-	Train copy(original);
-	
-	EXPECT_EQ(copy.getName(), "Express1");
-	EXPECT_EQ(copy.getID(), 1);
-	EXPECT_EQ(copy.getMass(), 80.0);
-	EXPECT_EQ(copy.getDepartureStation(), "CityA");
-	EXPECT_EQ(copy.getDepartureTime().toString(), "14h10");
-}
 
-TEST_F(TrainTest, AssignmentOperator)
-{
-	Time depTime1("14h10");
-	Time depTime2("15h20");
-	Time stopDur("00h05");
-	
-	Train t1("Train1", 80.0, 0.005, 356.0, 500.0, "A", "B", depTime1, stopDur);
-	Train t2("Train2", 60.0, 0.004, 400.0, 450.0, "C", "D", depTime2, stopDur);
-	
-	t2 = t1;
-	EXPECT_EQ(t2.getName(), "Train1");
-	EXPECT_EQ(t2.getMass(), 80.0);
-	EXPECT_EQ(t2.getDepartureStation(), "A");
-	EXPECT_EQ(t2.getDepartureTime().toString(), "14h10");
-}
 
 TEST_F(TrainTest, VelocityGetterSetter)
 {
