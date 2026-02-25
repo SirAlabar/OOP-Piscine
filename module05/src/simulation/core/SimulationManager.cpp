@@ -91,13 +91,9 @@ void SimulationManager::record(ICommand* cmd)
 
 void SimulationManager::resetNetworkServices()
 {
-    _ownedTrafficController.reset();
-    _ownedContext.reset();
-    _ownedEventFactory.reset();
-
-    _trafficController = nullptr;
-    _context           = nullptr;
-    _eventFactory      = nullptr;
+    _trafficController.reset();
+    _context.reset();
+    _eventFactory.reset();
 }
 
 void SimulationManager::setNetwork(Graph* network)
@@ -109,13 +105,9 @@ void SimulationManager::setNetwork(Graph* network)
 
     NetworkServices svc = _networkServicesFactory.build(_network, _rng, &_eventScheduler);
 
-    _ownedTrafficController.reset(svc.trafficController);
-    _ownedContext.reset(svc.context);
-    _ownedEventFactory.reset(svc.eventFactory);
-
-    _trafficController = _ownedTrafficController.get();
-    _context           = _ownedContext.get();
-    _eventFactory      = _ownedEventFactory.get();
+    _trafficController.reset(svc.trafficController);
+    _context.reset(svc.context);
+    _eventFactory.reset(svc.eventFactory);
 }
 
 void SimulationManager::addTrain(Train* train)
@@ -147,9 +139,8 @@ void SimulationManager::setEventSeed(unsigned int seed)
 
     if (_network)
     {
-        _ownedEventFactory.reset(
+        _eventFactory.reset(
             _networkServicesFactory.buildEventFactory(_network, _rng, &_eventScheduler));
-        _eventFactory = _ownedEventFactory.get();
     }
 }
 
@@ -422,7 +413,7 @@ Train* SimulationManager::findTrain(const std::string& name) const
 
 SimulationContext* SimulationManager::getContext() const
 {
-    return _context;
+    return _context.get();
 }
 
 void SimulationManager::reset()

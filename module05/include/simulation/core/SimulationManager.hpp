@@ -36,7 +36,8 @@ class ITrainState;
 using TrainList = std::vector<Train*>;
 
 // Thin facade and composition root.
-// Owns simulation data and wires three sub-services:
+// Owns all simulation services via unique_ptr — no raw owning pointers.
+// Wires three sub-services:
 //   TrainLifecycleService — departures, state transitions, physics
 //   EventPipeline         — event scheduling, activation, expiration
 //   SimulationReporting   — snapshot files, console dashboard
@@ -49,21 +50,14 @@ private:
     NetworkServicesFactory _networkServicesFactory;
     ObserverManager        _observerManager;
 
-    // Non-owning pointer to whichever collision system is active.
-    // _ownedCollision is non-null only when SimulationManager created it.
+    // Collision: owned when created internally, non-owning when injected.
     std::unique_ptr<ICollisionAvoidance> _ownedCollision;
     ICollisionAvoidance*                 _collisionSystem;
 
-    // Raw aliases used by sub-services via T*& references.
-    // Ownership is held by the unique_ptrs below.
-    TrafficController* _trafficController;
-    SimulationContext* _context;
-    EventFactory*      _eventFactory;
-
-    // Owning storage for network-bound services.
-    std::unique_ptr<TrafficController> _ownedTrafficController;
-    std::unique_ptr<SimulationContext> _ownedContext;
-    std::unique_ptr<EventFactory>      _ownedEventFactory;
+    // Network-bound services: owned here, referenced by sub-services.
+    std::unique_ptr<TrafficController> _trafficController;
+    std::unique_ptr<SimulationContext> _context;
+    std::unique_ptr<EventFactory>      _eventFactory;
 
     Graph*    _network;
     TrainList _trains;

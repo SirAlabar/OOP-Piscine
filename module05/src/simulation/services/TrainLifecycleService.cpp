@@ -12,13 +12,13 @@
 #include "core/Train.hpp"
 
 TrainLifecycleService::TrainLifecycleService(
-    std::vector<Train*>& trains,
-    SimulationContext*& context,
-    TrafficController*& trafficCtrl,
-    double&             currentTime,
-    double&             timestep,
-    bool&               roundTripEnabled,
-    EventScheduler&     eventScheduler)
+    std::vector<Train*>&                    trains,
+    std::unique_ptr<SimulationContext>&     context,
+    std::unique_ptr<TrafficController>&     trafficCtrl,
+    double&                                 currentTime,
+    double&                                 timestep,
+    bool&                                   roundTripEnabled,
+    EventScheduler&                         eventScheduler)
     : _trains(trains),
       _context(context),
       _trafficCtrl(trafficCtrl),
@@ -109,7 +109,7 @@ void TrainLifecycleService::handleStateTransitions()
 
         std::string  prevStateName = train->getCurrentState()->getName();
         ITrainState* newState      =
-            train->getCurrentState()->checkTransition(train, _context);
+            train->getCurrentState()->checkTransition(train, _context.get());
 
         if (!newState)
         {
@@ -183,10 +183,10 @@ void TrainLifecycleService::updateTrainStates(double dt)
             }
         }
 
-        MovementSystem::checkSignalFailures(train, _context, activeEvents);
+        MovementSystem::checkSignalFailures(train, _context.get(), activeEvents);
 
         std::size_t prevRailIndex = train->getCurrentRailIndex();
-        MovementSystem::resolveProgress(train, _context, activeEvents);
+        MovementSystem::resolveProgress(train, _context.get(), activeEvents);
         std::size_t newRailIndex = train->getCurrentRailIndex();
 
         if (newRailIndex != prevRailIndex && _recorder)

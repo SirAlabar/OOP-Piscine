@@ -9,15 +9,15 @@
 #include "utils/Time.hpp"
 
 SimulationReporting::SimulationReporting(
-    ISimulationOutput*& simulationWriter,
-    std::map<Train*, FileOutputWriter*>& outputWriters,
-    std::vector<Train*>&                 trains,
-    SimulationContext*&                  context,
-    EventScheduler&                      eventScheduler,
-    double&                              currentTime,
-    std::map<Train*, ITrainState*>&      previousStates,
-    int&                lastSnapshotMinute,
-    int&                lastDashboardMinute)
+    ISimulationOutput*&                     simulationWriter,
+    std::map<Train*, FileOutputWriter*>&    outputWriters,
+    std::vector<Train*>&                    trains,
+    std::unique_ptr<SimulationContext>&     context,
+    EventScheduler&                         eventScheduler,
+    double&                                 currentTime,
+    std::map<Train*, ITrainState*>&         previousStates,
+    int&                                    lastSnapshotMinute,
+    int&                                    lastDashboardMinute)
     : _simulationWriter(simulationWriter),
       _outputWriters(outputWriters),
       _trains(trains),

@@ -14,15 +14,15 @@
 #include <map>
 
 EventPipeline::EventPipeline(
-    EventFactory*&      eventFactory,
-    EventScheduler&     eventScheduler,
-    std::vector<Train*>&                 trains,
-    SimulationContext*&                  context,
-    ISimulationOutput*&                  simulationWriter,
-    std::map<Train*, FileOutputWriter*>& outputWriters,
-    StatsCollector*&    statsCollector,
-    double&             currentTime,
-    double&             lastEventGenerationTime)
+    std::unique_ptr<EventFactory>&           eventFactory,
+    EventScheduler&                          eventScheduler,
+    std::vector<Train*>&                     trains,
+    std::unique_ptr<SimulationContext>&      context,
+    ISimulationOutput*&                      simulationWriter,
+    std::map<Train*, FileOutputWriter*>&     outputWriters,
+    StatsCollector*&                         statsCollector,
+    double&                                  currentTime,
+    double&                                  lastEventGenerationTime)
     : _eventFactory(eventFactory),
       _eventScheduler(eventScheduler),
       _trains(trains),
@@ -41,8 +41,6 @@ void EventPipeline::setCommandRecorder(ICommandRecorder* recorder)
     _recorder = recorder;
 }
 
-
-
 void EventPipeline::update()
 {
     if (!_eventFactory)
@@ -52,8 +50,6 @@ void EventPipeline::update()
 
     Time currentTimeFormatted = Time::fromSeconds(_currentTime);
 
-    // --- Snapshot pre-update active events (type counts) ---
-    // We need counts, not pointers, because update() may delete expired events.
     const std::vector<Event*>& previousActive = _eventScheduler.getActiveEvents();
     std::map<std::string, int> preCounts;
     for (Event* e : previousActive)
@@ -61,21 +57,17 @@ void EventPipeline::update()
         preCounts[Event::typeToString(e->getType())]++;
     }
 
-    // Remember which events were active before, to detect newly activated ones.
     std::vector<Event*> prevActiveSnapshot = previousActive;
 
-    // --- Advance scheduler ---
     _eventScheduler.update(currentTimeFormatted);
     const std::vector<Event*>& currentActive = _eventScheduler.getActiveEvents();
 
-    // --- Post-update type counts (for expiration detection) ---
     std::map<std::string, int> postCounts;
     for (Event* e : currentActive)
     {
         postCounts[Event::typeToString(e->getType())]++;
     }
 
-    // --- Detect and handle newly activated events ---
     for (Event* event : currentActive)
     {
         bool isNew = true;
@@ -94,10 +86,8 @@ void EventPipeline::update()
         }
     }
 
-    // --- Detect and notify ended events ---
     notifyEndedEvents(preCounts, postCounts);
 
-    // --- Periodic event generation (every 60 simulated seconds) ---
     double timeSinceLastGeneration = _currentTime - _lastEventGenerationTime;
     if (timeSinceLastGeneration >= SimConfig::SECONDS_PER_MINUTE)
     {
@@ -135,9 +125,7 @@ void EventPipeline::notifyNewEvent(Event* event)
     if (_simulationWriter && _context && _context->hasAnyActiveTrain())
     {
         Time t = Time::fromSeconds(_currentTime);
-
-        _simulationWriter->writeEventActivated(t, eventTypeStr,
-                                               event->getDescription());
+        _simulationWriter->writeEventActivated(t, eventTypeStr, event->getDescription());
     }
 }
 
@@ -171,8 +159,7 @@ void EventPipeline::notifyEndedEvents(
     }
 }
 
-void EventPipeline::logEventForAffectedTrains(Event* event,
-                                               const std::string& action)
+void EventPipeline::logEventForAffectedTrains(Event* event, const std::string& action)
 {
     if (!event)
     {
