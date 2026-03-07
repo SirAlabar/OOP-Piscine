@@ -1,16 +1,14 @@
 services:
   railway:
     build: .
+    environment:
+      - DISPLAY=${DISPLAY}
     volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix
       - ./examples:/app/examples
       - ./output:/app/output
-      - build_volume:/app/build
     stdin_open: true
     tty: true
-
-volumes:
-  build_volume:
-
 
 
 

@@ -111,6 +111,8 @@ re: fclean all
 ensure-output:
 	@mkdir -p $(OUTPUT_DIR)
 
+#docker compose run railway examples/network_render.txt examples/trains_complex.txt --render
+
 docker-build: ensure-output
 	@printf "$(YELLOW)Building Docker image...$(RESET)\n"
 	@$(DOCKER_COMPOSE) build
