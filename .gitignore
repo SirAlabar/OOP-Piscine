@@ -4,24 +4,6 @@
 obj/
 *.out
 
-# Executables
-bank
-graph
-worker
-car
-command
-shape
-employee
-logger
-school_base
-singleton
-school_forms
-mediator
-observer
-school
-railway_sim
-railway_simulation
-
 # CMake files
 CMakeCache.txt
 CMakeFiles/
