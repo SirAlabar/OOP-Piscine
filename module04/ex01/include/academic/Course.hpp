@@ -13,8 +13,8 @@ private:
 	std::string _name;
 	Professor* _responsable;
 	std::vector<Student*> _students;
-	int _numberOfClassToGraduate;
-	int _maximumNumberOfStudent;
+	// int _numberOfClassToGraduate;
+	// int _maximumNumberOfStudent;
 
 public:
 	Course(std::string p_name);

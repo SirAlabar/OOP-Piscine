@@ -12,6 +12,8 @@ public:
 	Form(FormType p_formType);
 	virtual void execute() = 0;
 	virtual ~Form() {}
+
+	FormType getFormType() const { return _formType; }
 };
 
 #endif

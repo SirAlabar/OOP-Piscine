@@ -4,9 +4,7 @@
 
 Course::Course(std::string p_name) : 
 	_name(p_name), 
-	_responsable(NULL),
-	_numberOfClassToGraduate(0),
-	_maximumNumberOfStudent(0)
+	_responsable(NULL)
 {
 }
 
